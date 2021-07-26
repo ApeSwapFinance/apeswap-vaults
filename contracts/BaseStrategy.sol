@@ -190,11 +190,16 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         if (buyBackRate > 0) {
             uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(feeMax);
     
+            if (earnedAddress == bananaAddress) {
+                // Earn token is BANANA
+                IERC20(wantAddress).safeTransfer(buyBackAddress, buyBackAmt);
+            } else {
             _safeSwap(
                 buyBackAmt,
                 earnedToBananaPath,
                 buyBackAddress
             );
+            }
 
             _earnedAmt = _earnedAmt.sub(buyBackAmt);
         }
