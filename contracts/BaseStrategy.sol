@@ -21,11 +21,11 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public earnedAddress;
     
     address public uniRouterAddress;
-    address public constant usdcAddress = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address public constant bananaAddress = 0x3a3Df212b7AA91Aa0402B9035b098891d276572B;
-    address public constant rewardAddress = 0x917FB15E8aAA12264DCBdC15AFef7cD3cE76BA39;
-    address public constant withdrawFeeAddress = 0x4879712c5D1A98C0B88Fb700daFF5c65d12Fd729;
-    address public constant feeAddress = 0x1cb757f1eB92F25A917CE9a92ED88c1aC0734334;
+    address public usdcAddress = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
+    address public bananaAddress = 0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95;
+    address public rewardAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
+    address public withdrawFeeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
+    address public feeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public vaultChefAddress;
     address public govAddress;
 
@@ -61,6 +61,14 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
         address _uniRouterAddress
+    );
+
+    event SetAddress(
+        address usdcAddress,
+        address bananaAddress,
+        address rewardAddress,
+        address withdrawFeeAddress,
+        address feeAddress
     );
     
     modifier onlyGov() {
@@ -189,16 +197,16 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     function buyBack(uint256 _earnedAmt) internal virtual returns (uint256) {
         if (buyBackRate > 0) {
             uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(feeMax);
-    
+
             if (earnedAddress == bananaAddress) {
                 // Earn token is BANANA
                 IERC20(wantAddress).safeTransfer(buyBackAddress, buyBackAmt);
             } else {
-            _safeSwap(
-                buyBackAmt,
-                earnedToBananaPath,
-                buyBackAddress
-            );
+                _safeSwap(
+                    buyBackAmt,
+                    earnedToBananaPath,
+                    buyBackAddress
+                );
             }
 
             _earnedAmt = _earnedAmt.sub(buyBackAmt);
@@ -261,6 +269,28 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _slippageFactor,
             _uniRouterAddress
         );
+    }
+
+    function setAddresses(
+        address _usdcAddress,
+        address _bananaAddress,
+        address _rewardAddress,
+        address _withdrawFeeAddress,
+        address _feeAddress
+    ) external onlyGov {
+        require(_usdcAddress != address(0), "Invalid USD address");
+        require(_bananaAddress != address(0), "Invalid BANANA address");
+        require(_withdrawFeeAddress != address(0), "Invalid Withdraw address");
+        require(_rewardAddress != address(0), "Invalid reward address");
+        require(_feeAddress != address(0), "Invalid fee address");
+
+        usdcAddress = _usdcAddress;
+        bananaAddress = _bananaAddress;
+        rewardAddress = _rewardAddress;
+        withdrawFeeAddress = _withdrawFeeAddress;
+        feeAddress = _feeAddress;
+
+        emit SetAddress(usdcAddress, bananaAddress, rewardAddress, withdrawFeeAddress, feeAddress);
     }
     
     function _safeSwap(
