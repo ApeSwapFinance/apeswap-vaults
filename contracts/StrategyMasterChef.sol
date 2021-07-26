@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./libs/IMasterchef.sol";
 import "./BaseStrategyLPSingle.sol";
 
-contract StrategyMasterchef is BaseStrategyLPSingle, Initializable {
+contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
