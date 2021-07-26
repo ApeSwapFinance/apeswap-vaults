@@ -4,6 +4,7 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/Utils/SafeERC20.sol";
 import "@openzeppelin/contracts/Utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/Security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/Utils/Math/SafeMath.sol";
 
 import "./libs/IStrategy.sol";
 import "./Operators.sol";
@@ -132,20 +133,20 @@ contract VaultApe is ReentrancyGuard, Operators {
 
     // Withdraw everything from pool for yourself
     function withdrawAll(uint256 _pid) external {
-        _withdraw(_pid, uint256(-1), msg.sender);
+        _withdraw(_pid, type(uint256).max, msg.sender);
     }
 
     function resetAllowances() external onlyOwner {
         for (uint256 i=0; i<poolInfo.length; i++) {
             PoolInfo storage pool = poolInfo[i];
             pool.want.safeApprove(pool.strat, uint256(0));
-            pool.want.safeIncreaseAllowance(pool.strat, uint256(-1));
+            pool.want.safeIncreaseAllowance(pool.strat, type(uint256).max);
         }
     }
 
     function resetSingleAllowance(uint256 _pid) public onlyOwner {
         PoolInfo storage pool = poolInfo[_pid];
         pool.want.safeApprove(pool.strat, uint256(0));
-        pool.want.safeIncreaseAllowance(pool.strat, uint256(-1));
+        pool.want.safeIncreaseAllowance(pool.strat, type(uint256).max);
     }
 }

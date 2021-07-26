@@ -7,8 +7,6 @@ abstract contract BaseStrategyLP is BaseStrategy {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
  
-    uint256 public constant MAX_INT = 2**256 - 1;
-
     function convertDustToEarned() external nonReentrant whenNotPaused {
         // Converts dust tokens into earned tokens, which will be reinvested on the next earn().
 

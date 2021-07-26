@@ -78,31 +78,31 @@ contract StrategyMasterchef is BaseStrategyLPSingle, Initializable {
         IERC20(wantAddress).safeApprove(masterchefAddress, uint256(0));
         IERC20(wantAddress).safeIncreaseAllowance(
             masterchefAddress,
-            uint256(MAX_INT)
+            type(uint256).max
         );
 
         IERC20(earnedAddress).safeApprove(uniRouterAddress, uint256(0));
         IERC20(earnedAddress).safeIncreaseAllowance(
             uniRouterAddress,
-            uint256(MAX_INT)
+            type(uint256).max
         );
 
         IERC20(token0Address).safeApprove(uniRouterAddress, uint256(0));
         IERC20(token0Address).safeIncreaseAllowance(
             uniRouterAddress,
-            uint256(MAX_INT)
+            type(uint256).max
         );
 
         IERC20(token1Address).safeApprove(uniRouterAddress, uint256(0));
         IERC20(token1Address).safeIncreaseAllowance(
             uniRouterAddress,
-            uint256(MAX_INT)
+            type(uint256).max
         );
 
         IERC20(usdcAddress).safeApprove(rewardAddress, uint256(0));
         IERC20(usdcAddress).safeIncreaseAllowance(
             rewardAddress,
-            uint256(MAX_INT)
+            type(uint256).max
         );
     }
     
