@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/Security/Pausable.sol";
 import "@openzeppelin/contracts/Utils/Math/SafeMath.sol";
 import "@openzeppelin/contracts/Security/ReentrancyGuard.sol";
 
-import "./libs/IStrategyFish.sol";
+import "./libs/IStrategyBanana.sol";
 import "./libs/IUniPair.sol";
 import "./libs/IUniRouter02.sol";
 
@@ -22,7 +22,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     
     address public uniRouterAddress;
     address public constant usdcAddress = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
-    address public constant fishAddress = 0x3a3Df212b7AA91Aa0402B9035b098891d276572B;
+    address public constant bananaAddress = 0x3a3Df212b7AA91Aa0402B9035b098891d276572B;
     address public constant rewardAddress = 0x917FB15E8aAA12264DCBdC15AFef7cD3cE76BA39;
     address public constant withdrawFeeAddress = 0x4879712c5D1A98C0B88Fb700daFF5c65d12Fd729;
     address public constant feeAddress = 0x1cb757f1eB92F25A917CE9a92ED88c1aC0734334;
@@ -48,7 +48,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     address[] public earnedToWmaticPath;
     address[] public earnedToUsdcPath;
-    address[] public earnedToFishPath;
+    address[] public earnedToBananaPath;
     address[] public earnedToToken0Path;
     address[] public earnedToToken1Path;
     address[] public token0ToEarnedPath;
@@ -178,7 +178,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             
             uint256 usdcAfter = IERC20(usdcAddress).balanceOf(address(this)).sub(usdcBefore);
             
-            IStrategyFish(rewardAddress).depositReward(usdcAfter);
+            IStrategyBanana(rewardAddress).depositReward(usdcAfter);
             
             _earnedAmt = _earnedAmt.sub(fee);
         }
@@ -192,7 +192,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     
             _safeSwap(
                 buyBackAmt,
-                earnedToFishPath,
+                earnedToBananaPath,
                 buyBackAddress
             );
 

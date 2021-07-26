@@ -2,7 +2,6 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "./libs/IMasterchef.sol";
 import "./BaseStrategyLPSingle.sol";
 
@@ -22,7 +21,7 @@ contract StrategyMasterchef is BaseStrategyLPSingle, Initializable {
         address _earnedAddress,
         address[] memory _earnedToWmaticPath,
         address[] memory _earnedToUsdcPath,
-        address[] memory _earnedToFishPath,
+        address[] memory _earnedToBananaPath,
         address[] memory _earnedToToken0Path,
         address[] memory _earnedToToken1Path,
         address[] memory _token0ToEarnedPath,
@@ -42,7 +41,7 @@ contract StrategyMasterchef is BaseStrategyLPSingle, Initializable {
 
         earnedToWmaticPath = _earnedToWmaticPath;
         earnedToUsdcPath = _earnedToUsdcPath;
-        earnedToFishPath = _earnedToFishPath;
+        earnedToBananaPath = _earnedToBananaPath;
         earnedToToken0Path = _earnedToToken0Path;
         earnedToToken1Path = _earnedToToken1Path;
         token0ToEarnedPath = _token0ToEarnedPath;
