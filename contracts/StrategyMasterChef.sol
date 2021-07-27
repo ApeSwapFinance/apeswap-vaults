@@ -12,13 +12,17 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
     address public masterchefAddress;
     uint256 public pid;
 
+    /**
+        address[5] _configAddress,
+        _configAddress[0] _vaultChefAddress,
+        _configAddress[1] _masterchefAddress,
+        _configAddress[2] _uniRouterAddress,
+        _configAddress[3]  _wantAddress,
+        _configAddress[4]  _earnedAddress
+    */
     function initialize(
-        address _vaultChefAddress,
-        address _masterchefAddress,
-        address _uniRouterAddress,
+        address[5] memory _configAddresses,
         uint256 _pid,
-        address _wantAddress,
-        address _earnedAddress,
         address[] memory _earnedToWmaticPath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath,
@@ -28,16 +32,16 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
         address[] memory _token1ToEarnedPath
     ) external initializer {
         govAddress = msg.sender;
-        vaultChefAddress = _vaultChefAddress;
-        masterchefAddress = _masterchefAddress;
-        uniRouterAddress = _uniRouterAddress;
+        vaultChefAddress = _configAddresses[0];
+        masterchefAddress = _configAddresses[1];
+        uniRouterAddress = _configAddresses[2];
 
-        wantAddress = _wantAddress;
+        wantAddress = _configAddresses[3];
         token0Address = IUniPair(wantAddress).token0();
         token1Address = IUniPair(wantAddress).token1();
 
         pid = _pid;
-        earnedAddress = _earnedAddress;
+        earnedAddress = _configAddresses[4];
 
         earnedToWmaticPath = _earnedToWmaticPath;
         earnedToUsdcPath = _earnedToUsdcPath;
