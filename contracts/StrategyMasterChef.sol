@@ -13,11 +13,11 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
     uint256 public pid;
 
     /**
-        address[5] _configAddress,
-        _configAddress[0] _vaultChefAddress,
-        _configAddress[1] _masterchefAddress,
-        _configAddress[2] _uniRouterAddress,
-        _configAddress[3]  _wantAddress,
+        address[5] _configAddresses,
+        _configAddresses[0] _vaultChefAddress,
+        _configAddresses[1] _masterchefAddress,
+        _configAddresses[2] _uniRouterAddress,
+        _configAddresses[3]  _wantAddress,
         _configAddress[4]  _earnedAddress
     */
     function initialize(

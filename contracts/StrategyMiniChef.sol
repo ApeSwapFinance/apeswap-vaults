@@ -1,61 +1,67 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./libs/IMiniChefStake.sol";
 import "./libs/IWETH.sol";
 
 import "./BaseStrategyLP.sol";
 
-contract StrategySushiSwap is BaseStrategyLP {
+contract StrategyMiniChef is BaseStrategyLP, Initializable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     uint256 public pid;
     address public miniChefAddress;
-
     address public wmaticAddress;
 
     address[] public wmaticToUsdcPath;
-    address[] public wmaticToFishPath;
+    address[] public wmaticToBananaPath;
     address[] public wmaticToToken0Path;
     address[] public wmaticToToken1Path;
 
-    constructor(
-        address _vaultChefAddress,
+    bool private coreSet = false;
+
+    /**
+        address[3] _configAddresses,
+        _configAddress[0] _vaultChefAddress,
+        _configAddresses[1] _miniChefAddress,
+        _configAddresses[2] _uniRouterAddress,
+        _configAddress[3]  _wantAddress,
+        _configAddress[4]  _earnedAddress
+        _configAddress[5]  _wmaticAddress
+    */
+    function initialize(
+        address[6] memory _configAddresses,
         uint256 _pid,
-        address _wantAddress,
-        address _earnedAddress,
-        address _miniChefAddress,
-        address _wmaticAddress,
         address[] memory _earnedToWmaticPath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath,
-        address[] memory _wmaticToUsdcPath,
-        address[] memory _wmaticToFishPath,
         address[] memory _earnedToToken0Path,
         address[] memory _earnedToToken1Path,
         address[] memory _wmaticToToken0Path,
         address[] memory _wmaticToToken1Path,
         address[] memory _token0ToEarnedPath,
         address[] memory _token1ToEarnedPath
-    ) {
+    ) public initializer {
         govAddress = msg.sender;
-        vaultChefAddress = _vaultChefAddress;
+        vaultChefAddress = _configAddresses[0];
 
-        wantAddress = _wantAddress;
+        miniChefAddress = _configAddresses[1];
+        uniRouterAddress = _configAddresses[2];
+
+        wantAddress = _configAddresses[3];
         token0Address = IUniPair(wantAddress).token0();
         token1Address = IUniPair(wantAddress).token1();
 
         pid = _pid;
-        earnedAddress = _earnedAddress;
+        earnedAddress = _configAddresses[4];
 
-        miniChefAddress = _miniChefAddress;
-        wmaticAddress = _wmaticAddress;
+        wmaticAddress = _configAddresses[5];
+
         earnedToWmaticPath = _earnedToWmaticPath;
         earnedToUsdcPath = _earnedToUsdcPath;
         earnedToBananaPath = _earnedToBananaPath;
-        wmaticToUsdcPath = _wmaticToUsdcPath;
-        wmaticToFishPath = _wmaticToFishPath;
         earnedToToken0Path = _earnedToToken0Path;
         earnedToToken1Path = _earnedToToken1Path;
         wmaticToToken0Path = _wmaticToToken0Path;
@@ -66,6 +72,13 @@ contract StrategySushiSwap is BaseStrategyLP {
         transferOwnership(vaultChefAddress);
 
         _resetAllowances();
+    }
+
+    // TODO can this be defaulted?
+    function setCoreAddresses(address[] memory _wmaticToUsdcPath, address[] memory _wmaticToBananaPath) public {
+        require(!coreSet, "Already set");
+        wmaticToUsdcPath = _wmaticToUsdcPath;
+        wmaticToBananaPath = _wmaticToBananaPath;
     }
 
     function _vaultDeposit(uint256 _amount) internal override {
@@ -200,7 +213,7 @@ contract StrategySushiSwap is BaseStrategyLP {
             _safeSwap(
                 buyBackAmt,
                 _earnedAddress == wmaticAddress
-                    ? wmaticToFishPath
+                    ? wmaticToBananaPath
                     : earnedToBananaPath,
                 buyBackAddress
             );
