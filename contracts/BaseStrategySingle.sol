@@ -16,8 +16,6 @@ abstract contract BaseStrategySingle is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
     address public wantAddress;
-    address public token0Address;
-    address public token1Address;
     address public earnedAddress;
 
     address public uniRouterAddress;
