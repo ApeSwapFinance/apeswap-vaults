@@ -9,7 +9,8 @@ abstract contract BaseStrategyLPSingle is BaseStrategyLP {
     
     function _vaultHarvest() internal virtual;
 
-    function earn() external override nonReentrant whenNotPaused onlyGov {
+    // TODO removed onlyGov modifier - check risks
+    function earn() external override nonReentrant whenNotPaused {
         // Harvest farm tokens
         _vaultHarvest();
 

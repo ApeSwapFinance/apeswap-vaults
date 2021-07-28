@@ -16,7 +16,7 @@
     "migrate:bsc": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network bsc",
     "migrate:bsc-testnet": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network bsc-testnet",
     "migrate:development": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network development",
-    "verify:bsc": "truffle run verify Migrations --network bsc",
+    "verify:bsc": "truffle run verify VaultApe --network bsc && truffle run verify StrategyFactory --network bsc",
     "verify:bsc-testnet": "truffle run verify Migrations --network bsc-testnet",
     "typecheck": "tsc --noEmit",
     "lint": "solhint './contracts/**/*.sol'",

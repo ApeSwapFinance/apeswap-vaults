@@ -4,7 +4,7 @@ pragma solidity 0.8.6;
 import "./StrategyMasterChef.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TokenVestingFactory is Ownable {
+contract StrategyFactory is Ownable {
   address public defaultGov;
   address public defaultVaultChef;
   address public defaultRouter;
