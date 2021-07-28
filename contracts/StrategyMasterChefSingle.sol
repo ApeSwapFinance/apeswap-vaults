@@ -33,8 +33,6 @@ contract StrategyMasterChefSingle is BaseStrategySingle, Initializable {
         uniRouterAddress = _configAddresses[2];
 
         wantAddress = _configAddresses[3];
-        token0Address = IUniPair(wantAddress).token0();
-        token1Address = IUniPair(wantAddress).token1();
 
         pid = _pid;
         earnedAddress = _configAddresses[4];
@@ -96,18 +94,6 @@ contract StrategyMasterChefSingle is BaseStrategySingle, Initializable {
 
         IERC20(earnedAddress).safeApprove(uniRouterAddress, uint256(0));
         IERC20(earnedAddress).safeIncreaseAllowance(
-            uniRouterAddress,
-            type(uint256).max
-        );
-
-        IERC20(token0Address).safeApprove(uniRouterAddress, uint256(0));
-        IERC20(token0Address).safeIncreaseAllowance(
-            uniRouterAddress,
-            type(uint256).max
-        );
-
-        IERC20(token1Address).safeApprove(uniRouterAddress, uint256(0));
-        IERC20(token1Address).safeIncreaseAllowance(
             uniRouterAddress,
             type(uint256).max
         );
