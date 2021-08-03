@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "./StrategyMasterChef.sol";
+import "../StrategyMasterChefSingle.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StrategyFactory is Ownable {
+contract StrategyMasterChefSingleFactory is Ownable {
   address public defaultGov;
   address public defaultVaultChef;
   address public defaultRouter;
 
-  event DeployedMasterChefStrategy(
+  event DeployedMasterChefSingleStrategy(
     address indexed _vaultChefAddress,
     address _masterchefAddress,
     address _routerAddress,
@@ -18,11 +18,7 @@ contract StrategyFactory is Ownable {
     address _earnedAddress,
     address[] _earnedToWmaticPath,
     address[] _earnedToUsdcPath,
-    address[] _earnedToBananaPath,
-    address[] _earnedToToken0Path,
-    address[] _earnedToToken1Path,
-    address[] _token0ToEarnedPath,
-    address[] _token1ToEarnedPath
+    address[] _earnedToBananaPath
   );
 
   constructor (address _defaultGov, address _defaultVault, address _defaultRouter) {
@@ -42,16 +38,12 @@ contract StrategyFactory is Ownable {
         uint256 _pid,
         address[] memory _earnedToWmaticPath,
         address[] memory _earnedToUsdcPath,
-        address[] memory _earnedToBananaPath,
-        address[] memory _earnedToToken0Path,
-        address[] memory _earnedToToken1Path,
-        address[] memory _token0ToEarnedPath,
-        address[] memory _token1ToEarnedPath
+        address[] memory _earnedToBananaPath
     ) public {
-    deployMasterChefStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultGov], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath, _earnedToToken0Path, _earnedToToken1Path, _token0ToEarnedPath, _token1ToEarnedPath);
+    deployMasterChefSingleStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultGov], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath);
   }
 
-  /**
+    /**
     address[6] _configAddress,
     _configAddress[0] _vaultChefAddress,
     _configAddress[1] _masterchefAddress,
@@ -60,18 +52,14 @@ contract StrategyFactory is Ownable {
     _configAddress[4]  _earnedAddress,
     _configAddress[5]  _gov
    */
-  function deployMasterChefStrategy(
+  function deployMasterChefSingleStrategy(
         address[6] memory _configAddresses,
         uint256 _pid,
         address[] memory _earnedToWmaticPath,
         address[] memory _earnedToUsdcPath,
-        address[] memory _earnedToBananaPath,
-        address[] memory _earnedToToken0Path,
-        address[] memory _earnedToToken1Path,
-        address[] memory _token0ToEarnedPath,
-        address[] memory _token1ToEarnedPath
+        address[] memory _earnedToBananaPath
     ) public {
-      StrategyMasterChef strategy = new StrategyMasterChef();
+      StrategyMasterChefSingle strategy = new StrategyMasterChefSingle();
 
       /**
         address[0] _vaultChefAddress,
@@ -80,11 +68,11 @@ contract StrategyFactory is Ownable {
         address[3]  _wantAddress,
         address[4]  _earnedAddress
       */
-      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4]], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath, _earnedToToken0Path, _earnedToToken1Path, _token0ToEarnedPath, _token1ToEarnedPath);
+      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4]], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath);
 
       strategy.setGov(_configAddresses[5]);
 
-      emit DeployedMasterChefStrategy(
+      emit DeployedMasterChefSingleStrategy(
         _configAddresses[0],
         _configAddresses[1],
         _configAddresses[2],
@@ -93,11 +81,7 @@ contract StrategyFactory is Ownable {
         _configAddresses[4],
         _earnedToWmaticPath,
         _earnedToUsdcPath,
-        _earnedToBananaPath,
-        _earnedToToken0Path,
-        _earnedToToken1Path,
-        _token0ToEarnedPath,
-        _token1ToEarnedPath
+        _earnedToBananaPath
       );
     }
 

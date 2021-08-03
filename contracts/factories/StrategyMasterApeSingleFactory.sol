@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "./StrategyMasterChefSingle.sol";
+import "../StrategyMasterApeSingle.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StrategySingleFactory is Ownable {
+contract StrategyMasterApeSingleFactory is Ownable {
   address public defaultGov;
   address public defaultVaultChef;
   address public defaultRouter;
 
-  event DeployedMasterChefSingleStrategy(
+  event DeployedMasterApeSingleStrategy(
     address indexed _vaultChefAddress,
     address _masterchefAddress,
     address _routerAddress,
@@ -33,14 +33,14 @@ contract StrategySingleFactory is Ownable {
     _configAddress[1] _wantAddress,
     _configAddress[2] _earnedAddress,
    */
-  function deployDefaultMasterChefStrategy(
+  function deployDefaultMasterApeSingleStrategy(
         address[3] memory _configAddresses,
         uint256 _pid,
         address[] memory _earnedToWmaticPath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath
     ) public {
-    deployMasterChefSingleStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultGov], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath);
+    deployMasterApeSingleStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultGov], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath);
   }
 
     /**
@@ -52,14 +52,14 @@ contract StrategySingleFactory is Ownable {
     _configAddress[4]  _earnedAddress,
     _configAddress[5]  _gov
    */
-  function deployMasterChefSingleStrategy(
+  function deployMasterApeSingleStrategy(
         address[6] memory _configAddresses,
         uint256 _pid,
         address[] memory _earnedToWmaticPath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath
     ) public {
-      StrategyMasterChefSingle strategy = new StrategyMasterChefSingle();
+      StrategyMasterApeSingle strategy = new StrategyMasterApeSingle();
 
       /**
         address[0] _vaultChefAddress,
@@ -72,7 +72,7 @@ contract StrategySingleFactory is Ownable {
 
       strategy.setGov(_configAddresses[5]);
 
-      emit DeployedMasterChefSingleStrategy(
+      emit DeployedMasterApeSingleStrategy(
         _configAddresses[0],
         _configAddresses[1],
         _configAddresses[2],
