@@ -16,10 +16,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     using SafeERC20 for IERC20;
 
     address public wantAddress;
-    address public token0Address;
-    address public token1Address;
     address public earnedAddress;
-    
+
     address public uniRouterAddress;
     address public usdcAddress = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     address public bananaAddress = 0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95;
@@ -33,9 +31,10 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public sharesTotal = 0;
 
     address public constant buyBackAddress = 0x000000000000000000000000000000000000dEaD;
-    uint256 public controllerFee = 50;
-    uint256 public rewardRate = 0;
-    uint256 public buyBackRate = 450;
+    uint256 public controllerFee = 50; // 0.5%
+    uint256 public rewardRate = 100; // 1%
+    uint256 public buyBackRate = 300; // 3%
+
     uint256 public constant feeMaxTotal = 1000;
     uint256 public constant feeMax = 10000; // 100 = 1%
 
@@ -49,10 +48,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address[] public earnedToWmaticPath;
     address[] public earnedToUsdcPath;
     address[] public earnedToBananaPath;
-    address[] public earnedToToken0Path;
-    address[] public earnedToToken1Path;
-    address[] public token0ToEarnedPath;
-    address[] public token1ToEarnedPath;
     
     event SetSettings(
         uint256 _controllerFee,
@@ -163,7 +158,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _safeSwapWmatic(
                 fee,
                 earnedToWmaticPath,
-                feeAddress
+                _msgSender()
             );
             
             _earnedAmt = _earnedAmt.sub(fee);
@@ -175,19 +170,26 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     function distributeRewards(uint256 _earnedAmt) internal returns (uint256) {
         if (rewardRate > 0) {
             uint256 fee = _earnedAmt.mul(rewardRate).div(feeMax);
-    
-            uint256 usdcBefore = IERC20(usdcAddress).balanceOf(address(this));
-            
-            _safeSwap(
-                fee,
-                earnedToUsdcPath,
-                address(this)
-            );
-            
-            uint256 usdcAfter = IERC20(usdcAddress).balanceOf(address(this)).sub(usdcBefore);
-            
-            IERC20(usdcAddress).safeTransfer(rewardAddress, usdcAfter);
-            // IStrategyBanana(rewardAddress).depositReward(usdcAfter);
+
+            if (earnedAddress == bananaAddress) {
+                // Earn token is BANANA
+                IERC20(wantAddress).safeTransfer(rewardAddress, fee);
+            } else {
+                // uint256 usdcBefore = IERC20(usdcAddress).balanceOf(address(this));
+
+                _safeSwap(
+                    fee,
+                    earnedToWmaticPath,
+                    rewardAddress
+                );
+
+                // uint256 usdcAfter = IERC20(usdcAddress).balanceOf(address(this)).sub(usdcBefore);
+                
+                // IERC20(usdcAddress).safeTransfer(rewardAddress, usdcAfter);
+
+                //  This could be hooked to a contract for instant redistribution
+                // IStrategyBanana(rewardAddress).depositReward(usdcAfter);
+            }
 
             _earnedAmt = _earnedAmt.sub(fee);
         }
