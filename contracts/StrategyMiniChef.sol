@@ -89,7 +89,11 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         IMiniChefStake(miniChefAddress).withdraw(pid, _amount, address(this));
     }
 
-    function earn() external override nonReentrant whenNotPaused onlyGov {
+    function earn() external override nonReentrant whenNotPaused { 
+        earn(_msgSender());
+    }
+
+    function earn(address _to) public override nonReentrant whenNotPaused onlyGov {
         // Harvest farm tokens
         IMiniChefStake(miniChefAddress).harvest(pid, address(this));
 
@@ -98,7 +102,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         uint256 wmaticAmt = IERC20(wmaticAddress).balanceOf(address(this));
 
         if (earnedAmt > 0) {
-            earnedAmt = distributeFees(earnedAmt, earnedAddress);
+            earnedAmt = distributeFees(earnedAmt, earnedAddress, _to);
             earnedAmt = distributeRewards(earnedAmt, earnedAddress);
             earnedAmt = buyBack(earnedAmt, earnedAddress);
 
@@ -153,7 +157,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
     }
 
     // To pay for earn function
-    function distributeFees(uint256 _earnedAmt, address _earnedAddress)
+    function distributeFees(uint256 _earnedAmt, address _earnedAddress, address _to)
         internal
         returns (uint256)
     {
@@ -162,9 +166,9 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
             if (_earnedAddress == wmaticAddress) {
                 IWETH(wmaticAddress).withdraw(fee);
-                safeTransferETH(feeAddress, fee);
+                safeTransferETH(_to, fee);
             } else {
-                _safeSwapWmatic(fee, earnedToWmaticPath, feeAddress);
+                _safeSwapWmatic(fee, earnedToWmaticPath, _to);
             }
 
             _earnedAmt = _earnedAmt.sub(fee);

@@ -15,6 +15,9 @@ interface IStrategy {
     // Main want token compounding function
     function earn() external;
 
+    // Main want token compounding function
+    function earn(address _to) external;
+
     // Transfer want tokens autoFarm -> strategy
     function deposit(address _userAddress, uint256 _wantAmt) external returns (uint256);
 

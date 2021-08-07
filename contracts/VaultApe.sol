@@ -146,7 +146,7 @@ contract VaultApe is ReentrancyGuard, Operators {
 
     function earnAll() external {
         for (uint256 i=0; i<poolInfo.length; i++) {
-            IStrategy(poolInfo[i].strat).earn();
+            IStrategy(poolInfo[i].strat).earn(_msgSender());
         }
     }
 

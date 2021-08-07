@@ -46,8 +46,12 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
         _resetAllowances();
     }
 
+    function earn() external override nonReentrant whenNotPaused { 
+        earn(_msgSender());
+    }
+
     // TODO removed onlyGov modifier - check risks
-    function earn() external override nonReentrant whenNotPaused {
+    function earn(address _to) public override nonReentrant whenNotPaused {
         // Harvest farm tokens
         _vaultHarvest();
 
@@ -55,7 +59,7 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
         uint256 earnedAmt = IERC20(earnedAddress).balanceOf(address(this));
 
         if (earnedAmt > 0) {
-            earnedAmt = distributeFees(earnedAmt);
+            earnedAmt = distributeFees(earnedAmt, _to);
             earnedAmt = distributeRewards(earnedAmt);
             earnedAmt = buyBack(earnedAmt);
     
