@@ -174,7 +174,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
             if (earnedAddress == bananaAddress) {
                 // Earn token is BANANA
-                IERC20(wantAddress).safeTransfer(rewardAddress, fee);
+                IERC20(earnedAddress).safeTransfer(rewardAddress, fee);
             } else {
                 // uint256 usdcBefore = IERC20(usdcAddress).balanceOf(address(this));
 
@@ -204,7 +204,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
             if (earnedAddress == bananaAddress) {
                 // Earn token is BANANA
-                IERC20(wantAddress).safeTransfer(buyBackAddress, buyBackAmt);
+                IERC20(earnedAddress).safeTransfer(buyBackAddress, buyBackAmt);
             } else {
                 _safeSwap(
                     buyBackAmt,
