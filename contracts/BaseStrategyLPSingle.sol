@@ -8,13 +8,18 @@ abstract contract BaseStrategyLPSingle is BaseStrategyLP {
     using SafeERC20 for IERC20;
     
     function _vaultHarvest() internal virtual;
-
+    
+    // TODO removed onlyGov modifier - check risks
     function earn() external override nonReentrant whenNotPaused { 
-        earn(_msgSender());
+        _earn(_msgSender());
     }
 
     // TODO removed onlyGov modifier - check risks
-    function earn(address _to) public override nonReentrant whenNotPaused {
+    function earn(address _to) external override nonReentrant whenNotPaused {
+        _earn(_to);
+    }
+
+    function _earn(address _to) internal {
         // Harvest farm tokens
         _vaultHarvest();
 

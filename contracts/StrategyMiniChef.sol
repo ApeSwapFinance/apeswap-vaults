@@ -90,10 +90,14 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
     }
 
     function earn() external override nonReentrant whenNotPaused { 
-        earn(_msgSender());
+        _earn(_msgSender());
     }
 
-    function earn(address _to) public override nonReentrant whenNotPaused onlyGov {
+    function earn(address _to) external override nonReentrant whenNotPaused onlyGov {
+        _earn(_to);
+    }
+
+    function _earn(address _to) internal {
         // Harvest farm tokens
         IMiniChefStake(miniChefAddress).harvest(pid, address(this));
 
