@@ -9,6 +9,9 @@ interface IStrategy {
     // Total want tokens managed by strategy
     function wantLockedTotal() external view returns (uint256);
 
+    // Is strategy paused
+    function paused() external view returns (bool);
+
     // Sum of all shares of users to wantLockedTotal
     function sharesTotal() external view returns (uint256);
 
