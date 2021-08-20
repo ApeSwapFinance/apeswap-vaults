@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/Utils/SafeERC20.sol";
 import "@openzeppelin/contracts/Utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/Security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/Utils/Math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./libs/IStrategy.sol";
-import "./Operators.sol";
 
-contract VaultApe is ReentrancyGuard, Operators {
+contract VaultApe is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -70,11 +70,11 @@ contract VaultApe is ReentrancyGuard, Operators {
         _deposit(_pid, _wantAmt, msg.sender);
     }
 
-    // For unique contract calls
-    function deposit(uint256 _pid, uint256 _wantAmt, address _to) external nonReentrant onlyOperator {
+    // For depositing for other users
+    function deposit(uint256 _pid, uint256 _wantAmt, address _to) external nonReentrant {
         _deposit(_pid, _wantAmt, _to);
     }
-    
+
     function _deposit(uint256 _pid, uint256 _wantAmt, address _to) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_to];
@@ -93,8 +93,8 @@ contract VaultApe is ReentrancyGuard, Operators {
         _withdraw(_pid, _wantAmt, msg.sender);
     }
 
-    // For unique contract calls
-    function withdraw(uint256 _pid, uint256 _wantAmt, address _to) external nonReentrant onlyOperator {
+    // For withdrawing to other address
+    function withdraw(uint256 _pid, uint256 _wantAmt, address _to) external nonReentrant {
         _withdraw(_pid, _wantAmt, _to);
     }
 
