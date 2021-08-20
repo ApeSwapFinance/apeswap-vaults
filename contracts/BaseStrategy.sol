@@ -30,20 +30,20 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public lastEarnBlock = block.number;
     uint256 public sharesTotal = 0;
 
-    address public constant buyBackAddress = 0x000000000000000000000000000000000000dEaD;
+    address public constant BUY_BACK_ADDRESS = 0x000000000000000000000000000000000000dEaD;
     uint256 public controllerFee = 50; // 0.5%
     uint256 public rewardRate = 100; // 1%
     uint256 public buyBackRate = 300; // 3%
 
-    uint256 public constant feeMaxTotal = 1000;
-    uint256 public constant feeMax = 10000; // 100 = 1%
+    uint256 public constant FEE_MAX_TOTAL = 1000;
+    uint256 public constant FEE_MAX = 10000; // 100 = 1%
 
     uint256 public withdrawFeeFactor = 10000; // 0% withdraw fee
-    uint256 public constant withdrawFeeFactorMax = 10000;
-    uint256 public constant withdrawFeeFactorLL = 9900;
+    uint256 public constant WITHDRAW_FEE_FACTOR_MAX = 10000;
+    uint256 public constant WITHDRAW_FEE_FACTOR_LL = 9900;
 
     uint256 public slippageFactor = 950; // 5% default slippage tolerance
-    uint256 public constant slippageFactorUL = 995;
+    uint256 public constant SLIPPAGE_FACTOR_UL = 995;
 
     address[] public earnedToWmaticPath;
     address[] public earnedToUsdcPath;
@@ -138,8 +138,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         
         // Withdraw fee
         uint256 withdrawFee = _wantAmt
-            .mul(withdrawFeeFactorMax.sub(withdrawFeeFactor))
-            .div(withdrawFeeFactorMax);
+            .mul(WITHDRAW_FEE_FACTOR_MAX.sub(withdrawFeeFactor))
+            .div(WITHDRAW_FEE_FACTOR_MAX);
         if (withdrawFee > 0) {
             IERC20(wantAddress).safeTransfer(withdrawFeeAddress, withdrawFee);
         }
@@ -154,7 +154,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     // To pay for earn function
     function distributeFees(uint256 _earnedAmt, address _to) internal returns (uint256) {
         if (controllerFee > 0) {
-            uint256 fee = _earnedAmt.mul(controllerFee).div(feeMax);
+            uint256 fee = _earnedAmt.mul(controllerFee).div(FEE_MAX);
     
             _safeSwapWmatic(
                 fee,
@@ -170,7 +170,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     function distributeRewards(uint256 _earnedAmt) internal returns (uint256) {
         if (rewardRate > 0) {
-            uint256 fee = _earnedAmt.mul(rewardRate).div(feeMax);
+            uint256 fee = _earnedAmt.mul(rewardRate).div(FEE_MAX);
 
             if (earnedAddress == bananaAddress) {
                 // Earn token is BANANA
@@ -200,16 +200,16 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     function buyBack(uint256 _earnedAmt) internal virtual returns (uint256) {
         if (buyBackRate > 0) {
-            uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(feeMax);
+            uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(FEE_MAX);
 
             if (earnedAddress == bananaAddress) {
                 // Earn token is BANANA
-                IERC20(earnedAddress).safeTransfer(buyBackAddress, buyBackAmt);
+                IERC20(earnedAddress).safeTransfer(BUY_BACK_ADDRESS, buyBackAmt);
             } else {
                 _safeSwap(
                     buyBackAmt,
                     earnedToBananaPath,
-                    buyBackAddress
+                    BUY_BACK_ADDRESS
                 );
             }
 
@@ -254,10 +254,10 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _slippageFactor,
         address _uniRouterAddress
     ) external onlyGov {
-        require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= feeMaxTotal, "Max fee of 10%");
-        require(_withdrawFeeFactor >= withdrawFeeFactorLL, "_withdrawFeeFactor too low");
-        require(_withdrawFeeFactor <= withdrawFeeFactorMax, "_withdrawFeeFactor too high");
-        require(_slippageFactor <= slippageFactorUL, "_slippageFactor too high");
+        require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= FEE_MAX_TOTAL, "Max fee of 10%");
+        require(_withdrawFeeFactor >= WITHDRAW_FEE_FACTOR_LL, "_withdrawFeeFactor too low");
+        require(_withdrawFeeFactor <= WITHDRAW_FEE_FACTOR_MAX, "_withdrawFeeFactor too high");
+        require(_slippageFactor <= SLIPPAGE_FACTOR_UL, "_slippageFactor too high");
         controllerFee = _controllerFee;
         rewardRate = _rewardRate;
         buyBackRate = _buyBackRate;

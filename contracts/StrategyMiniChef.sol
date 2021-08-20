@@ -166,7 +166,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         returns (uint256)
     {
         if (controllerFee > 0) {
-            uint256 fee = _earnedAmt.mul(controllerFee).div(feeMax);
+            uint256 fee = _earnedAmt.mul(controllerFee).div(FEE_MAX);
 
             if (_earnedAddress == wmaticAddress) {
                 IWETH(wmaticAddress).withdraw(fee);
@@ -186,7 +186,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         returns (uint256)
     {
         if (rewardRate > 0) {
-            uint256 fee = _earnedAmt.mul(rewardRate).div(feeMax);
+            uint256 fee = _earnedAmt.mul(rewardRate).div(FEE_MAX);
 
             uint256 usdcBefore = IERC20(usdcAddress).balanceOf(address(this));
 
@@ -216,14 +216,14 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         returns (uint256)
     {
         if (buyBackRate > 0) {
-            uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(feeMax);
+            uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(FEE_MAX);
 
             _safeSwap(
                 buyBackAmt,
                 _earnedAddress == wmaticAddress
                     ? wmaticToBananaPath
                     : earnedToBananaPath,
-                buyBackAddress
+                BUY_BACK_ADDRESS
             );
 
             _earnedAmt = _earnedAmt.sub(buyBackAmt);
@@ -304,5 +304,5 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         );
     }
 
-    receive() external payable {}
+    receive() external payable { }
 }
