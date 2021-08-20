@@ -223,7 +223,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
                 _earnedAddress == wmaticAddress
                     ? wmaticToBananaPath
                     : earnedToBananaPath,
-                BUY_BACK_ADDRESS
+                buyBackAddress
             );
 
             _earnedAmt = _earnedAmt.sub(buyBackAmt);

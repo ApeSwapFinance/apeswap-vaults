@@ -30,7 +30,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public lastEarnBlock = block.number;
     uint256 public sharesTotal = 0;
 
-    address public constant BUY_BACK_ADDRESS = 0x000000000000000000000000000000000000dEaD;
+    address public buyBackAddress = 0x000000000000000000000000000000000000dEaD;
     uint256 public controllerFee = 50; // 0.5%
     uint256 public rewardRate = 100; // 1%
     uint256 public buyBackRate = 300; // 3%
@@ -55,7 +55,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress
+        address _uniRouterAddress,
+        address _buyBackAddress
     );
 
     event SetAddress(
@@ -204,12 +205,12 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
             if (earnedAddress == bananaAddress) {
                 // Earn token is BANANA
-                IERC20(earnedAddress).safeTransfer(BUY_BACK_ADDRESS, buyBackAmt);
+                IERC20(earnedAddress).safeTransfer(buyBackAddress, buyBackAmt);
             } else {
                 _safeSwap(
                     buyBackAmt,
                     earnedToBananaPath,
-                    BUY_BACK_ADDRESS
+                    buyBackAddress
                 );
             }
 
@@ -252,7 +253,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress
+        address _uniRouterAddress,
+        address _buyBackAddress
     ) external onlyGov {
         require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= FEE_MAX_TOTAL, "Max fee of 10%");
         require(_withdrawFeeFactor >= WITHDRAW_FEE_FACTOR_LL, "_withdrawFeeFactor too low");
@@ -264,6 +266,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         withdrawFeeFactor = _withdrawFeeFactor;
         slippageFactor = _slippageFactor;
         uniRouterAddress = _uniRouterAddress;
+        buyBackAddress = _buyBackAddress;
 
         emit SetSettings(
             _controllerFee,
@@ -271,7 +274,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _buyBackRate,
             _withdrawFeeFactor,
             _slippageFactor,
-            _uniRouterAddress
+            _uniRouterAddress,
+            _buyBackAddress
         );
     }
 
