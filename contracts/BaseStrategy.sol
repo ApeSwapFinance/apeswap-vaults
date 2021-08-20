@@ -23,7 +23,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public bananaAddress = 0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95;
     address public rewardAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public withdrawFeeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
-    address public feeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public vaultChefAddress;
     address public govAddress;
 
@@ -55,8 +54,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress,
-        address _buyBackAddress
+        address _uniRouterAddress
     );
 
     event SetAddress(
@@ -64,7 +62,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         address bananaAddress,
         address rewardAddress,
         address withdrawFeeAddress,
-        address feeAddress
+        address buyBackAddress
     );
     
     modifier onlyGov() {
@@ -174,23 +172,14 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             uint256 fee = _earnedAmt.mul(rewardRate).div(FEE_MAX);
 
             if (earnedAddress == bananaAddress) {
-                // Earn token is BANANA
+                // Earn token is BANANA - don't sell
                 IERC20(earnedAddress).safeTransfer(rewardAddress, fee);
             } else {
-                // uint256 usdcBefore = IERC20(usdcAddress).balanceOf(address(this));
-
                 _safeSwap(
                     fee,
                     earnedToWmaticPath,
                     rewardAddress
                 );
-
-                // uint256 usdcAfter = IERC20(usdcAddress).balanceOf(address(this)).sub(usdcBefore);
-                
-                // IERC20(usdcAddress).safeTransfer(rewardAddress, usdcAfter);
-
-                //  This could be hooked to a contract for instant redistribution
-                // IStrategyBanana(rewardAddress).depositReward(usdcAfter);
             }
 
             _earnedAmt = _earnedAmt.sub(fee);
@@ -204,7 +193,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             uint256 buyBackAmt = _earnedAmt.mul(buyBackRate).div(FEE_MAX);
 
             if (earnedAddress == bananaAddress) {
-                // Earn token is BANANA
+                // Earn token is BANANA - don't sell
                 IERC20(earnedAddress).safeTransfer(buyBackAddress, buyBackAmt);
             } else {
                 _safeSwap(
@@ -253,8 +242,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor,
-        address _uniRouterAddress,
-        address _buyBackAddress
+        address _uniRouterAddress
     ) external onlyGov {
         require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= FEE_MAX_TOTAL, "Max fee of 10%");
         require(_withdrawFeeFactor >= WITHDRAW_FEE_FACTOR_LL, "_withdrawFeeFactor too low");
@@ -266,7 +254,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         withdrawFeeFactor = _withdrawFeeFactor;
         slippageFactor = _slippageFactor;
         uniRouterAddress = _uniRouterAddress;
-        buyBackAddress = _buyBackAddress;
 
         emit SetSettings(
             _controllerFee,
@@ -274,8 +261,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _buyBackRate,
             _withdrawFeeFactor,
             _slippageFactor,
-            _uniRouterAddress,
-            _buyBackAddress
+            _uniRouterAddress
         );
     }
 
@@ -284,21 +270,21 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         address _bananaAddress,
         address _rewardAddress,
         address _withdrawFeeAddress,
-        address _feeAddress
+        address _buyBackAddress
     ) external onlyGov {
         require(_usdcAddress != address(0), "Invalid USD address");
         require(_bananaAddress != address(0), "Invalid BANANA address");
         require(_withdrawFeeAddress != address(0), "Invalid Withdraw address");
         require(_rewardAddress != address(0), "Invalid reward address");
-        require(_feeAddress != address(0), "Invalid fee address");
+        require(_buyBackAddress != address(0), "Invalid buyback address");
 
         usdcAddress = _usdcAddress;
         bananaAddress = _bananaAddress;
         rewardAddress = _rewardAddress;
         withdrawFeeAddress = _withdrawFeeAddress;
-        feeAddress = _feeAddress;
+        buyBackAddress = _buyBackAddress;
 
-        emit SetAddress(usdcAddress, bananaAddress, rewardAddress, withdrawFeeAddress, feeAddress);
+        emit SetAddress(usdcAddress, bananaAddress, rewardAddress, withdrawFeeAddress, buyBackAddress);
     }
     
     function _safeSwap(
