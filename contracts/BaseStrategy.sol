@@ -19,7 +19,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public earnedAddress;
 
     address public uniRouterAddress;
-    address public usdcAddress = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
+    address public usdAddress = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     address public bananaAddress = 0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95;
     address public rewardAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public withdrawFeeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
@@ -45,7 +45,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public constant SLIPPAGE_FACTOR_UL = 995;
 
     address[] public earnedToWnativePath;
-    address[] public earnedToUsdcPath;
+    address[] public earnedToUsdPath;
     address[] public earnedToBananaPath;
     
     event SetSettings(
@@ -58,7 +58,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     );
 
     event SetAddress(
-        address usdcAddress,
+        address usdAddress,
         address bananaAddress,
         address rewardAddress,
         address withdrawFeeAddress,
@@ -177,7 +177,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             } else {
                 _safeSwap(
                     fee,
-                    earnedToWnativePath,
+                    earnedToUsdPath,
                     rewardAddress
                 );
             }
@@ -266,25 +266,25 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     }
 
     function setAddresses(
-        address _usdcAddress,
+        address _usdAddress,
         address _bananaAddress,
         address _rewardAddress,
         address _withdrawFeeAddress,
         address _buyBackAddress
     ) external onlyGov {
-        require(_usdcAddress != address(0), "Invalid USD address");
+        require(_usdAddress != address(0), "Invalid USD address");
         require(_bananaAddress != address(0), "Invalid BANANA address");
         require(_withdrawFeeAddress != address(0), "Invalid Withdraw address");
         require(_rewardAddress != address(0), "Invalid reward address");
         require(_buyBackAddress != address(0), "Invalid buyback address");
 
-        usdcAddress = _usdcAddress;
+        usdAddress = _usdAddress;
         bananaAddress = _bananaAddress;
         rewardAddress = _rewardAddress;
         withdrawFeeAddress = _withdrawFeeAddress;
         buyBackAddress = _buyBackAddress;
 
-        emit SetAddress(usdcAddress, bananaAddress, rewardAddress, withdrawFeeAddress, buyBackAddress);
+        emit SetAddress(usdAddress, bananaAddress, rewardAddress, withdrawFeeAddress, buyBackAddress);
     }
     
     function _safeSwap(

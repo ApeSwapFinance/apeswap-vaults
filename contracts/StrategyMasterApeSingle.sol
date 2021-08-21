@@ -24,7 +24,7 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
         address[5] memory _configAddresses,
         uint256 _pid,
         address[] memory _earnedToWnativePath,
-        address[] memory _earnedToUsdcPath,
+        address[] memory _earnedToUsdPath,
         address[] memory _earnedToBananaPath
     ) external initializer {
         govAddress = msg.sender;
@@ -38,7 +38,7 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
         earnedAddress = _configAddresses[4];
 
         earnedToWnativePath = _earnedToWnativePath;
-        earnedToUsdcPath = _earnedToUsdcPath;
+        earnedToUsdPath = _earnedToUsdPath;
         earnedToBananaPath = _earnedToBananaPath;
 
         transferOwnership(vaultChefAddress);
@@ -119,8 +119,8 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
             type(uint256).max
         );
 
-        IERC20(usdcAddress).safeApprove(rewardAddress, uint256(0));
-        IERC20(usdcAddress).safeIncreaseAllowance(
+        IERC20(usdAddress).safeApprove(rewardAddress, uint256(0));
+        IERC20(usdAddress).safeIncreaseAllowance(
             rewardAddress,
             type(uint256).max
         );

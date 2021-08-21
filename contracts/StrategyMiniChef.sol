@@ -15,7 +15,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
     address public miniChefAddress;
     address public wnativeAddress;
 
-    address[] public wnativeToUsdcPath;
+    address[] public wnativeToUsdPath;
     address[] public wnativeToBananaPath;
     address[] public wnativeToToken0Path;
     address[] public wnativeToToken1Path;
@@ -33,7 +33,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
     /**
         address[11][] _paths
         _paths[0] _earnedToWnativePath,
-        _paths[1] _earnedToUsdcPath,
+        _paths[1] _earnedToUsdPath,
         _paths[2] _earnedToBananaPath,
         _paths[3] _earnedToToken0Path,
         _paths[4] _earnedToToken1Path,
@@ -41,7 +41,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         _paths[6] _wnativeToToken1Path,
         _paths[7] _token0ToEarnedPath,
         _paths[8] _token1ToEarnedPath
-        _paths[9] _wnativeToUsdcPath
+        _paths[9] _wnativeToUsdPath
         _paths[10] _wnativeToBananaPath
      */
     function initialize(
@@ -65,7 +65,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         wnativeAddress = _configAddresses[5];
 
         earnedToWnativePath = _paths[0];
-        earnedToUsdcPath = _paths[1];
+        earnedToUsdPath = _paths[1];
         earnedToBananaPath = _paths[2];
         earnedToToken0Path = _paths[3];
         earnedToToken1Path = _paths[4];
@@ -73,7 +73,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         wnativeToToken1Path = _paths[6];
         token0ToEarnedPath = _paths[7];
         token1ToEarnedPath = _paths[8];
-        wnativeToUsdcPath = _paths[9];
+        wnativeToUsdPath = _paths[9];
         wnativeToBananaPath = _paths[10];
 
         transferOwnership(vaultChefAddress);
@@ -188,22 +188,22 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         if (rewardRate > 0) {
             uint256 fee = _earnedAmt.mul(rewardRate).div(FEE_MAX);
 
-            uint256 usdcBefore = IERC20(usdcAddress).balanceOf(address(this));
+            uint256 usdBefore = IERC20(usdAddress).balanceOf(address(this));
 
             _safeSwap(
                 fee,
                 _earnedAddress == wnativeAddress
-                    ? wnativeToUsdcPath
-                    : earnedToUsdcPath,
+                    ? wnativeToUsdPath
+                    : earnedToUsdPath,
                 address(this)
             );
 
-            uint256 usdcAfter = IERC20(usdcAddress)
+            uint256 usdAfter = IERC20(usdAddress)
             .balanceOf(address(this))
-            .sub(usdcBefore);
+            .sub(usdBefore);
 
-            IERC20(usdcAddress).safeTransfer(rewardAddress, usdcAfter);
-            // IStrategyBanana(rewardAddress).depositReward(usdcAfter);
+            IERC20(usdAddress).safeTransfer(rewardAddress, usdAfter);
+            // IStrategyBanana(rewardAddress).depositReward(usdAfter);
 
             _earnedAmt = _earnedAmt.sub(fee);
         }
@@ -279,8 +279,8 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
             type(uint256).max
         );
 
-        IERC20(usdcAddress).safeApprove(rewardAddress, uint256(0));
-        IERC20(usdcAddress).safeIncreaseAllowance(rewardAddress, type(uint256).max);
+        IERC20(usdAddress).safeApprove(rewardAddress, uint256(0));
+        IERC20(usdAddress).safeIncreaseAllowance(rewardAddress, type(uint256).max);
     }
 
     function _emergencyVaultWithdraw() internal override {

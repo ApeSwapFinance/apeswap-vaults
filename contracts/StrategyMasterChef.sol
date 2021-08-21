@@ -24,7 +24,7 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
         address[5] memory _configAddresses,
         uint256 _pid,
         address[] memory _earnedToWnativePath,
-        address[] memory _earnedToUsdcPath,
+        address[] memory _earnedToUsdPath,
         address[] memory _earnedToBananaPath,
         address[] memory _earnedToToken0Path,
         address[] memory _earnedToToken1Path,
@@ -44,7 +44,7 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
         earnedAddress = _configAddresses[4];
 
         earnedToWnativePath = _earnedToWnativePath;
-        earnedToUsdcPath = _earnedToUsdcPath;
+        earnedToUsdPath = _earnedToUsdPath;
         earnedToBananaPath = _earnedToBananaPath;
         earnedToToken0Path = _earnedToToken0Path;
         earnedToToken1Path = _earnedToToken1Path;
@@ -103,8 +103,8 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
             type(uint256).max
         );
 
-        IERC20(usdcAddress).safeApprove(rewardAddress, uint256(0));
-        IERC20(usdcAddress).safeIncreaseAllowance(
+        IERC20(usdAddress).safeApprove(rewardAddress, uint256(0));
+        IERC20(usdAddress).safeIncreaseAllowance(
             rewardAddress,
             type(uint256).max
         );
