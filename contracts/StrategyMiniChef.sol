@@ -20,10 +20,8 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
     address[] public wmaticToToken0Path;
     address[] public wmaticToToken1Path;
 
-    bool private coreSet = false;
-
     /**
-        address[3] _configAddresses,
+        address[6] _configAddresses,
         _configAddress[0] _vaultChefAddress,
         _configAddresses[1] _miniChefAddress,
         _configAddresses[2] _uniRouterAddress,
@@ -31,18 +29,25 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         _configAddress[4]  _earnedAddress
         _configAddress[5]  _wmaticAddress
     */
+
+    /**
+        address[11][] _paths
+        _paths[0] _earnedToWmaticPath,
+        _paths[1] _earnedToUsdcPath,
+        _paths[2] _earnedToBananaPath,
+        _paths[3] _earnedToToken0Path,
+        _paths[4] _earnedToToken1Path,
+        _paths[5] _wmaticToToken0Path,
+        _paths[6] _wmaticToToken1Path,
+        _paths[7] _token0ToEarnedPath,
+        _paths[8] _token1ToEarnedPath
+        _paths[9] _wmaticToUsdcPath
+        _paths[10] _wmaticToBananaPath
+     */
     function initialize(
         address[6] memory _configAddresses,
         uint256 _pid,
-        address[] memory _earnedToWmaticPath,
-        address[] memory _earnedToUsdcPath,
-        address[] memory _earnedToBananaPath,
-        address[] memory _earnedToToken0Path,
-        address[] memory _earnedToToken1Path,
-        address[] memory _wmaticToToken0Path,
-        address[] memory _wmaticToToken1Path,
-        address[] memory _token0ToEarnedPath,
-        address[] memory _token1ToEarnedPath
+        address[11][] memory _paths
     ) public initializer {
         govAddress = msg.sender;
         vaultChefAddress = _configAddresses[0];
@@ -59,26 +64,21 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
         wmaticAddress = _configAddresses[5];
 
-        earnedToWmaticPath = _earnedToWmaticPath;
-        earnedToUsdcPath = _earnedToUsdcPath;
-        earnedToBananaPath = _earnedToBananaPath;
-        earnedToToken0Path = _earnedToToken0Path;
-        earnedToToken1Path = _earnedToToken1Path;
-        wmaticToToken0Path = _wmaticToToken0Path;
-        wmaticToToken1Path = _wmaticToToken1Path;
-        token0ToEarnedPath = _token0ToEarnedPath;
-        token1ToEarnedPath = _token1ToEarnedPath;
+        earnedToWmaticPath = _paths[0];
+        earnedToUsdcPath = _paths[1];
+        earnedToBananaPath = _paths[2];
+        earnedToToken0Path = _paths[3];
+        earnedToToken1Path = _paths[4];
+        wmaticToToken0Path = _paths[5];
+        wmaticToToken1Path = _paths[6];
+        token0ToEarnedPath = _paths[7];
+        token1ToEarnedPath = _paths[8];
+        wmaticToUsdcPath = _paths[9];
+        wmaticToBananaPath = _paths[10];
 
         transferOwnership(vaultChefAddress);
 
         _resetAllowances();
-    }
-
-    // TODO can this be defaulted?
-    function setCoreAddresses(address[] memory _wmaticToUsdcPath, address[] memory _wmaticToBananaPath) public {
-        require(!coreSet, "Already set");
-        wmaticToUsdcPath = _wmaticToUsdcPath;
-        wmaticToBananaPath = _wmaticToBananaPath;
     }
 
     function _vaultDeposit(uint256 _amount) internal override {
