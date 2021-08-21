@@ -21,6 +21,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public uniRouterAddress;
     address public usdAddress = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     address public bananaAddress = 0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95;
+    // Wrapped native token address (WBNB)
+    address public wNativeAdress = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     address public rewardAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public withdrawFeeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public vaultChefAddress;
