@@ -16,7 +16,7 @@ contract StrategyMasterChefFactory is Ownable {
     uint256 _pid,
     address _wantAddress,
     address _earnedAddress,
-    address[] _earnedToWmaticPath,
+    address[] _earnedToWnativePath,
     address[] _earnedToUsdcPath,
     address[] _earnedToBananaPath,
     address[] _earnedToToken0Path,
@@ -40,7 +40,7 @@ contract StrategyMasterChefFactory is Ownable {
   function deployDefaultMasterChefStrategy(
         address[3] memory _configAddresses,
         uint256 _pid,
-        address[] memory _earnedToWmaticPath,
+        address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath,
         address[] memory _earnedToToken0Path,
@@ -48,7 +48,7 @@ contract StrategyMasterChefFactory is Ownable {
         address[] memory _token0ToEarnedPath,
         address[] memory _token1ToEarnedPath
     ) public {
-    deployMasterChefStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultGov], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath, _earnedToToken0Path, _earnedToToken1Path, _token0ToEarnedPath, _token1ToEarnedPath);
+    deployMasterChefStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultGov], _pid, _earnedToWnativePath, _earnedToUsdcPath, _earnedToBananaPath, _earnedToToken0Path, _earnedToToken1Path, _token0ToEarnedPath, _token1ToEarnedPath);
   }
 
   /**
@@ -63,7 +63,7 @@ contract StrategyMasterChefFactory is Ownable {
   function deployMasterChefStrategy(
         address[6] memory _configAddresses,
         uint256 _pid,
-        address[] memory _earnedToWmaticPath,
+        address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath,
         address[] memory _earnedToToken0Path,
@@ -80,7 +80,7 @@ contract StrategyMasterChefFactory is Ownable {
         address[3]  _wantAddress,
         address[4]  _earnedAddress
       */
-      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4]], _pid, _earnedToWmaticPath, _earnedToUsdcPath, _earnedToBananaPath, _earnedToToken0Path, _earnedToToken1Path, _token0ToEarnedPath, _token1ToEarnedPath);
+      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4]], _pid, _earnedToWnativePath, _earnedToUsdcPath, _earnedToBananaPath, _earnedToToken0Path, _earnedToToken1Path, _token0ToEarnedPath, _token1ToEarnedPath);
 
       strategy.setGov(_configAddresses[5]);
 
@@ -91,7 +91,7 @@ contract StrategyMasterChefFactory is Ownable {
         _pid,
         _configAddresses[3],
         _configAddresses[4],
-        _earnedToWmaticPath,
+        _earnedToWnativePath,
         _earnedToUsdcPath,
         _earnedToBananaPath,
         _earnedToToken0Path,

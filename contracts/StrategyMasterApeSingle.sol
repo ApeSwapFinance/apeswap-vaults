@@ -23,7 +23,7 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
     function initialize(
         address[5] memory _configAddresses,
         uint256 _pid,
-        address[] memory _earnedToWmaticPath,
+        address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath
     ) external initializer {
@@ -37,7 +37,7 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
         pid = _pid;
         earnedAddress = _configAddresses[4];
 
-        earnedToWmaticPath = _earnedToWmaticPath;
+        earnedToWnativePath = _earnedToWnativePath;
         earnedToUsdcPath = _earnedToUsdcPath;
         earnedToBananaPath = _earnedToBananaPath;
 

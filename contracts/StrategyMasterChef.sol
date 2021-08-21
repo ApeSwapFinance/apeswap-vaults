@@ -23,7 +23,7 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
     function initialize(
         address[5] memory _configAddresses,
         uint256 _pid,
-        address[] memory _earnedToWmaticPath,
+        address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdcPath,
         address[] memory _earnedToBananaPath,
         address[] memory _earnedToToken0Path,
@@ -43,7 +43,7 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
         pid = _pid;
         earnedAddress = _configAddresses[4];
 
-        earnedToWmaticPath = _earnedToWmaticPath;
+        earnedToWnativePath = _earnedToWnativePath;
         earnedToUsdcPath = _earnedToUsdcPath;
         earnedToBananaPath = _earnedToBananaPath;
         earnedToToken0Path = _earnedToToken0Path;

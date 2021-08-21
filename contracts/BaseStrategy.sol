@@ -44,7 +44,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public slippageFactor = 950; // 5% default slippage tolerance
     uint256 public constant SLIPPAGE_FACTOR_UL = 995;
 
-    address[] public earnedToWmaticPath;
+    address[] public earnedToWnativePath;
     address[] public earnedToUsdcPath;
     address[] public earnedToBananaPath;
     
@@ -155,9 +155,9 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         if (controllerFee > 0) {
             uint256 fee = _earnedAmt.mul(controllerFee).div(FEE_MAX);
     
-            _safeSwapWmatic(
+            _safeSwapWnative(
                 fee,
-                earnedToWmaticPath,
+                earnedToWnativePath,
                 _to
             );
             
@@ -177,7 +177,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             } else {
                 _safeSwap(
                     fee,
-                    earnedToWmaticPath,
+                    earnedToWnativePath,
                     rewardAddress
                 );
             }
@@ -304,7 +304,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         );
     }
     
-    function _safeSwapWmatic(
+    function _safeSwapWnative(
         uint256 _amountIn,
         address[] memory _path,
         address _to

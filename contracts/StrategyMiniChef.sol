@@ -13,12 +13,12 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
     uint256 public pid;
     address public miniChefAddress;
-    address public wmaticAddress;
+    address public wnativeAddress;
 
-    address[] public wmaticToUsdcPath;
-    address[] public wmaticToBananaPath;
-    address[] public wmaticToToken0Path;
-    address[] public wmaticToToken1Path;
+    address[] public wnativeToUsdcPath;
+    address[] public wnativeToBananaPath;
+    address[] public wnativeToToken0Path;
+    address[] public wnativeToToken1Path;
 
     /**
         address[6] _configAddresses,
@@ -27,22 +27,22 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         _configAddresses[2] _uniRouterAddress,
         _configAddress[3]  _wantAddress,
         _configAddress[4]  _earnedAddress
-        _configAddress[5]  _wmaticAddress
+        _configAddress[5]  _wnativeAddress
     */
 
     /**
         address[11][] _paths
-        _paths[0] _earnedToWmaticPath,
+        _paths[0] _earnedToWnativePath,
         _paths[1] _earnedToUsdcPath,
         _paths[2] _earnedToBananaPath,
         _paths[3] _earnedToToken0Path,
         _paths[4] _earnedToToken1Path,
-        _paths[5] _wmaticToToken0Path,
-        _paths[6] _wmaticToToken1Path,
+        _paths[5] _wnativeToToken0Path,
+        _paths[6] _wnativeToToken1Path,
         _paths[7] _token0ToEarnedPath,
         _paths[8] _token1ToEarnedPath
-        _paths[9] _wmaticToUsdcPath
-        _paths[10] _wmaticToBananaPath
+        _paths[9] _wnativeToUsdcPath
+        _paths[10] _wnativeToBananaPath
      */
     function initialize(
         address[6] memory _configAddresses,
@@ -62,19 +62,19 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         pid = _pid;
         earnedAddress = _configAddresses[4];
 
-        wmaticAddress = _configAddresses[5];
+        wnativeAddress = _configAddresses[5];
 
-        earnedToWmaticPath = _paths[0];
+        earnedToWnativePath = _paths[0];
         earnedToUsdcPath = _paths[1];
         earnedToBananaPath = _paths[2];
         earnedToToken0Path = _paths[3];
         earnedToToken1Path = _paths[4];
-        wmaticToToken0Path = _paths[5];
-        wmaticToToken1Path = _paths[6];
+        wnativeToToken0Path = _paths[5];
+        wnativeToToken1Path = _paths[6];
         token0ToEarnedPath = _paths[7];
         token1ToEarnedPath = _paths[8];
-        wmaticToUsdcPath = _paths[9];
-        wmaticToBananaPath = _paths[10];
+        wnativeToUsdcPath = _paths[9];
+        wnativeToBananaPath = _paths[10];
 
         transferOwnership(vaultChefAddress);
 
@@ -103,7 +103,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
         // Converts farm tokens into want tokens
         uint256 earnedAmt = IERC20(earnedAddress).balanceOf(address(this));
-        uint256 wmaticAmt = IERC20(wmaticAddress).balanceOf(address(this));
+        uint256 wnativeAmt = IERC20(wnativeAddress).balanceOf(address(this));
 
         if (earnedAmt > 0) {
             earnedAmt = distributeFees(earnedAmt, earnedAddress, _to);
@@ -121,23 +121,23 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
             }
         }
 
-        if (wmaticAmt > 0) {
-            wmaticAmt = distributeFees(wmaticAmt, wmaticAddress);
-            wmaticAmt = distributeRewards(wmaticAmt, wmaticAddress);
-            wmaticAmt = buyBack(wmaticAmt, wmaticAddress);
+        if (wnativeAmt > 0) {
+            wnativeAmt = distributeFees(wnativeAmt, wnativeAddress);
+            wnativeAmt = distributeRewards(wnativeAmt, wnativeAddress);
+            wnativeAmt = buyBack(wnativeAmt, wnativeAddress);
 
-            if (wmaticAddress != token0Address) {
+            if (wnativeAddress != token0Address) {
                 // Swap half earned to token0
-                _safeSwap(wmaticAmt.div(2), wmaticToToken0Path, address(this));
+                _safeSwap(wnativeAmt.div(2), wnativeToToken0Path, address(this));
             }
 
-            if (wmaticAddress != token1Address) {
+            if (wnativeAddress != token1Address) {
                 // Swap half earned to token1
-                _safeSwap(wmaticAmt.div(2), wmaticToToken1Path, address(this));
+                _safeSwap(wnativeAmt.div(2), wnativeToToken1Path, address(this));
             }
         }
 
-        if (earnedAmt > 0 || wmaticAmt > 0) {
+        if (earnedAmt > 0 || wnativeAmt > 0) {
             // Get want tokens, ie. add liquidity
             uint256 token0Amt = IERC20(token0Address).balanceOf(address(this));
             uint256 token1Amt = IERC20(token1Address).balanceOf(address(this));
@@ -168,11 +168,11 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         if (controllerFee > 0) {
             uint256 fee = _earnedAmt.mul(controllerFee).div(FEE_MAX);
 
-            if (_earnedAddress == wmaticAddress) {
-                IWETH(wmaticAddress).withdraw(fee);
+            if (_earnedAddress == wnativeAddress) {
+                IWETH(wnativeAddress).withdraw(fee);
                 safeTransferETH(_to, fee);
             } else {
-                _safeSwapWmatic(fee, earnedToWmaticPath, _to);
+                _safeSwapWnative(fee, earnedToWnativePath, _to);
             }
 
             _earnedAmt = _earnedAmt.sub(fee);
@@ -192,8 +192,8 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
             _safeSwap(
                 fee,
-                _earnedAddress == wmaticAddress
-                    ? wmaticToUsdcPath
+                _earnedAddress == wnativeAddress
+                    ? wnativeToUsdcPath
                     : earnedToUsdcPath,
                 address(this)
             );
@@ -220,8 +220,8 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
             _safeSwap(
                 buyBackAmt,
-                _earnedAddress == wmaticAddress
-                    ? wmaticToBananaPath
+                _earnedAddress == wnativeAddress
+                    ? wnativeToBananaPath
                     : earnedToBananaPath,
                 buyBackAddress
             );
@@ -261,8 +261,8 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
             type(uint256).max
         );
 
-        IERC20(wmaticAddress).safeApprove(uniRouterAddress, uint256(0));
-        IERC20(wmaticAddress).safeIncreaseAllowance(
+        IERC20(wnativeAddress).safeApprove(uniRouterAddress, uint256(0));
+        IERC20(wnativeAddress).safeIncreaseAllowance(
             uniRouterAddress,
             type(uint256).max
         );
