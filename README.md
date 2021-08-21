@@ -70,3 +70,9 @@ Use `typechain` to generate contract interfaces for UI integration.
 Use the `truffle-contract-size` module to find the size of each contract in the `contracts/` directory with:  
 `yarn size`  
 
+## Deployed Contracts:
+
+VaultApe:                   https://bscscan.com/address/0xa4c084d141A4E54F3C79707d58229e9e64bdF0aC#writeContract
+StrategyMasterChefSingle:   https://bscscan.com/address/0x27619a7919bf31c15fca24dd10ccdb3f290b3581#code
+StrategyMasterApeSingle:    https://bscscan.com/address/0x51b13b0068d27fd49284b3ceac7c55d372602ad9#readContract
+StrategyMasterChef:         https://bscscan.com/address/0x5199e3ac3a64e8413f1fa3485b58a4741f23eb99#code
