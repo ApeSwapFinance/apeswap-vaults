@@ -135,6 +135,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         if (sharesRemoved > sharesTotal) {
             sharesRemoved = sharesTotal;
         }
+        require(sharesRemoved >= 1, "No shares removed");
         sharesTotal = sharesTotal.sub(sharesRemoved);
         
         // Withdraw fee
