@@ -77,6 +77,7 @@ contract VaultApe is ReentrancyGuard, Ownable {
 
     function _deposit(uint256 _pid, uint256 _wantAmt, address _to) internal {
         PoolInfo storage pool = poolInfo[_pid];
+        require(pool.strat != address(0), "That strategy does not exist");
         UserInfo storage user = userInfo[_pid][_to];
 
         if (_wantAmt > 0) {
@@ -100,6 +101,7 @@ contract VaultApe is ReentrancyGuard, Ownable {
 
     function _withdraw(uint256 _pid, uint256 _wantAmt, address _to) internal {
         PoolInfo storage pool = poolInfo[_pid];
+        require(pool.strat != address(0), "That strategy does not exist");
         UserInfo storage user = userInfo[_pid][msg.sender];
 
         uint256 wantLockedTotal = IStrategy(poolInfo[_pid].strat).wantLockedTotal();
