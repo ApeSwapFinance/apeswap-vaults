@@ -96,6 +96,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         if (sharesTotal > 0) {
             sharesAdded = sharesAdded.mul(sharesTotal).div(wantLockedBefore);
         }
+        require(sharesAdded >= 1, "Low deposit - no shares added");
         sharesTotal = sharesTotal.add(sharesAdded);
 
         return sharesAdded;
@@ -135,7 +136,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         if (sharesRemoved > sharesTotal) {
             sharesRemoved = sharesTotal;
         }
-        require(sharesRemoved >= 1, "No shares removed");
+        require(sharesRemoved >= 1, "Low withdraw - no shares removed");
         sharesTotal = sharesTotal.sub(sharesRemoved);
         
         // Withdraw fee
