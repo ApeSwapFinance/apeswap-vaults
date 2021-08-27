@@ -19,10 +19,11 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public earnedAddress;
 
     address public uniRouterAddress;
-    address public usdAddress = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
-    address public bananaAddress = 0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95;
+    address public usdAddress;
+    address public bananaAddress;
     // Wrapped native token address (WBNB)
     address public wNativeAdress = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+
     address public rewardAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public withdrawFeeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
     address public vaultChefAddress;
@@ -55,13 +56,10 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _rewardRate,
         uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
-        uint256 _slippageFactor,
-        address _uniRouterAddress
+        uint256 _slippageFactor
     );
 
     event SetAddress(
-        address usdAddress,
-        address bananaAddress,
         address rewardAddress,
         address withdrawFeeAddress,
         address buyBackAddress
@@ -245,8 +243,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _rewardRate,
         uint256 _buyBackRate,
         uint256 _withdrawFeeFactor,
-        uint256 _slippageFactor,
-        address _uniRouterAddress
+        uint256 _slippageFactor
     ) external onlyGov {
         require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= FEE_MAX_TOTAL, "Max fee of 10%");
         require(_withdrawFeeFactor >= WITHDRAW_FEE_FACTOR_LL, "_withdrawFeeFactor too low");
@@ -257,38 +254,30 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         buyBackRate = _buyBackRate;
         withdrawFeeFactor = _withdrawFeeFactor;
         slippageFactor = _slippageFactor;
-        uniRouterAddress = _uniRouterAddress;
 
         emit SetSettings(
             _controllerFee,
             _rewardRate,
             _buyBackRate,
             _withdrawFeeFactor,
-            _slippageFactor,
-            _uniRouterAddress
+            _slippageFactor
         );
     }
 
     function setAddresses(
-        address _usdAddress,
-        address _bananaAddress,
         address _rewardAddress,
         address _withdrawFeeAddress,
         address _buyBackAddress
     ) external onlyGov {
-        require(_usdAddress != address(0), "Invalid USD address");
-        require(_bananaAddress != address(0), "Invalid BANANA address");
         require(_withdrawFeeAddress != address(0), "Invalid Withdraw address");
         require(_rewardAddress != address(0), "Invalid reward address");
         require(_buyBackAddress != address(0), "Invalid buyback address");
 
-        usdAddress = _usdAddress;
-        bananaAddress = _bananaAddress;
         rewardAddress = _rewardAddress;
         withdrawFeeAddress = _withdrawFeeAddress;
         buyBackAddress = _buyBackAddress;
 
-        emit SetAddress(usdAddress, bananaAddress, rewardAddress, withdrawFeeAddress, buyBackAddress);
+        emit SetAddress(rewardAddress, withdrawFeeAddress, buyBackAddress);
     }
     
     function _safeSwap(
