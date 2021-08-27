@@ -125,7 +125,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         }
 
         if (secondEarnedAmt > 0) {
-            secondEarnedAmt = distributeFees(secondEarnedAmt, secondEarnedAddress);
+            secondEarnedAmt = distributeFees(secondEarnedAmt, secondEarnedAddress, _to);
             secondEarnedAmt = distributeRewards(secondEarnedAmt, secondEarnedAddress);
             secondEarnedAmt = buyBack(secondEarnedAmt, secondEarnedAddress);
 
