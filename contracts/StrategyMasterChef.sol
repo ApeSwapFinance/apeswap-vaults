@@ -103,11 +103,6 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
             type(uint256).max
         );
 
-        IERC20(usdAddress).safeApprove(rewardAddress, uint256(0));
-        IERC20(usdAddress).safeIncreaseAllowance(
-            rewardAddress,
-            type(uint256).max
-        );
     }
     
     function _emergencyVaultWithdraw() internal override {
