@@ -46,12 +46,10 @@ contract StrategyMasterChefSingle is BaseStrategySingle, Initializable {
         _resetAllowances();
     }
 
-    // TODO removed onlyGov modifier - check risks
     function earn() external override nonReentrant whenNotPaused { 
         _earn(_msgSender());
     }
 
-    // TODO removed onlyGov modifier - check risks
     function earn(address _to) external override nonReentrant whenNotPaused {
         _earn(_to);
     }
