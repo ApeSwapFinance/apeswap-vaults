@@ -8,6 +8,8 @@ contract StrategyMasterChefSingleFactory is Ownable {
   address public defaultGov;
   address public defaultVaultChef;
   address public defaultRouter;
+  address public defaultBananaAddress;
+  address public defaultUsdAddress;
 
   event DeployedMasterChefSingleStrategy(
     address indexed _vaultChefAddress,
@@ -21,10 +23,12 @@ contract StrategyMasterChefSingleFactory is Ownable {
     address[] _earnedToBananaPath
   );
 
-  constructor (address _defaultGov, address _defaultVault, address _defaultRouter) {
+  constructor (address _defaultGov, address _defaultVault, address _defaultRouter, address _defaultBananaAddress, address _defaultUsdAddress) {
     defaultGov = _defaultGov;
     defaultVaultChef = _defaultVault;
     defaultRouter = _defaultRouter;
+    defaultBananaAddress = _defaultBananaAddress;
+    defaultUsdAddress = _defaultUsdAddress;
   }
 
   /**
@@ -40,7 +44,7 @@ contract StrategyMasterChefSingleFactory is Ownable {
         address[] memory _earnedToUsdPath,
         address[] memory _earnedToBananaPath
     ) public {
-    deployMasterChefSingleStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultGov], _pid, _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath);
+    deployMasterChefSingleStrategy([defaultVaultChef, _configAddresses[0], defaultRouter, _configAddresses[1], _configAddresses[2], defaultUsdAddress, defaultBananaAddress, defaultGov], _pid, _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath);
   }
 
     /**
@@ -50,10 +54,12 @@ contract StrategyMasterChefSingleFactory is Ownable {
     _configAddress[2] _uniRouterAddress,
     _configAddress[3] _wantAddress,
     _configAddress[4]  _earnedAddress,
-    _configAddress[5]  _gov
+    _configAddress[5]  _usdAddress,
+    _configAddress[6]  _bananaAddress,
+    _configAddress[7]  _gov
    */
   function deployMasterChefSingleStrategy(
-        address[6] memory _configAddresses,
+        address[8] memory _configAddresses,
         uint256 _pid,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
@@ -67,10 +73,12 @@ contract StrategyMasterChefSingleFactory is Ownable {
         address[2] _uniRouterAddress,
         address[3]  _wantAddress,
         address[4]  _earnedAddress
+        address[4]  _usdAddress
+        address[5]  _bananaAddress
       */
-      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4]], _pid, _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath);
+      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4], _configAddresses[5], _configAddresses[6]], _pid, _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath);
 
-      strategy.setGov(_configAddresses[5]);
+      strategy.setGov(_configAddresses[7]);
 
       emit DeployedMasterChefSingleStrategy(
         _configAddresses[0],
@@ -85,10 +93,12 @@ contract StrategyMasterChefSingleFactory is Ownable {
       );
     }
 
-    function updateDefaults (address _defaultGov, address _defaultVault, address _defaultRouter) external onlyOwner {
+    function updateDefaults (address _defaultGov, address _defaultVault, address _defaultRouter, address _defaultBananaAddress, address _defaultUsdAddress) external onlyOwner {
       defaultGov = _defaultGov;
       defaultVaultChef = _defaultVault;
       defaultRouter = _defaultRouter;
+      defaultBananaAddress = _defaultBananaAddress;
+      defaultUsdAddress = _defaultUsdAddress;
     }
 
 }

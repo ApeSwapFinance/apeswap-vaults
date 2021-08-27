@@ -29,6 +29,8 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         _configAddress[3]   wantAddress,
         _configAddress[4]   earnedAddress
         _configAddress[5]   secondEarnedAddress
+        _configAddress[6]   usdAddress
+        _configAddress[7]   bananaAddress
     */
 
     /**
@@ -47,7 +49,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         _paths[11]  secondEarnedToWnativePath
      */
     function initialize(
-        address[6] memory _configAddresses,
+        address[8] memory _configAddresses,
         uint256 _pid,
         address[11][] memory _paths
     ) public initializer {
@@ -65,6 +67,8 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
         earnedAddress = _configAddresses[4];
 
         secondEarnedAddress = _configAddresses[5];
+        usdAddress = _configAddresses[6];
+        bananaAddress = _configAddresses[7];
 
         earnedToWnativePath = _paths[0];
         earnedToUsdPath = _paths[1];

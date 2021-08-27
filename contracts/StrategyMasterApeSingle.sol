@@ -19,9 +19,11 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
         _configAddresses[2] _uniRouterAddress,
         _configAddresses[3]  _wantAddress,
         _configAddress[4]  _earnedAddress
+        _configAddress[5]  _usdAddress
+        _configAddress[6]  _bananaAddress
     */
     function initialize(
-        address[5] memory _configAddresses,
+        address[7] memory _configAddresses,
         uint256 _pid,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
@@ -36,6 +38,8 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
 
         pid = _pid;
         earnedAddress = _configAddresses[4];
+        usdAddress = _configAddresses[5];
+        bananaAddress = _configAddresses[6];
 
         earnedToWnativePath = _earnedToWnativePath;
         earnedToUsdPath = _earnedToUsdPath;
