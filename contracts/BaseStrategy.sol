@@ -277,7 +277,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         withdrawFeeAddress = _withdrawFeeAddress;
         buyBackAddress = _buyBackAddress;
 
-        emit SetAddress(rewardAddress, withdrawFeeAddress, buyBackAddress);
+        emit SetAddress(_rewardAddress, _withdrawFeeAddress, _buyBackAddress);
     }
     
     function _safeSwap(
