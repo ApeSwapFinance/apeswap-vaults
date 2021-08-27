@@ -85,7 +85,7 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
         if (wantAddress == earnedAddress)
             IMasterchef(masterchefAddress).leaveStaking(_amount);
         else
-            IMasterchef(masterchefAddress).deposit(pid, _amount);
+            IMasterchef(masterchefAddress).withdraw(pid, _amount);
     }
     
     function _vaultHarvest() internal override {
