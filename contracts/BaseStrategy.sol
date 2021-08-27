@@ -30,7 +30,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public govAddress;
 
     uint256 public lastEarnBlock = block.number;
-    uint256 public sharesTotal = 0;
+    uint256 public sharesTotal;
 
     address public buyBackAddress = 0x000000000000000000000000000000000000dEaD;
     uint256 public controllerFee = 25; // 0.25%
