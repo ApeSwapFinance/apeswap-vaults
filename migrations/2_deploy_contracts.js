@@ -31,13 +31,13 @@ module.exports = async function (deployer, network) {
   const usdAddress = config[network].usdAddress;
   const bananaAddress = config[network].bananaAddress;
 
-  await deployer.deploy(StrategyMasterChefSingleFactory, adminAddress, vaultAddress, routerAddress, usdAddress, bananaAddress);
+  await deployer.deploy(StrategyMasterChefSingleFactory, adminAddress, vaultAddress, routerAddress, bananaAddress, usdAddress);
 
-  await deployer.deploy(StrategyMasterApeSingleFactory, adminAddress, vaultAddress, routerAddress, usdAddress, bananaAddress);
+  await deployer.deploy(StrategyMasterApeSingleFactory, adminAddress, vaultAddress, routerAddress, bananaAddress, usdAddress);
 
-  await deployer.deploy(StrategyKoalaFarmFactory, adminAddress, vaultAddress, routerAddress, usdAddress, bananaAddress);
+  await deployer.deploy(StrategyKoalaFarmFactory, adminAddress, vaultAddress, routerAddress, bananaAddress, usdAddress);
 
-  await deployer.deploy(StrategyMasterChefFactory, adminAddress, vaultAddress, routerAddress, usdAddress, bananaAddress);
+  await deployer.deploy(StrategyMasterChefFactory, adminAddress, vaultAddress, routerAddress, bananaAddress, usdAddress);
 
   const strategyMasterChefSingleFactory = await StrategyMasterChefSingleFactory.deployed();
   const strategyMasterApeSingleFactory = await StrategyMasterApeSingleFactory.deployed();
