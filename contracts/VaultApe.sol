@@ -81,9 +81,13 @@ contract VaultApe is ReentrancyGuard, Ownable {
         UserInfo storage user = userInfo[_pid][_to];
 
         if (_wantAmt > 0) {
+            // Call must happen before transfer
+            uint256 wantBefore = IERC20(pool.want).balanceOf(address(this));
             pool.want.safeTransferFrom(msg.sender, address(this), _wantAmt);
+            uint256 finalDeposit = IERC20(pool.want).balanceOf(address(this)).sub(wantBefore);
 
-            uint256 sharesAdded = IStrategy(poolInfo[_pid].strat).deposit(_to, _wantAmt);
+            // Proper deposit amount for tokens with fees
+            uint256 sharesAdded = IStrategy(poolInfo[_pid].strat).deposit(_to, finalDeposit);
             user.shares = user.shares.add(sharesAdded);
         }
         emit Deposit(_to, _pid, _wantAmt);
