@@ -69,7 +69,7 @@ contract StrategyKoalaFarm is BaseStrategyLPSingle, Initializable {
     }
     
     function _vaultHarvest() internal override {
-        _vaultWithdraw(0);
+        _vaultDeposit(0);
     }
     
     function vaultSharesTotal() public override view returns (uint256) {
@@ -110,5 +110,39 @@ contract StrategyKoalaFarm is BaseStrategyLPSingle, Initializable {
     
     function _emergencyVaultWithdraw() internal override {
         IKoalaFarm(masterchefAddress).emergencyWithdraw(pid);
+    }
+
+    function _safeSwap(
+        uint256 _amountIn,
+        address[] memory _path,
+        address _to
+    ) internal override {
+        uint256[] memory amounts = IUniRouter02(uniRouterAddress).getAmountsOut(_amountIn, _path);
+        uint256 amountOut = amounts[amounts.length.sub(1)];
+
+        IUniRouter02(uniRouterAddress).swapExactTokensForTokensSupportingFeeOnTransferTokens(
+            _amountIn,
+            amountOut.mul(slippageFactor).div(1000),
+            _path,
+            _to,
+            block.timestamp.add(600)
+        );
+    }
+    
+    function _safeSwapWnative(
+        uint256 _amountIn,
+        address[] memory _path,
+        address _to
+    ) internal override {
+        uint256[] memory amounts = IUniRouter02(uniRouterAddress).getAmountsOut(_amountIn, _path);
+        uint256 amountOut = amounts[amounts.length.sub(1)];
+
+        IUniRouter02(uniRouterAddress).swapExactTokensForETHSupportingFeeOnTransferTokens(
+            _amountIn,
+            amountOut.mul(slippageFactor).div(1000),
+            _path,
+            _to,
+            block.timestamp.add(600)
+        );
     }
 }
