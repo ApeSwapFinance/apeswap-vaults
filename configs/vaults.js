@@ -81,7 +81,28 @@ const MasterApeSingleVaults = [
         earnedToWnativePath: ['0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
         earnedToUsdPath: ['0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
         earnedToBananaPath: ['0x0000000000000000000000000000000000000000','0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
-    }
+    },
+];
+
+const KoalaChefSingleVaults = [
+    {   
+        // VID: 10 - LYPTUS -> NALIS KoalaChef https://bscscan.com/address/0x6ff8369282c292d832d18f302619b71ccef5af80
+        configAddresses: ['0x7b3ca828e189739660310b47fc89b3a3e8a0e564', '0xba26397cdff25f0d26e815d218ef3c77609ae7f1', '0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3'],
+        pid: 1,
+        earnedToWnativePath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+        earnedToUsdPath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
+        earnedToBananaPath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xe9e7cea3dedca5984780bafc599bd69add087d56','0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
+        earnedToWantPath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xe9e7cea3dedca5984780bafc599bd69add087d56','0xba26397cdff25f0d26e815d218ef3c77609ae7f1'],
+    },
+    {   
+        // VID: 11 - NALIS -> NALIS KoalaChef https://bscscan.com/address/0xd18cb0739149d39f2429dffee6e086f2ca1b0627
+        configAddresses: ['0x7b3ca828e189739660310b47fc89b3a3e8a0e564', '0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3', '0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3'],
+        pid: 0,
+        earnedToWnativePath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+        earnedToUsdPath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
+        earnedToBananaPath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xe9e7cea3dedca5984780bafc599bd69add087d56','0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
+        earnedToWantPath: ['0x0000000000000000000000000000000000000000','0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3'],
+    },
 ];
 
 const MasterChefSingleVaults = [
@@ -106,5 +127,6 @@ const MasterChefSingleVaults = [
 module.exports = {
     MasterChefSingleVaults,
     MasterApeSingleVaults,
-    MasterChefVaults
+    MasterChefVaults,
+    KoalaChefSingleVaults
 }
