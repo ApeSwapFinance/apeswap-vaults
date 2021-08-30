@@ -157,6 +157,13 @@ contract VaultApe is ReentrancyGuard, Ownable {
         }
     }
 
+    function earnSome(uint256[] memory pids) external {
+        for (uint256 i=0; i<pids.length; i++) {
+            if (poolInfo.length >= pids[i] && !IStrategy(poolInfo[pids[i]].strat).paused())
+                IStrategy(poolInfo[pids[i]].strat).earn(_msgSender());
+        }
+    }
+
     function resetSingleAllowance(uint256 _pid) public onlyOwner {
         PoolInfo storage pool = poolInfo[_pid];
         pool.want.safeApprove(pool.strat, uint256(0));
