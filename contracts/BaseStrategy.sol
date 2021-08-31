@@ -24,8 +24,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     // Wrapped native token address (WBNB)
     address public wNativeAdress = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
-    address public rewardAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
-    address public withdrawFeeAddress = 0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69;
+    address public rewardAddress = 0x4EB6b0A7543508f6EbD81c2E9c7cA7A471475e73;
+    address public withdrawFeeAddress = 0x4EB6b0A7543508f6EbD81c2E9c7cA7A471475e73;
     address public vaultChefAddress;
     address public govAddress;
 
@@ -37,7 +37,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public rewardRate = 75; // 0.75%
     uint256 public buyBackRate = 300; // 3%
 
-    uint256 public constant FEE_MAX_TOTAL = 1000;
+    uint256 public constant FEE_MAX_TOTAL = 10000;
     uint256 public constant FEE_MAX = 10000; // 100 = 1%
 
     uint256 public withdrawFeeFactor = 10000; // 0% withdraw fee
@@ -245,7 +245,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         uint256 _withdrawFeeFactor,
         uint256 _slippageFactor
     ) external onlyGov {
-        require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= FEE_MAX_TOTAL, "Max fee of 10%");
+        require(_controllerFee.add(_rewardRate).add(_buyBackRate) <= FEE_MAX_TOTAL, "Max fee of 100%");
         require(_withdrawFeeFactor >= WITHDRAW_FEE_FACTOR_LL, "_withdrawFeeFactor too low");
         require(_withdrawFeeFactor <= WITHDRAW_FEE_FACTOR_MAX, "_withdrawFeeFactor too high");
         require(_slippageFactor <= SLIPPAGE_FACTOR_UL, "_slippageFactor too high");
