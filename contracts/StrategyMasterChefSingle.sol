@@ -11,6 +11,7 @@ contract StrategyMasterChefSingle is BaseStrategySingle, Initializable {
 
     address public masterchefAddress;
     uint256 public pid;
+    address[] public earnedToWantPath;
 
     /**
         address[5] _configAddresses,
@@ -27,7 +28,8 @@ contract StrategyMasterChefSingle is BaseStrategySingle, Initializable {
         uint256 _pid,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
-        address[] memory _earnedToBananaPath
+        address[] memory _earnedToBananaPath,
+        address[] memory _earnedToWantPath
     ) external initializer {
         govAddress = msg.sender;
         vaultChefAddress = _configAddresses[0];
@@ -44,6 +46,7 @@ contract StrategyMasterChefSingle is BaseStrategySingle, Initializable {
         earnedToWnativePath = _earnedToWnativePath;
         earnedToUsdPath = _earnedToUsdPath;
         earnedToBananaPath = _earnedToBananaPath;
+        earnedToWantPath = _earnedToWantPath;
 
         transferOwnership(vaultChefAddress);
         
@@ -69,6 +72,14 @@ contract StrategyMasterChefSingle is BaseStrategySingle, Initializable {
             earnedAmt = distributeFees(earnedAmt, _to);
             earnedAmt = distributeRewards(earnedAmt);
             earnedAmt = buyBack(earnedAmt);
+
+            if (wantAddress != earnedAddress) {
+                _safeSwap(
+                    earnedAmt,
+                    earnedToWantPath,
+                    address(this)
+                );
+            }
     
             _farm();
         }
