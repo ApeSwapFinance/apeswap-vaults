@@ -40,7 +40,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public constant FEE_MAX_TOTAL = 10000;
     uint256 public constant FEE_MAX = 10000; // 100 = 1%
 
-    uint256 public withdrawFeeFactor = 10000; // 0% withdraw fee
+    uint256 public withdrawFeeFactor = 9990; // 0.1% default withdraw fee
     uint256 public constant WITHDRAW_FEE_FACTOR_MAX = 10000;
     uint256 public constant WITHDRAW_FEE_FACTOR_LL = 9900;
 
