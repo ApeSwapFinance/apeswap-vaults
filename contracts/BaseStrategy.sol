@@ -81,6 +81,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     
     function deposit(address _userAddress, uint256 _wantAmt) external onlyOwner nonReentrant whenNotPaused returns (uint256) {
         // Call must happen before transfer
+        _farm();
         uint256 wantLockedBefore = wantLockedTotal();
 
         IERC20(wantAddress).safeTransferFrom(
