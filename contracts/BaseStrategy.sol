@@ -87,16 +87,14 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         _beforeDeposit(_userAddress);
         uint256 wantLockedBefore = wantLockedTotal();
 
-        uint256 wantBefore = IERC20(wantAddress).balanceOf(address(this));
         IERC20(wantAddress).safeTransferFrom(
             address(msg.sender),
             address(this),
             _wantAmt
         );
-        uint256 finalDeposit = IERC20(wantAddress).balanceOf(address(this)).sub(wantBefore);
 
         // Proper deposit amount for tokens with fees, or vaults with deposit fees
-        uint256 sharesAdded = _farmAmount(finalDeposit);
+        uint256 sharesAdded = _farm();
         if (sharesTotal > 0) {
             sharesAdded = sharesAdded.mul(sharesTotal).div(wantLockedBefore);
         }
@@ -112,17 +110,6 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         
         uint256 sharesBefore = vaultSharesTotal();
         _vaultDeposit(wantAmt);
-        uint256 sharesAfter = vaultSharesTotal();
-        
-        return sharesAfter.sub(sharesBefore);
-    }
-
-    function _farmAmount(uint256 _amount) internal returns (uint256) {
-        uint256 wantAmt = IERC20(wantAddress).balanceOf(address(this));
-        require(wantAmt >= _amount, "Not enough want tokens in contract");
-        
-        uint256 sharesBefore = vaultSharesTotal();
-        _vaultDeposit(_amount);
         uint256 sharesAfter = vaultSharesTotal();
         
         return sharesAfter.sub(sharesBefore);
