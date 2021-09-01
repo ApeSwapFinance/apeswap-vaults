@@ -112,4 +112,12 @@ contract StrategyMasterChef is BaseStrategyLPSingle, Initializable {
     function _emergencyVaultWithdraw() internal override {
         IMasterchef(masterchefAddress).emergencyWithdraw(pid);
     }
+
+    function _beforeDeposit(address _to) internal override {
+        
+    }
+
+    function _beforeWithdraw(address _to) internal override {
+        
+    }
 }

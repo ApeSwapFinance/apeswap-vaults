@@ -145,4 +145,10 @@ contract StrategyKoalaFarm is BaseStrategyLPSingle, Initializable {
             block.timestamp.add(600)
         );
     }
+
+    function _beforeDeposit(address _to) internal override {
+    }
+
+    function _beforeWithdraw(address _to) internal override {  
+    }
 }

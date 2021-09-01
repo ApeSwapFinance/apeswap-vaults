@@ -11,6 +11,8 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
 
     address public masterchefAddress;
     uint256 public pid;
+    bool public earnOnDeposit;
+    bool public earnOnWithdraw;
 
     /**
         address[5] _configAddresses,
@@ -47,6 +49,10 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
 
         transferOwnership(vaultChefAddress);
         
+        // If wantToken = earnToken we earn dust before any action
+        earnOnDeposit = _configAddresses[3] == _configAddresses[4];
+        earnOnWithdraw = _configAddresses[3] == _configAddresses[4];
+
         _resetAllowances();
     }
 
@@ -125,5 +131,17 @@ contract StrategyMasterApeSingle is BaseStrategySingle, Initializable {
     
     function _emergencyVaultWithdraw() internal override {
         IMasterchef(masterchefAddress).emergencyWithdraw(pid);
+    }
+
+    function _beforeDeposit(address _to) internal override {
+        if (earnOnDeposit) {
+            _earn(_to);
+        }
+    }
+
+    function _beforeWithdraw(address _to) internal override {
+        if (earnOnWithdraw) {
+            _earn(_to);
+        }
     }
 }

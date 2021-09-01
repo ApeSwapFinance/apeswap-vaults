@@ -73,6 +73,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     function _vaultDeposit(uint256 _amount) internal virtual;
     function _vaultWithdraw(uint256 _amount) internal virtual;
     function _vaultHarvest() internal virtual;
+    function _beforeDeposit(address _from) internal virtual;
+    function _beforeWithdraw(address _from) internal virtual;
     function earn() external virtual;
     function earn(address _to) external virtual;
     function vaultSharesTotal() public virtual view returns (uint256);
@@ -82,6 +84,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     
     function deposit(address _userAddress, uint256 _wantAmt) external onlyOwner nonReentrant whenNotPaused returns (uint256) {
         // Call must happen before transfer
+        _beforeDeposit(_userAddress);
         uint256 wantLockedBefore = wantLockedTotal();
 
         uint256 wantBefore = IERC20(wantAddress).balanceOf(address(this));
@@ -128,6 +131,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     function withdraw(address _userAddress, uint256 _wantAmt) external onlyOwner nonReentrant returns (uint256) {
         require(_wantAmt > 0, "_wantAmt is 0");
         
+        _beforeWithdraw(_userAddress);
         uint256 wantAmt = IERC20(wantAddress).balanceOf(address(this));
         
         // Check if strategy has tokens from panic

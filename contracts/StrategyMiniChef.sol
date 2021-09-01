@@ -320,4 +320,12 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
     }
 
     receive() external payable { }
+
+    function _beforeDeposit(address _to) internal override {
+        
+    }
+
+    function _beforeWithdraw(address _to) internal override {
+        
+    }
 }
