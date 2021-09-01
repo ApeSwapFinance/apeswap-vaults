@@ -94,6 +94,10 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
     function _vaultWithdraw(uint256 _amount) internal override {
         IMiniChefStake(miniChefAddress).withdraw(pid, _amount, address(this));
+    }    
+    
+    function _vaultHarvest() internal override {
+        IMiniChefStake(miniChefAddress).harvest(pid, address(this));
     }
 
     function earn() external override nonReentrant whenNotPaused { 
@@ -106,7 +110,7 @@ contract StrategyMiniChef is BaseStrategyLP, Initializable {
 
     function _earn(address _to) internal {
         // Harvest farm tokens
-        IMiniChefStake(miniChefAddress).harvest(pid, address(this));
+        _vaultHarvest();
 
         // Converts farm tokens into want tokens
         uint256 earnedAmt = IERC20(earnedAddress).balanceOf(address(this));

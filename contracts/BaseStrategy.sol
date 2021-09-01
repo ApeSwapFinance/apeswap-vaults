@@ -72,6 +72,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
 
     function _vaultDeposit(uint256 _amount) internal virtual;
     function _vaultWithdraw(uint256 _amount) internal virtual;
+    function _vaultHarvest() internal virtual;
     function earn() external virtual;
     function earn(address _to) external virtual;
     function vaultSharesTotal() public virtual view returns (uint256);

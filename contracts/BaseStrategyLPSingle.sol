@@ -7,8 +7,6 @@ abstract contract BaseStrategyLPSingle is BaseStrategyLP {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     
-    function _vaultHarvest() internal virtual;
-    
     function earn() external override nonReentrant whenNotPaused { 
         _earn(_msgSender());
     }

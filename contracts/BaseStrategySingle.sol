@@ -4,5 +4,5 @@ pragma solidity 0.8.6;
 import "./BaseStrategy.sol";
 
 abstract contract BaseStrategySingle is BaseStrategy {
-    function _vaultHarvest() internal virtual;
+
 }
