@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/Utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/Security/Pausable.sol";
 import "@openzeppelin/contracts/Utils/Math/SafeMath.sol";
+import "@openzeppelin/contracts/Utils/Math/Math.sol";
 import "@openzeppelin/contracts/Security/ReentrancyGuard.sol";
 
 import "./libs/IStrategyBanana.sol";
@@ -13,6 +14,7 @@ import "./libs/IUniRouter02.sol";
 
 abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
+    using Math for uint256;
     using SafeERC20 for IERC20;
 
     address public wantAddress;
@@ -135,7 +137,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _wantAmt = wantLockedTotal();
         }
 
-        uint256 sharesRemoved = _wantAmt.mul(sharesTotal).div(wantLockedTotal());
+        uint256 sharesRemoved = _wantAmt.mul(sharesTotal).ceilDiv(wantLockedTotal());
         if (sharesRemoved > sharesTotal) {
             sharesRemoved = sharesTotal;
         }
