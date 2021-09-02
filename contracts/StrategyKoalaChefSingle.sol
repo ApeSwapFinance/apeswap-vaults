@@ -13,7 +13,6 @@ contract StrategyKoalaChefSingle is BaseStrategySingle, Initializable {
     uint256 public pid;
     address[] public earnedToWantPath;
     bool public earnOnDeposit;
-    bool public earnOnWithdraw;
 
     /**
         address[5] _configAddresses,
@@ -54,7 +53,6 @@ contract StrategyKoalaChefSingle is BaseStrategySingle, Initializable {
 
         // If wantToken = earnToken we earn dust before any action
         earnOnDeposit = _configAddresses[3] == _configAddresses[4];
-        earnOnWithdraw = _configAddresses[3] == _configAddresses[4];
 
         _resetAllowances();
     }
@@ -174,8 +172,6 @@ contract StrategyKoalaChefSingle is BaseStrategySingle, Initializable {
     }
 
     function _beforeWithdraw(address _to) internal override {
-        if (earnOnWithdraw) {
-            _earn(_to);
-        }
+
     }
 }
