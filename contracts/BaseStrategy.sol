@@ -122,6 +122,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
         
         _beforeWithdraw(_userAddress);
         uint256 wantAmt = IERC20(wantAddress).balanceOf(address(this));
+        uint256 wantBeforeWithdraw = wantLockedTotal();
         
         // Check if strategy has tokens from panic
         if (_wantAmt > wantAmt) {
@@ -133,11 +134,11 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
             _wantAmt = wantAmt;
         }
 
-        if (_wantAmt > wantLockedTotal()) {
-            _wantAmt = wantLockedTotal();
+        if (_wantAmt > wantBeforeWithdraw) {
+            _wantAmt = wantBeforeWithdraw;
         }
 
-        uint256 sharesRemoved = _wantAmt.mul(sharesTotal).ceilDiv(wantLockedTotal());
+        uint256 sharesRemoved = _wantAmt.mul(sharesTotal).ceilDiv(wantBeforeWithdraw);
         if (sharesRemoved > sharesTotal) {
             sharesRemoved = sharesTotal;
         }
