@@ -45,6 +45,13 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: true
     },
+    polygon: {
+      provider: () => new HDWalletProvider(MAINNET_DEPLOYER_KEY, `https://wizardly-torvalds:ploy-garter-scared-latter-kite-unzip@nd-514-295-623.p2pify.com`),
+      network_id: 137,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: false
+    },
   },
   plugins: [
     'truffle-plugin-verify',

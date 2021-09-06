@@ -18,6 +18,7 @@
     "migrate:bsc-testnet": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network bsc-testnet",
     "migrate:development": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network development",
     "verify:bsc": "truffle run verify VaultApe --network bsc && truffle run verify StrategyMasterChefSingleFactory --network bsc && truffle run verify StrategyMasterApeSingleFactory --network bsc && truffle run verify StrategyKoalaFarmFactory --network bsc && truffle run verify StrategyMasterChefFactory --network bsc && truffle run verify StrategyKoalaChefSingleFactory --network bsc",
+    "verify:polygon": "truffle run verify VaultApe --network polygon && truffle run verify StrategyMasterChefSingleFactory --network polygon && truffle run verify StrategyMasterApeSingleFactory --network polygon && truffle run verify StrategyKoalaFarmFactory --network polygon && truffle run verify StrategyMasterChefFactory --network polygon && truffle run verify StrategyKoalaChefSingleFactory --network polygon",
     "verify:bsc-testnet": "truffle run verify Migrations --network bsc-testnet",
     "typecheck": "tsc --noEmit",
     "lint": "solhint './contracts/**/*.sol'",
@@ -34,7 +35,7 @@
   "devDependencies": {
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
-    "@openzeppelin/contracts": "^4.0.0",
+    "@openzeppelin/contracts": "^4.3.0",
     "@openzeppelin/test-environment": "^0.1.9",
     "@openzeppelin/test-helpers": "^0.5.12",
     "@truffle/hdwallet-provider": "^1.4.1",
