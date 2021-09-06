@@ -23,8 +23,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public uniRouterAddress;
     address public usdAddress;
     address public bananaAddress;
-    // Wrapped native token address (WBNB)
-    address public wNativeAdress = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    // Wrapped native token address (WBNB/WMATIC)
+    address public wNativeAdress = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
     address public rewardAddress = 0x4EB6b0A7543508f6EbD81c2E9c7cA7A471475e73;
     address public withdrawFeeAddress = 0x4EB6b0A7543508f6EbD81c2E9c7cA7A471475e73;
@@ -34,7 +34,8 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     uint256 public lastEarnBlock = block.number;
     uint256 public sharesTotal;
 
-    address public buyBackAddress = 0x000000000000000000000000000000000000dEaD;
+    // Burning wallet address
+    address public buyBackAddress = 0xa22c3fAc4B4a4dfbF6a8F5F8fe85d9478acE2B0C;
     uint256 public controllerFee = 25; // 0.25%
     uint256 public rewardRate = 75; // 0.75%
     uint256 public buyBackRate = 300; // 3%
