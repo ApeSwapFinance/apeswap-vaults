@@ -121,6 +121,30 @@ const MasterChefVaults = {
             earnedToToken1Path: ['0x76bf0c28e604cc3fe9967c83b3c3f31c213cfe64','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619'],
             token0ToEarnedPath: ['0x5d47baba0d66083c52009271faf3f50dcc01023c','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270','0x76bf0c28e604cc3fe9967c83b3c3f31c213cfe64'],
             token1ToEarnedPath: ['0x7ceb23fd6bc0add59e62ac25578270cff1b9f619','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x76bf0c28e604cc3fe9967c83b3c3f31c213cfe64'],
+        },
+        {   
+            // VID: 0 - HAIR/MATIC -> HAIR MasterChef
+            configAddresses: ['0xc6ae34172bb4fc40c49c3f53badebce3bb8e6430', '0x491c17b1b9aa867f3a7a480baffc0721d59a7393', '0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+            pid: 1,
+            earnedToWnativePath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],
+            earnedToUsdPath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],
+            earnedToBananaPath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x5d47baba0d66083c52009271faf3f50dcc01023c'],
+            earnedToToken0Path: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],
+            earnedToToken1Path: ['0x0000000000000000000000000000000000000000','0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+            token0ToEarnedPath: ['0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270','0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+            token1ToEarnedPath: ['0x0000000000000000000000000000000000000000','0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+        },
+        {   
+            // VID: 0 - HAIR/USDC -> HAIR MasterChef
+            configAddresses: ['0xc6ae34172bb4fc40c49c3f53badebce3bb8e6430', '0xb394009787c2d0cb5b45d06e401a39648e21d681', '0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+            pid: 8,
+            earnedToWnativePath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],
+            earnedToUsdPath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],
+            earnedToBananaPath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x5d47baba0d66083c52009271faf3f50dcc01023c'],
+            earnedToToken0Path: ['0x0000000000000000000000000000000000000000','0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+            earnedToToken1Path: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],
+            token0ToEarnedPath: ['0x0000000000000000000000000000000000000000','0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+            token1ToEarnedPath: ['0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174','0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
         }
     ]
 };
@@ -256,6 +280,15 @@ const MasterChefSingleVaults = {
             earnedToUsdPath: ['0x76bf0c28e604cc3fe9967c83b3c3f31c213cfe64','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270','0x8f3cf7ad23cd3cadbd9735aff958023239c6a063'],
             earnedToBananaPath: ['0x76bf0c28e604cc3fe9967c83b3c3f31c213cfe64','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x5d47baba0d66083c52009271faf3f50dcc01023c'],
             earnedToWantPath: ['0x0000000000000000000000000000000000000000', '0x76bf0c28e604cc3fe9967c83b3c3f31c213cfe64'],
+        },
+        {   
+            // VID: 0 - HAIR -> HAIR MasterChef
+            configAddresses: ['0xc6ae34172bb4fc40c49c3f53badebce3bb8e6430', '0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C', '0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
+            pid: 0,
+            earnedToWnativePath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],
+            earnedToUsdPath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],
+            earnedToBananaPath: ['0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x5d47baba0d66083c52009271faf3f50dcc01023c'],
+            earnedToWantPath: ['0x0000000000000000000000000000000000000000', '0x100A947f51fA3F1dcdF97f3aE507A72603cAE63C'],
         }
     ]
 };
