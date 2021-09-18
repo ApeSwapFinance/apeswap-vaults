@@ -95,7 +95,7 @@ const MasterChefVaults = {
             earnedToToken1Path: ['0xd9a88f9b7101046786490baf433f0f6ab3d753e2','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
             token0ToEarnedPath: ['0x0000000000000000000000000000000000000000','0xd9a88f9b7101046786490baf433f0f6ab3d753e2'],
             token1ToEarnedPath: ['0xe9e7cea3dedca5984780bafc599bd69add087d56','0xd9a88f9b7101046786490baf433f0f6ab3d753e2'],
-        } 
+        }
     ],
     polygon: [
         {   
@@ -149,6 +149,38 @@ const MasterChefVaults = {
     ]
 };
 
+const MasterChefReflectVaults = {
+    bsc: [
+        {   
+            // VID: XX -  SING/BUSD MasterApe - https://bscscan.com/address/XXX
+            configAddresses: ['0x31b05a72037e91b86393a0f935fe7094141ba0a7','0xdddc245c62a0aa875893ab53b52455acdcd7f526','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+            pid: 0,
+            earnedToWnativePath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            earnedToUsdPath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
+            earnedToBananaPath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c','0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
+            earnedToToken0Path: ['0x0000000000000000000000000000000000000000','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+            earnedToToken1Path: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
+            token0ToEarnedPath: ['0x0000000000000000000000000000000000000000','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+            token1ToEarnedPath: ['0xe9e7cea3dedca5984780bafc599bd69add087d56','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+        },
+        {   
+            // VID: XX -  SING/BNB MasterApe - https://bscscan.com/address/XXX
+            configAddresses: ['0x31b05a72037e91b86393a0f935fe7094141ba0a7','0xdd5f9a9f05a9680867936c878ae6db4c9dab5c37','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+            pid: 1,
+            earnedToWnativePath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            earnedToUsdPath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
+            earnedToBananaPath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c','0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
+            earnedToToken0Path: ['0x0000000000000000000000000000000000000000','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+            earnedToToken1Path: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            token0ToEarnedPath: ['0x0000000000000000000000000000000000000000','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+            token1ToEarnedPath: ['0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+        }
+    ],
+    polygon: []
+}
+    
+
+
 const MasterApeSingleVaults = { 
     bsc: [
         {   
@@ -175,7 +207,7 @@ const KoalaChefSingleVaults = {
             earnedToWantPath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xe9e7cea3dedca5984780bafc599bd69add087d56','0xba26397cdff25f0d26e815d218ef3c77609ae7f1'],
         },
         {   
-            // VID: 12 - NALIS -> NALIS KoalaChef https://bscscan.com/address/0x148c180bb3c84b901f6038556f5e143c148f5fcc
+            // VID: 36 - NALIS -> NALIS KoalaChef https://bscscan.com/address/0x4523c6e7e17b859fd6b17731649c5eda78ce4c26
             configAddresses: ['0x7b3ca828e189739660310b47fc89b3a3e8a0e564', '0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3', '0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3'],
             pid: 0,
             earnedToWnativePath: ['0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
@@ -269,7 +301,7 @@ const MasterChefSingleVaults = {
             earnedToUsdPath: ['0xd9a88f9b7101046786490baf433f0f6ab3d753e2','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
             earnedToBananaPath: ['0xd9a88f9b7101046786490baf433f0f6ab3d753e2', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', '0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
             earnedToWantPath: ['0x0000000000000000000000000000000000000000', '0xd9a88f9b7101046786490baf433f0f6ab3d753e2'],
-        }
+        },
     ],
     polygon: [
         {   
@@ -293,10 +325,30 @@ const MasterChefSingleVaults = {
     ]
 };
 
+
+const MasterChefSingleReflectVaults = {
+    bsc: [
+        {   
+            // VID: 38 -  SING -> SING MasterApe - https://bscscan.com/address/0xf04c2b3b2632990220277d9933d15874035d1bc7
+            configAddresses: ['0x31b05a72037e91b86393a0f935fe7094141ba0a7','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+            pid: 2,
+            earnedToWnativePath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            earnedToUsdPath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xe9e7cea3dedca5984780bafc599bd69add087d56'],
+            earnedToBananaPath: ['0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563','0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c','0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
+            earnedToWantPath: ['0x0000000000000000000000000000000000000000','0x23894c0ce2d79b79ea33a4d02e67ae843ef6e563'],
+        }
+    ],
+    polygon: [
+
+    ]
+};
+
 module.exports = {
     MasterChefSingleVaults,
     MasterApeSingleVaults,
     MasterChefVaults,
     KoalaChefSingleVaults,
-    KoalaChefVaults
+    KoalaChefVaults,
+    MasterChefSingleReflectVaults,
+    MasterChefReflectVaults
 }
