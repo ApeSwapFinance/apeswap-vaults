@@ -192,7 +192,32 @@ const MasterApeSingleVaults = {
             earnedToBananaPath: ['0x0000000000000000000000000000000000000000','0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
         },
     ],
-    polygon: []
+    polygon: [
+        {   
+            // VID: 0 - SING/USDC -> SING MasterChef
+            configAddresses: ['0x9762fe3ef5502df432de41e7765b0ccc90e02e92', '0x6046eb198abc5ea4f17027bc00a2aee0420e84ee', '0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+            pid: 0,
+            earnedToWnativePath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],
+            earnedToUsdPath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],
+            earnedToBananaPath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x5d47baba0d66083c52009271faf3f50dcc01023c'],
+            earnedToToken0Path: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],           
+            earnedToToken1Path: ['0x0000000000000000000000000000000000000000', '0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+            token0ToEarnedPath: ['0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174','0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+            token1ToEarnedPath: ['0x0000000000000000000000000000000000000000','0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+        },
+        {   
+            // VID: 0 - SING/WMATIC -> SING MasterChef
+            configAddresses: ['0x9762fe3ef5502df432de41e7765b0ccc90e02e92', '0x854d3639f38f65c091664062230091858955ddc2', '0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+            pid: 1,
+            earnedToWnativePath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],
+            earnedToUsdPath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],
+            earnedToBananaPath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x5d47baba0d66083c52009271faf3f50dcc01023c'],
+            earnedToToken0Path: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],           
+            earnedToToken1Path: ['0x0000000000000000000000000000000000000000', '0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+            token0ToEarnedPath: ['0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270','0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+            token1ToEarnedPath: ['0x0000000000000000000000000000000000000000','0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+        }
+    ]
 };
 
 const KoalaChefSingleVaults = {
@@ -270,7 +295,8 @@ const KoalaChefVaults = {
             token1ToEarnedPath: ['0xe9e7cea3dedca5984780bafc599bd69add087d56','0xb2ebaa0ad65e9c888008bf10646016f7fcdd73c3'],
         },
     ],
-    polygon: []
+    polygon: [
+    ]
 };
 
 const MasterChefSingleVaults = {
@@ -339,7 +365,15 @@ const MasterChefSingleReflectVaults = {
         }
     ],
     polygon: [
-
+        {   
+            // VID: 0 - SING -> SING MasterChef
+            configAddresses: ['0x9762fe3ef5502df432de41e7765b0ccc90e02e92', '0xcb898b0efb084df14dd8e018da37b4d0f06ab26d', '0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+            pid: 2,
+            earnedToWnativePath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'],
+            earnedToUsdPath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'],
+            earnedToBananaPath: ['0xcb898b0efb084df14dd8e018da37b4d0f06ab26d','0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270', '0x5d47baba0d66083c52009271faf3f50dcc01023c'],
+            earnedToWantPath: ['0x0000000000000000000000000000000000000000', '0xcb898b0efb084df14dd8e018da37b4d0f06ab26d'],
+        }
     ]
 };
 
