@@ -68,7 +68,8 @@ contract StrategyVenusBNB is BaseStrategy, Initializable {
         address[6] memory _configAddresses,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
-        address[] memory _earnedToBananaPath
+        address[] memory _earnedToBananaPath,
+        address[] memory _markets
     ) external initializer {
         govAddress = msg.sender;
         vaultChefAddress = _configAddresses[0];
@@ -85,8 +86,7 @@ contract StrategyVenusBNB is BaseStrategy, Initializable {
         earnedToBananaPath = _earnedToBananaPath;
 
         transferOwnership(vaultChefAddress);
-        address[1] memory markets = [vbnb];
-        IUnitroller(unitroller).enterMarkets(markets);
+        IUnitroller(unitroller).enterMarkets(_markets);
 
         _resetAllowances();
     }
@@ -168,6 +168,7 @@ contract StrategyVenusBNB is BaseStrategy, Initializable {
     
             _farm();
         }
+        _leverage(address(this).balance);
     }
 
     /**

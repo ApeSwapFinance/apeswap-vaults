@@ -10,7 +10,7 @@ interface IWBNB is IERC20 {
 
 interface IUnitroller {
     function claimVenus(address holder) external;
-    function enterMarkets(address[1] memory _vtokens) external;
+    function enterMarkets(address[] memory _vtokens) external;
     function exitMarket(address _vtoken) external;
     function getAssetsIn(address account) view external returns (address[] memory);
     function getAccountLiquidity(address account) view external returns (uint, uint, uint);

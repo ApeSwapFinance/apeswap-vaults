@@ -38,9 +38,10 @@ contract StrategyVenusBNBFactory is Ownable {
         address[2] memory _configAddresses,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
-        address[] memory _earnedToBananaPath
+        address[] memory _earnedToBananaPath,
+        address [] memory _markets
     ) public {
-    deployVenusBNBStrategy([defaultVaultChef, defaultRouter, _configAddresses[0], _configAddresses[1], defaultUsdAddress, defaultBananaAddress, defaultGov], _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath);
+    deployVenusBNBStrategy([defaultVaultChef, defaultRouter, _configAddresses[0], _configAddresses[1], defaultUsdAddress, defaultBananaAddress, defaultGov], _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath, _markets);
   }
 
     /**
@@ -57,7 +58,8 @@ contract StrategyVenusBNBFactory is Ownable {
         address[7] memory _configAddresses,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
-        address[] memory _earnedToBananaPath
+        address[] memory _earnedToBananaPath,
+        address[] memory _markets
     ) public {
       StrategyVenusBNB strategy = new StrategyVenusBNB();
 
@@ -69,7 +71,7 @@ contract StrategyVenusBNBFactory is Ownable {
         _configAddress[4]       _usdAddress,
         _configAddress[5]       _bananaAddress
       */
-      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4], _configAddresses[5]], _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath);
+      strategy.initialize([_configAddresses[0], _configAddresses[1], _configAddresses[2], _configAddresses[3], _configAddresses[4], _configAddresses[5]], _earnedToWnativePath, _earnedToUsdPath, _earnedToBananaPath, _markets);
 
       strategy.setGov(_configAddresses[6]);
 
