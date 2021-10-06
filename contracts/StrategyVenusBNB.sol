@@ -97,15 +97,12 @@ contract StrategyVenusBNB is BaseStrategy, Initializable {
      * levels of compound lending. It also updates the helper {depositedBalance} variable.
      */
     function _vaultDeposit(uint256 _amount) internal override {
-        _vaultDeposit();
-    }
-
-    function _vaultDeposit() internal {
         uint256 wbnbBal = IERC20(wNativeAdress).balanceOf(address(this));
+        require(_amount <= wbnbBal, "Insuficient WBNB deposited");
 
-        if (wbnbBal > 0) {
-            IWBNB(wNativeAdress).withdraw(wbnbBal);
-            _leverage(wbnbBal);
+        if (_amount > 0) {
+            IWBNB(wNativeAdress).withdraw(_amount);
+            _leverage(_amount);
         }
 
         updateBalance();
