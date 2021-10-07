@@ -68,7 +68,7 @@ contract StrategyBeltToken is BaseStrategy, Initializable {
         _earn(_to);
     }
 
-    function _earn(address _to) internal nonReentrant whenNotPaused {
+    function _earn(address _to) internal {
 
         // Harvest farm tokens
         _vaultHarvest();
