@@ -29,10 +29,10 @@ contract StrategyAuto4Belt is BaseStrategySingle, Initializable {
     */
     function initialize(
         address[8] memory _configAddresses,
-        uint256 _pid,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
-        address[] memory _earnedToBananaPath
+        address[] memory _earnedToBananaPath,
+        uint256 _pid
     ) external initializer {
         
         govAddress = msg.sender;
