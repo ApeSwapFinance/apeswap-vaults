@@ -12,16 +12,16 @@ contract StrategyBeltToken is BaseStrategy, Initializable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address public masterBelt;
-    address public oToken;
-    uint256 public pid;
+    address public masterBelt; // 0xd4bbc80b9b102b77b21a06cb77e954049605e6c1
+    address public oToken; // 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c wBNB
+    uint256 public pid; // 9
     address[] public earnedToWantPath;
 
     /**
         address[5] _configAddresses,
         _configAddresses[0] _vaultChefAddress,
         _configAddresses[1] _uniRouterAddress,
-        _configAddresses[2]  _wantAddress,
+        _configAddresses[2]  _wantAddress, // 0xa8bb71facdd46445644c277f9499dd22f6f0a30c BeltBNB
         _configAddress[3]  _earnedAddress
         _configAddress[4]  _usdAddress
         _configAddress[5]  _bananaAddress

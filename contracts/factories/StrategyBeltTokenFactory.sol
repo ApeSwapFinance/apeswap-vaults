@@ -28,7 +28,7 @@ contract StrategyBeltTokenFactory is Ownable {
     defaultRouter = _defaultRouter;
     defaultBananaAddress = _defaultBananaAddress;
     defaultUsdAddress = _defaultUsdAddress;
-    defaultMasterBelt = _defaultUsdAddress;
+    defaultMasterBelt = _defaultMasterBelt;
   }
 
   /**
