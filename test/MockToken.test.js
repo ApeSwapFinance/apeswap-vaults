@@ -7,7 +7,7 @@ const MockToken = contract.fromArtifact('MockToken');
 
 describe('MockToken', function () {
   const [minter, alice, bob, carol] = accounts;
-  
+
   beforeEach(async () => {
     this.mock = await MockToken.new(ether('123456'), { from: minter });
 

@@ -5,7 +5,7 @@ on:
     branches:
       - master
   pull_request:
-
+      - master
 jobs:
   test:
     strategy:
@@ -14,7 +14,8 @@ jobs:
         os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
-
+    env:
+      ARCHIVE_NODE_FORK: ${{ secrets.ARCHIVE_NODE_FORK }}
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
@@ -32,4 +33,4 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-yarn-
       - run: yarn
-      - run: yarn test
+      - run: yarn test:ci
