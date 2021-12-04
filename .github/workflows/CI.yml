@@ -35,7 +35,7 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ matrix.os }}-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn
       - run: yarn audit --groups dependencies
       - run: yarn test:ci
