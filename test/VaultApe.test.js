@@ -21,7 +21,9 @@ describe('VaultApe', function () {
   for (const strategy of testStrategies) {
 
     describe(`Testing ${strategy.contractName}`, () => {
-      const toDeposit = '10000000000000000'
+      const toDeposit = '1000000000000000'
+      const blocksToAddvance = 10;
+
       beforeEach(async () => {
         // Add Strategy
         const strategyContract = contract.fromArtifact(strategy.contractName);
@@ -34,7 +36,7 @@ describe('VaultApe', function () {
         await erc20Contract.methods.approve(vaultApe.address, MAX_UINT256).send({ from: testerAddress });
       });
 
-      it('should deposit and have shares supply', async () => {
+      it('should deposit and have shares', async () => {
         await vaultApe.deposit(0, toDeposit, testerAddress, { from: testerAddress })
         const userInfo = await vaultApe.userInfo(0, testerAddress);
         const stakedWantTokens = await vaultApe.stakedWantTokens(0, testerAddress);
@@ -50,8 +52,9 @@ describe('VaultApe', function () {
         expect(stakedWantTokens.toString()).equal(toDeposit);
         expect(userInfo.toString()).equal(toDeposit);
 
-        await time.advanceBlock();
-        await time.advanceBlock();
+        const currentBlock = await time.latestBlock()
+
+        await time.advanceBlockTo(currentBlock.toNumber() + blocksToAddvance);
 
         await vaultApe.earnAll();
         const newUserInfo = await vaultApe.userInfo(0, testerAddress);
@@ -60,9 +63,7 @@ describe('VaultApe', function () {
         expect(newStakedWantTokens.gt(stakedWantTokens)).to.be.true;
       });
 
-      it('should be able to withdraw', async () => {
-        const toDeposit = '6936116396509672'
-
+      it('should be able to withdraw all', async () => {
         await vaultApe.deposit(0, toDeposit, testerAddress, { from: testerAddress });
         await vaultApe.withdraw(0, toDeposit, testerAddress, { from: testerAddress });
         const userInfo = await vaultApe.userInfo(0, testerAddress);
