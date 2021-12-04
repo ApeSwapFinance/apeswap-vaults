@@ -18,6 +18,6 @@ module.exports = {
         // gasLimit: 8e6, // Maximum gas per block
         // gasPrice: 20e9, // Sets the default gas price for transactions if not otherwise specified.
         fork: process.env.ARCHIVE_NODE_FORK, // An url to Ethereum node to use as a source for a fork
-        unlocked_accounts: ['0x0341242Eb1995A9407F1bf632E8dA206858fBB3a'], // Array of addresses specifying which accounts should be unlocked.
+        unlocked_accounts: ['0x41f2E851431Ae142edE42B6C467515EF5053061d'], // Array of addresses specifying which accounts should be unlocked.
     },
 };
