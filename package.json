@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "yarn run compile && yarn mocha --exit --timeout 10000 && npm run coverage && rm -rf ./coverage && rm -rf ./coverage.json",
-    "test:ci": "yarn mocha --exit --timeout 30000",
+    "test:ci": "yarn run compile && yarn mocha --exit --timeout 30000",
     "coverage": "node ./coverage.js",
     "size": "truffle run contract-size",
     "compile": "truffle compile",
