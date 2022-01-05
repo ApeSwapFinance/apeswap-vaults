@@ -77,6 +77,7 @@ const testStrategies = [
     contractName: 'StrategyMasterChefSingle',
     vault: MasterChefSingleVaults.bsc[0],
     wantToken: MasterChefSingleVaults.bsc[0].configAddresses[1],
+    tokensToLPAmount: "10000000000000000000",
     initParams: (vaultApeAddress) => {
       return [
         [vaultApeAddress, MasterChefSingleVaults.bsc[0].configAddresses[0], testConfig.routerAddress, MasterChefSingleVaults.bsc[0].configAddresses[1], MasterChefSingleVaults.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress],
@@ -93,6 +94,7 @@ const testStrategies = [
     contractName: 'StrategyKoalaChefSingle',
     vault: KoalaChefSingleVaults.bsc[0],
     wantToken: KoalaChefSingleVaults.bsc[0].configAddresses[1],
+    tokensToLPAmount: "1000000000000000000000",
     initParams: (vaultApeAddress) => {
       return [
         [vaultApeAddress, KoalaChefSingleVaults.bsc[0].configAddresses[0], testConfig.routerAddress, KoalaChefSingleVaults.bsc[0].configAddresses[1], KoalaChefSingleVaults.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress],
