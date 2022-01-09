@@ -4,11 +4,13 @@ const { accounts, contract, web3 } = require('@openzeppelin/test-environment');
 const IERC20_ABI = require('./utils/abis/IERC20-ABI.json');
 const { testConfig, testStrategies } = require('./utils/config.js');
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
+const { tokenToString } = require('typescript');
 
 /**
  * POSSIBLE ISSUES
  * Wallet address used for initial swapping moved funds
  * No liquidity for initial swapping
+ * No liquidity for fee or any swapping
  * Caller reward distribution fee is less than 1 gwei so not possible to swap
  */
 
@@ -36,7 +38,7 @@ describe('VaultApe', function () {
 
   for (const strategy of testStrategies) {
 
-    describe(`Testing ${strategy.contractName}`, () => {
+    describe(`Testing ${strategy.contractName}` + (strategy.name ? ` - ${strategy.name}` : ''), () => {
       let toDeposit;
       const tokensToLPAmount = strategy.tokensToLPAmount ? strategy.tokensToLPAmount : "1000000000000000000";
       const blocksToAdvance = 10;
@@ -69,7 +71,7 @@ describe('VaultApe', function () {
             }
             await router.addLiquidityETH(token1, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress, value: 1e18 });
             const LPTokens = await pair.balanceOf(testerAddress);
-            toDeposit = (Math.floor(Number(LPTokens) * 0.1)).toString();
+            toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             await pair.transfer(testerAddress2, toDeposit, { from: testerAddress });
           } else if (token1 == testConfig.wrappedNative) {
             if (token0 != testConfig.usdAddress) {
@@ -78,7 +80,7 @@ describe('VaultApe', function () {
             }
             await router.addLiquidityETH(token0, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress, value: 1e18 });
             const LPTokens = await pair.balanceOf(testerAddress);
-            toDeposit = (Math.floor(Number(LPTokens) * 0.1)).toString();
+            toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             await pair.transfer(testerAddress2, toDeposit, { from: testerAddress });
           } else {
             if (token1 != testConfig.usdAddress) {
@@ -91,17 +93,40 @@ describe('VaultApe', function () {
             }
             await router.addLiquidity(token0, token1, tokensToLPAmount, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress });
             const LPTokens = await pair.balanceOf(testerAddress);
-            toDeposit = (Math.floor(Number(LPTokens) * 0.1)).toString();
+            toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             await pair.transfer(testerAddress2, toDeposit, { from: testerAddress });
           }
         } else {
-          if (strategy.wantToken != testConfig.usdAddress) {
-            const [tokenInAmount, tokenOutAmount] = await router.getAmountsIn(tokensToLPAmount, [testConfig.usdAddress, strategy.wantToken]);
-            await router.swapExactTokensForTokens((Number(tokenInAmount) * 1.1).toString(), 0, [testConfig.usdAddress, strategy.wantToken], testerAddress, await time.latestBlock() + 600, { from: testerAddress });
+          if (strategy.contractName == "StrategyBeltToken") {
+            //belt Vaults
+            const beltToken = contract.fromArtifact("IBeltMultiStrategyToken", strategy.wantToken);
+            if (strategy.wantToken == '') {
+              await beltToken.depositBNB(0, { value: tokensToLPAmount, from: testerAddress });
+            } else {
+              const [tokenInAmount, tokenOutAmount] = await router.getAmountsIn(tokensToLPAmount, [testConfig.usdAddress, strategy.oToken]);
+              await router.swapExactTokensForTokens((Number(tokenInAmount) * 1.1).toString(), 0, [testConfig.usdAddress, strategy.oToken], testerAddress, await time.latestBlock() + 600, { from: testerAddress });
+
+              const oToken = contract.fromArtifact('ERC20', strategy.oToken);
+              await oToken.approve(beltToken.address, MAX_UINT256, { from: testerAddress });
+              await beltToken.deposit(tokensToLPAmount, 0, { from: testerAddress });
+            }
+          } else if (strategy.contractName == "Strategy4Belt") {
+            //4Belt
+            const belt4Token = contract.fromArtifact("IBeltLP", "0xF6e65B33370Ee6A49eB0dbCaA9f43839C1AC04d5");
+            const busd = contract.fromArtifact('ERC20', testConfig.usdAddress);
+            await busd.approve(belt4Token.address, MAX_UINT256, { from: testerAddress });
+
+            await belt4Token.add_liquidity([0, 0, 0, (Number(tokensToLPAmount) * 1.1).toString()], 0, { from: testerAddress });
+          } else {
+            //single token
+            if (strategy.wantToken != testConfig.usdAddress) {
+              const [tokenInAmount, tokenOutAmount] = await router.getAmountsIn(tokensToLPAmount, [testConfig.usdAddress, strategy.wantToken]);
+              await router.swapExactTokensForTokens((Number(tokenInAmount) * 1.1).toString(), 0, [testConfig.usdAddress, strategy.wantToken], testerAddress, await time.latestBlock() + 600, { from: testerAddress });
+            }
           }
-          toDeposit = (Math.floor(Number(tokensToLPAmount) * 0.1)).toString();
+          toDeposit = (Math.floor(Number(tokensToLPAmount) * 0.05)).toString();
           const wantToken = contract.fromArtifact('ERC20', strategy.wantToken);
-          await wantToken.transfer(testerAddress2, toDeposit, { from: testerAddress });
+          await wantToken.transfer(testerAddress2, (Number(toDeposit) * 2).toString(), { from: testerAddress });
         }
       });
 
@@ -119,6 +144,12 @@ describe('VaultApe', function () {
       });
 
       it('should deposit and have shares', async () => {
+        const wantAddress = await this.strategy.wantAddress();
+        console.log(wantAddress);
+        const wantToken = contract.fromArtifact('ERC20', wantAddress);
+        const balance = await wantToken.balanceOf(testerAddress);
+        console.log(balance.toString());
+        console.log(toDeposit);
         await vaultApe.deposit(0, toDeposit, testerAddress, { from: testerAddress })
         const userInfo = await vaultApe.userInfo(0, testerAddress);
         const stakedWantTokens = await vaultApe.stakedWantTokens(0, testerAddress);
@@ -212,6 +243,11 @@ describe('VaultApe', function () {
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
 
         const testerBalanceBefore = await web3.eth.getBalance(testerAddress);
+
+        const vaultSharesTotal = await this.strategy.vaultSharesTotal();
+        const wantLockedTotal = await this.strategy.wantLockedTotal();
+        console.log(vaultSharesTotal.toString(), wantLockedTotal.toString());
+
         const transaction = await vaultApe.earnAll({ from: testerAddress });
         const gasPrice = await web3.eth.getGasPrice();
         const testerBalanceAfter = await web3.eth.getBalance(testerAddress);
@@ -241,7 +277,6 @@ describe('VaultApe', function () {
           rewardBalanceAfter = await bananaToken.balanceOf(rewardAddress);
         } else {
           rewardBalanceAfter = await usdToken.balanceOf(rewardAddress);
-
         }
 
         expect(Number(rewardBalanceAfter)).to.be.greaterThan(Number(rewardBalanceBefore));
@@ -271,6 +306,7 @@ describe('VaultApe', function () {
       });
 
       it("should be able to panic and unpanic", async () => {
+        await vaultApe.deposit(0, toDeposit, testerAddress2, { from: testerAddress2 });
         await this.strategy.panic();
         await expectRevert(vaultApe.deposit(0, toDeposit, testerAddress, { from: testerAddress }), "Pausable: paused");
 

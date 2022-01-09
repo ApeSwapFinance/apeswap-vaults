@@ -1,4 +1,4 @@
-const { MasterChefVaults, MasterApeSingleVaults, KoalaChefSingleVaults, MasterChefReflectVaults, MasterChefSingleVaults, BeltAutoStrategies, BeltTokenVaults } = require('../../configs/vaults');
+const { MasterChefVaults, MasterApeSingleVaults, KoalaChefSingleVaults, MasterChefReflectVaults, MasterChefSingleVaults, BeltTokenVaults, Belt4TokenVaults } = require('../../configs/vaults');
 
 
 const testConfig = {
@@ -7,7 +7,9 @@ const testConfig = {
   testAccount: '0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5',//'0x41f2E851431Ae142edE42B6C467515EF5053061d',
   testAccount2: '0x933DE7fadF291926609a2fd0ED79aCe0F8D6dCbf',
   adminAddress: "0x0341242Eb1995A9407F1bf632E8dA206858fBB3a",
-  routerAddress: "0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7",
+  //PCS Router: 0x10ED43C718714eb63d5aA57B78B54704E256024E
+  //ApeSwap Router: 0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7
+  routerAddress: "0x10ED43C718714eb63d5aA57B78B54704E256024E",
   vaultAddress: "0x5711a833C943AD1e8312A9c7E5403d48c717e1aa",
   usdAddress: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
   bananaAddress: "0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95",
@@ -106,38 +108,75 @@ const testStrategies = [
       ]
     }
   },
-  // // beltBNB -> AUTO
+  // beltBNB -> AUTO
   // {
   //   contractName: 'StrategyAutoBeltToken',
   //   vault: BeltAutoStrategies.bsc[0],
   //   wantToken: BeltAutoStrategies.bsc[0].configAddresses[1],
   //   initParams: (vaultApeAddress) => {
   //     return [
-  //       [vaultApeAddress, BeltAutoStrategies.bsc[0].configAddresses[0], testConfig.routerAddress, BeltAutoStrategies.bsc[0].configAddresses[1], BeltAutoStrategies.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress],
-  //       BeltAutoStrategies.bsc[0].pid,
+  //       [vaultApeAddress, BeltAutoStrategies.bsc[0].configAddresses[0], testConfig.routerAddress, BeltAutoStrategies.bsc[0].configAddresses[1], BeltAutoStrategies.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress, BeltAutoStrategies.bsc[0].configAddresses[3]],
   //       BeltAutoStrategies.bsc[0].earnedToWnativePath,
   //       BeltAutoStrategies.bsc[0].earnedToUsdPath,
   //       BeltAutoStrategies.bsc[0].earnedToBananaPath,
   //       BeltAutoStrategies.bsc[0].earnedToWantPath,
+  //       BeltAutoStrategies.bsc[0].pid,
   //     ]
   //   }
   // },
-  // // beltBNB -> BELT
-  // {
-  //   contractName: 'StrategyBeltToken',
-  //   vault: BeltTokenVaults.bsc[0],
-  //   wantToken: BeltTokenVaults.bsc[0].configAddresses[1],
-  //   initParams: (vaultApeAddress) => {
-  //     return [
-  //       [vaultApeAddress, BeltTokenVaults.bsc[0].configAddresses[0], testConfig.routerAddress, BeltTokenVaults.bsc[0].configAddresses[1], BeltTokenVaults.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress],
-  //       BeltTokenVaults.bsc[0].pid,
-  //       BeltTokenVaults.bsc[0].earnedToWnativePath,
-  //       BeltTokenVaults.bsc[0].earnedToUsdPath,
-  //       BeltTokenVaults.bsc[0].earnedToBananaPath,
-  //       BeltTokenVaults.bsc[0].earnedToWantPath,
-  //     ]
-  //   }
-  // }
+  // beltBNB -> BELT
+  {
+    name: 'beltBNB',
+    contractName: 'StrategyBeltToken',
+    vault: BeltTokenVaults.bsc[0],
+    wantToken: BeltTokenVaults.bsc[0].configAddresses[0],
+    oToken: BeltTokenVaults.bsc[0].configAddresses[3],
+    initParams: (vaultApeAddress) => {
+      return [
+        [vaultApeAddress, testConfig.routerAddress, BeltTokenVaults.bsc[0].configAddresses[0], BeltTokenVaults.bsc[0].configAddresses[1], testConfig.usdAddress, testConfig.bananaAddress, BeltTokenVaults.bsc[0].configAddresses[2], BeltTokenVaults.bsc[0].configAddresses[3]],
+        BeltTokenVaults.bsc[0].earnedToWnativePath,
+        BeltTokenVaults.bsc[0].earnedToUsdPath,
+        BeltTokenVaults.bsc[0].earnedToBananaPath,
+        BeltTokenVaults.bsc[0].earnedToWantPath,
+        BeltTokenVaults.bsc[0].pid,
+      ]
+    }
+  },
+  // beltBTC -> BELT
+  {
+    name: 'beltBTC',
+    contractName: 'StrategyBeltToken',
+    vault: BeltTokenVaults.bsc[1],
+    wantToken: BeltTokenVaults.bsc[1].configAddresses[0],
+    oToken: BeltTokenVaults.bsc[1].configAddresses[3],
+    tokensToLPAmount: "1000000000000000",
+    initParams: (vaultApeAddress) => {
+      return [
+        [vaultApeAddress, testConfig.routerAddress, BeltTokenVaults.bsc[1].configAddresses[0], BeltTokenVaults.bsc[1].configAddresses[1], testConfig.usdAddress, testConfig.bananaAddress, BeltTokenVaults.bsc[1].configAddresses[2], BeltTokenVaults.bsc[1].configAddresses[3]],
+        BeltTokenVaults.bsc[1].earnedToWnativePath,
+        BeltTokenVaults.bsc[1].earnedToUsdPath,
+        BeltTokenVaults.bsc[1].earnedToBananaPath,
+        BeltTokenVaults.bsc[1].earnedToWantPath,
+        BeltTokenVaults.bsc[1].pid,
+      ]
+    }
+  },
+  // 4Belt -> BELT
+  {
+    contractName: 'Strategy4Belt',
+    vault: Belt4TokenVaults.bsc[0],
+    wantToken: Belt4TokenVaults.bsc[0].configAddresses[1],
+    tokensToLPAmount: "100000000000000000000",
+    initParams: (vaultApeAddress) => {
+      return [
+        [vaultApeAddress, Belt4TokenVaults.bsc[0].configAddresses[0], testConfig.routerAddress, Belt4TokenVaults.bsc[0].configAddresses[1], Belt4TokenVaults.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress, Belt4TokenVaults.bsc[0].configAddresses[3]],
+        Belt4TokenVaults.bsc[0].earnedToWnativePath,
+        Belt4TokenVaults.bsc[0].earnedToUsdPath,
+        Belt4TokenVaults.bsc[0].earnedToBananaPath,
+        Belt4TokenVaults.bsc[0].pid,
+      ]
+    }
+  }
 ];
 
 module.exports = {

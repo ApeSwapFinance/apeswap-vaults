@@ -405,7 +405,7 @@ const BeltAutoStrategies = {
     bsc: [
         // beltBNB
         {
-            configAddresses: ['0xa8bb71facdd46445644c277f9499dd22f6f0a30c', '0xa184088a740c695e156f91f5cc086a06bb78b827', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            configAddresses: ['0x763a05bdb9f8946d8C3FA72d1e0d3f5E68647e5C', '0xa8Bb71facdd46445644C277F9499Dd22f6F0A30C', '0xa184088a740c695e156f91f5cc086a06bb78b827', '0xe9e7cea3dedca5984780bafc599bd69add087d56'],
             pid: 338,
             earnedToWnativePath: ['0xa184088a740c695e156f91f5cc086a06bb78b827', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
             earnedToUsdPath: ['0xa184088a740c695e156f91f5cc086a06bb78b827', '0xe9e7cea3dedca5984780bafc599bd69add087d56'],
@@ -426,14 +426,36 @@ const BeltAutoStrategies = {
 
 const BeltTokenVaults = {
     bsc: [
-        // beltBNB 
+        // beltBNB -> BELT
         {
-            configAddresses: ['0xa8bb71facdd46445644c277f9499dd22f6f0a30c', '0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
-            pid: 0,
+            configAddresses: ['0xa8Bb71facdd46445644C277F9499Dd22f6F0A30C', '0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xD4BbC80b9B102b77B21A06cb77E954049605E6c1', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            pid: 9,
             earnedToWnativePath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
-            earnedToUsdPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xe9e7cea3dedca5984780bafc599bd69add087d56'],
-            earnedToBananaPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', '0x603c7f932ed1fc6575303d8fb018fdcbb0f39a95'],
+            earnedToUsdPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56'],
+            earnedToBananaPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', '0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95'],
             earnedToWantPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+        },
+        // beltBTC -> BELT
+        {
+            configAddresses: ['0x51bd63F240fB13870550423D208452cA87c44444', '0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xD4BbC80b9B102b77B21A06cb77E954049605E6c1', '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c'],
+            pid: 7,
+            earnedToWnativePath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            earnedToUsdPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56'],
+            earnedToBananaPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', '0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95'],
+            earnedToWantPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c'],
+        },
+    ]
+}
+
+const Belt4TokenVaults = {
+    bsc: [
+        // 4belt -> BELT
+        {
+            configAddresses: ['0xD4BbC80b9B102b77B21A06cb77E954049605E6c1', '0x9cb73F20164e399958261c289Eb5F9846f4D1404', '0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xF6e65B33370Ee6A49eB0dbCaA9f43839C1AC04d5'],
+            pid: 3,
+            earnedToWnativePath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'],
+            earnedToUsdPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56'],
+            earnedToBananaPath: ['0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f', '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', '0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95'],
         },
     ]
 }
@@ -446,6 +468,6 @@ module.exports = {
     KoalaChefVaults,
     MasterChefSingleReflectVaults,
     MasterChefReflectVaults,
-    BeltAutoStrategies,
-    BeltTokenVaults
+    BeltTokenVaults,
+    Belt4TokenVaults
 }
