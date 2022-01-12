@@ -72,7 +72,7 @@ describe('VaultApe', function () {
             await router.addLiquidityETH(token1, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress, value: 1e18 });
             const LPTokens = await pair.balanceOf(testerAddress);
             toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
-            await pair.transfer(testerAddress2, toDeposit, { from: testerAddress });
+            await pair.transfer(testerAddress2, (Number(toDeposit) * 2).toString(), { from: testerAddress });
           } else if (token1 == testConfig.wrappedNative) {
             if (token0 != testConfig.usdAddress) {
               const [tokenInAmount, tokenOutAmount] = await router.getAmountsIn(tokensToLPAmount, [testConfig.usdAddress, token0]);
@@ -81,7 +81,7 @@ describe('VaultApe', function () {
             await router.addLiquidityETH(token0, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress, value: 1e18 });
             const LPTokens = await pair.balanceOf(testerAddress);
             toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
-            await pair.transfer(testerAddress2, toDeposit, { from: testerAddress });
+            await pair.transfer(testerAddress2, (Number(toDeposit) * 2).toString(), { from: testerAddress });
           } else {
             if (token1 != testConfig.usdAddress) {
               const [tokenInAmount, tokenOutAmount] = await router.getAmountsIn(tokensToLPAmount, [testConfig.usdAddress, token1]);
@@ -94,7 +94,7 @@ describe('VaultApe', function () {
             await router.addLiquidity(token0, token1, tokensToLPAmount, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress });
             const LPTokens = await pair.balanceOf(testerAddress);
             toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
-            await pair.transfer(testerAddress2, toDeposit, { from: testerAddress });
+            await pair.transfer(testerAddress2, (Number(toDeposit) * 2).toString(), { from: testerAddress });
           }
         } else {
           if (strategy.contractName == "StrategyBeltToken") {
@@ -145,11 +145,7 @@ describe('VaultApe', function () {
 
       it('should deposit and have shares', async () => {
         const wantAddress = await this.strategy.wantAddress();
-        console.log(wantAddress);
         const wantToken = contract.fromArtifact('ERC20', wantAddress);
-        const balance = await wantToken.balanceOf(testerAddress);
-        console.log(balance.toString());
-        console.log(toDeposit);
         await vaultApe.deposit(0, toDeposit, testerAddress, { from: testerAddress })
         const userInfo = await vaultApe.userInfo(0, testerAddress);
         const stakedWantTokens = await vaultApe.stakedWantTokens(0, testerAddress);
