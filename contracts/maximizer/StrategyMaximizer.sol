@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../libs/IStrategy.sol";
+import "../VaultApe.sol";
 import "../libs/IMasterBelt.sol";
 import "../libs/IUniRouter02.sol";
 
@@ -30,14 +30,16 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     IERC20 public constant BANANA =
         IERC20(0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95);
-    IStrategy public immutable BANANA_VAULT;
-    uint256 public immutable BANANA_FARM_PID;
     IERC20 public immutable STAKED_TOKEN;
 
     // Runtime data
     mapping(address => UserInfo) public userInfo; // Info of users
-    uint256 public accSharesPerStakedToken; // Accumulated BANANA_VAULT shares per staked token, times 1e18.
+    uint256 public accSharesPerStakedToken; // Accumulated VAULTAPE shares per staked token, times 1e18.
     uint256 public bonusAccSharesPerStakedToken; // Accumulated bonus shares per staked token, times 1e18.
+
+    //banana vault info
+    VaultApe public immutable VAULTAPE;
+    uint256 public immutable BANANA_VAULT_PID;
 
     // Farm info
     IMasterBelt public immutable MASTERAPE;
@@ -86,7 +88,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     );
 
     constructor(
-        address _autoBanana,
+        uint256 _bananaPoolPid,
+        address _vaultApe,
         address _stakedToken,
         address _stakedTokenFarm,
         address _farmRewardToken,
@@ -116,7 +119,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         require(_buyBackRate <= buyBackRateUL);
         require(_platformFee <= platformFeeUL);
 
-        BANANA_VAULT = IStrategy(_autoBanana);
+        BANANA_VAULT_PID = _bananaPoolPid;
+        VAULTAPE = _vaultApe;
         STAKED_TOKEN = IERC20(_stakedToken);
         MASTERAPE = IMasterBelt(_stakedTokenFarm);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
@@ -201,9 +205,9 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         uint256 previousShares = totalAutoBananaShares();
         uint256 bananaBalance = _bananaBalance();
 
-        _approveTokenIfNeeded(BANANA, bananaBalance, address(BANANA_VAULT));
+        _approveTokenIfNeeded(BANANA, bananaBalance, address(MASTERAPE));
 
-        BANANA_VAULT.deposit(msg.sender, bananaBalance);
+        VAULTAPE.deposit(BANANA_VAULT_PID, bananaBalance);
 
         uint256 currentShares = totalAutoBananaShares();
 
@@ -306,7 +310,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
         uint256 bananaBalanceBefore = _bananaBalance();
 
-        BANANA_VAULT.withdraw(msg.sender, _shares);
+        VAULTAPE.withdraw(BANANA_VAULT_PID, _shares);
 
         uint256 withdrawAmount = _bananaBalance().sub(bananaBalanceBefore);
 
@@ -378,7 +382,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         stake = user.stake;
         autoBananaShares = user.autoBananaShares.add(pendingShares);
 
-        (uint256 amount, ) = BANANA_VAULT.userInfo(address(this));
+        (uint256 amount, ) = VAULTAPE.userInfo(BANANA_VAULT_PID, address(this));
         uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(amount);
 
         banana = autoBananaShares.mul(pricePerFullShare).div(1e18);
@@ -406,8 +410,9 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         return MASTERAPE.userInfo(FARM_PID, address(this));
     }
 
+    //TODO check if this is right
     function totalAutoBananaShares() public view returns (uint256) {
-        (uint256 shares, , , ) = BANANA_VAULT.userInfo(address(this));
+        (uint256 shares, ) = VAULTAPE.userInfo(BANANA_VAULT_PID, address(this));
 
         return shares;
     }
