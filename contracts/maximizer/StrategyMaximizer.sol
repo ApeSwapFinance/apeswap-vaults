@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../libs/IStrategy.sol";
-import "../libs/IMasterBelt.sol";
+import "../libs/IVaultApe.sol";
+import "../libs/IMasterApe.sol";
 import "../libs/IUniRouter02.sol";
 
 contract StrategyMaximizer is Ownable, ReentrancyGuard {
@@ -30,8 +30,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     IERC20 public constant BANANA =
         IERC20(0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95);
-    IStrategy public immutable BANANA_VAULT;
-    uint256 public immutable BANANA_FARM_PID;
+    IVaultApe public immutable BANANA_VAULT;
+    uint256 public immutable BANANA_VAULT_PID;
     IERC20 public immutable STAKED_TOKEN;
 
     // Runtime data
@@ -40,7 +40,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     uint256 public bonusAccSharesPerStakedToken; // Accumulated bonus shares per staked token, times 1e18.
 
     // Farm info
-    IMasterBelt public immutable MASTERAPE;
+    IMasterApe public immutable MASTERAPE;
     IERC20 public immutable FARM_REWARD_TOKEN;
     uint256 public immutable FARM_PID;
 
@@ -87,6 +87,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
     constructor(
         address _autoBanana,
+        uint256 _autoBananaPid,
         address _stakedToken,
         address _stakedTokenFarm,
         address _farmRewardToken,
@@ -116,9 +117,10 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         require(_buyBackRate <= buyBackRateUL);
         require(_platformFee <= platformFeeUL);
 
-        BANANA_VAULT = IStrategy(_autoBanana);
+        BANANA_VAULT = IVaultApe(_autoBanana);
+        BANANA_VAULT_PID = _autoBananaPid;
         STAKED_TOKEN = IERC20(_stakedToken);
-        MASTERAPE = IMasterBelt(_stakedTokenFarm);
+        MASTERAPE = IMasterApe(_stakedTokenFarm);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         FARM_PID = _farmPid;
 
@@ -191,6 +193,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         }
 
         // Convert remaining rewards to BANANA
+        // TODO: Shouldn't need to convert BANANA tokens
         _swap(
             _rewardTokenBalance(),
             _minBananaOutput,
@@ -203,7 +206,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
         _approveTokenIfNeeded(BANANA, bananaBalance, address(BANANA_VAULT));
 
-        BANANA_VAULT.deposit(msg.sender, bananaBalance);
+        BANANA_VAULT.deposit(BANANA_VAULT_PID, bananaBalance);
 
         uint256 currentShares = totalAutoBananaShares();
 
@@ -306,7 +309,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
         uint256 bananaBalanceBefore = _bananaBalance();
 
-        BANANA_VAULT.withdraw(msg.sender, _shares);
+        BANANA_VAULT.withdraw(BANANA_VAULT_PID, _shares);
 
         uint256 withdrawAmount = _bananaBalance().sub(bananaBalanceBefore);
 
@@ -378,8 +381,9 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         stake = user.stake;
         autoBananaShares = user.autoBananaShares.add(pendingShares);
 
-        (uint256 amount, ) = BANANA_VAULT.userInfo(address(this));
-        uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(amount);
+        uint256 shares = BANANA_VAULT.userInfo(BANANA_VAULT_PID, address(this));
+        // TODO: Not sure I understand this math
+        uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(shares);
 
         banana = autoBananaShares.mul(pricePerFullShare).div(1e18);
     }
@@ -403,11 +407,12 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     }
 
     function totalStake() public view returns (uint256) {
-        return MASTERAPE.userInfo(FARM_PID, address(this));
+        (uint256 amount, ) = MASTERAPE.userInfo(FARM_PID, address(this));
+        return amount;
     }
 
     function totalAutoBananaShares() public view returns (uint256) {
-        (uint256 shares, , , ) = BANANA_VAULT.userInfo(address(this));
+        uint256 shares = BANANA_VAULT.userInfo(BANANA_VAULT_PID, address(this));
 
         return shares;
     }
