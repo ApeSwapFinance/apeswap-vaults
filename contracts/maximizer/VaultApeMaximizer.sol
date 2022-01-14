@@ -90,50 +90,20 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
         return user.shares.mul(wantLockedTotal).div(sharesTotal);
     }
 
-    // Update reward variables for all pools. Be careful of gas spending!
-    function massUpdatePools() public {
-        uint256 length = poolInfo.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
+    function earnAll() external {
+        for (uint256 i = 0; i < poolInfo.length; i++) {
+            if (!IStrategy(poolInfo[i].strat).paused())
+                IStrategy(poolInfo[i].strat).earn(_msgSender());
         }
     }
 
-    // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public {
-        if (
-            !poolInfo.length >= _pid || IStrategy(poolInfo[_pid].strat).paused()
-        ) {
-            return;
+    function earnSome(uint256[] memory pids) external {
+        for (uint256 i = 0; i < pids.length; i++) {
+            if (
+                poolInfo.length >= pids[i] &&
+                !IStrategy(poolInfo[pids[i]].strat).paused()
+            ) IStrategy(poolInfo[pids[i]].strat).earn(_msgSender());
         }
-
-        PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
-            return;
-        }
-        uint256 sharesTotal = IStrategy(pool.strat).sharesTotal();
-        if (sharesTotal == 0) {
-            pool.lastRewardBlock = block.number;
-            return;
-        }
-
-        IStrategy(poolInfo[_pid].strat).updatePool(_msgSender());
-
-        // uint256 BANANAReward = multiplier
-        //     .mul(BANANAPerBlock)
-        //     .mul(pool.allocPoint)
-        //     .div(totalAllocPoint);
-
-        // BANANAToken(BANANA).mint(
-        //     owner(),
-        //     BANANAReward.mul(ownerBANANAReward).div(1000)
-        // );
-        // BANANAToken(BANANA).mint(address(this), BANANAReward);
-
-        // pool.accRewardPerShare = pool.accRewardPerShare.add(
-        //     BANANAReward.mul(1e12).div(sharesTotal)
-        // );
-
-        pool.lastRewardBlock = block.number;
     }
 
     // Want tokens moved from user -> this -> Strat (compounding)
