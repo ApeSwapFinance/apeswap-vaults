@@ -144,8 +144,6 @@ describe('VaultApe', function () {
       });
 
       it('should deposit and have shares', async () => {
-        const wantAddress = await this.strategy.wantAddress();
-        const wantToken = contract.fromArtifact('ERC20', wantAddress);
         await vaultApe.deposit(0, toDeposit, testerAddress, { from: testerAddress })
         const userInfo = await vaultApe.userInfo(0, testerAddress);
         const stakedWantTokens = await vaultApe.stakedWantTokens(0, testerAddress);
@@ -239,9 +237,6 @@ describe('VaultApe', function () {
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
 
         const testerBalanceBefore = await web3.eth.getBalance(testerAddress);
-
-        const vaultSharesTotal = await this.strategy.vaultSharesTotal();
-        const wantLockedTotal = await this.strategy.wantLockedTotal();
 
         const transaction = await vaultApe.earnAll({ from: testerAddress });
         const gasPrice = await web3.eth.getGasPrice();
