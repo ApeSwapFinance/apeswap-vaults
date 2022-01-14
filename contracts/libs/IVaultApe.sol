@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 interface IVaultApe {
-    function owner() external view returns (address);
 
-    function poolInfo(uint256)
-        external
-        view
-        returns (address want, address strat);
-
-    function renounceOwnership() external;
-
-    function transferOwnership(address newOwner) external;
+    struct PoolInfo {
+        IERC20 want; // Address of the want token.
+        address strat; // Strategy address that will auto compound want tokens
+    }
 
     function userInfo(uint256, address) external view returns (uint256 shares);
 
@@ -42,11 +39,11 @@ interface IVaultApe {
 
     function withdrawAll(uint256 _pid) external;
 
-    function resetAllowances() external;
-
     function earnAll() external;
 
     function earnSome(uint256[] memory pids) external;
+
+    function resetAllowances() external;
 
     function resetSingleAllowance(uint256 _pid) external;
 }
