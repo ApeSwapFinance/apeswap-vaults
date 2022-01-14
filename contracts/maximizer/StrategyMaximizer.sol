@@ -103,7 +103,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         address _platform,
         uint256 _buyBackRate,
         uint256 _platformFee
-    ) public {
+    ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
                 _pathToBanana[_pathToBanana.length - 1] == address(BANANA),
