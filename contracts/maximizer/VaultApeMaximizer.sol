@@ -7,9 +7,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+
+import "../libs/IVaultApeMaximizer.sol";
 import "../libs/IStrategyMaximizer.sol";
 
-contract VaultApeMaximizer is ReentrancyGuard, Ownable {
+contract VaultApeMaximizer is IVaultApeMaximizer, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -31,13 +33,14 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
         //   4. User's `rewardDebt` gets updated.
     }
 
-    struct PoolInfo {
-        IERC20 want; // Address of the want token.
-        uint256 allocPoint; // How many allocation points assigned to this pool. BANANA to distribute per block.
-        uint256 lastRewardBlock; // Last block number that BANANA distribution occurs.
-        uint256 accRewardPerShare; // Accumulated BANANA per share, times 1e12. See below.
-        address strat; // Strategy address that will BANANA compound want tokens
-    }
+    // TOOD: This poolInfo looks like it's from the MasterApe. Will we use a different structure?
+    // struct PoolInfo {
+    //     IERC20 want; // Address of the want token.
+    //     address strat; // Strategy address that will BANANA compound want tokens
+    //     uint256 allocPoint; // How many allocation points assigned to this pool. BANANA to distribute per block.
+    //     uint256 lastRewardBlock; // Last block number that BANANA distribution occurs.
+    //     uint256 accRewardPerShare; // Accumulated BANANA per share, times 1e12. See below.
+    // }
 
     address public BANANA;
 
@@ -51,7 +54,7 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
     uint256 public startBlock = 0; // https://bscscan.com/block/countdown/7862758
 
     PoolInfo[] public poolInfo; // Info of each pool.
-    mapping(uint256 => mapping(address => UserInfo)) public userInfo; // Info of each user that stakes LP tokens.
+    mapping(uint256 => mapping(address => UserInfo)) public override userInfo; // Info of each user that stakes LP tokens.
     mapping(address => bool) public strats; // Info of each pool.
 
     event AddPool(address indexed strat);
@@ -63,18 +66,19 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
         uint256 amount
     );
 
-    constructor(address _banana, uint256 _startBlock) public {
+    constructor(address _banana, uint256 _startBlock) {
         BANANA = _banana;
         startBlock = _startBlock;
     }
 
-    function poolLength() external view returns (uint256) {
+    function poolLength() external override view returns (uint256) {
         return poolInfo.length;
     }
 
     // View function to see staked Want tokens on frontend.
     function stakedWantTokens(uint256 _pid, address _user)
         external
+        override
         view
         returns (uint256)
     {
@@ -101,7 +105,7 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         if (
-            !poolInfo.length >= _pid || IStrategy(poolInfo[_pid].strat).paused()
+            _pid >= poolInfo.length || IStrategy(poolInfo[_pid].strat).paused()
         ) {
             return;
         }
@@ -137,7 +141,7 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
     }
 
     // Want tokens moved from user -> this -> Strat (compounding)
-    function deposit(uint256 _pid, uint256 _wantAmt) external nonReentrant {
+    function deposit(uint256 _pid, uint256 _wantAmt) external override nonReentrant {
         _deposit(_pid, _wantAmt, msg.sender);
     }
 
@@ -146,7 +150,7 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
         uint256 _pid,
         uint256 _wantAmt,
         address _to
-    ) external nonReentrant {
+    ) external override nonReentrant {
         _deposit(_pid, _wantAmt, _to);
     }
 
@@ -192,7 +196,7 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
     }
 
     // Withdraw LP tokens from MasterChef.
-    function withdraw(uint256 _pid, uint256 _wantAmt) external nonReentrant {
+    function withdraw(uint256 _pid, uint256 _wantAmt) external override nonReentrant {
         _withdraw(_pid, _wantAmt, msg.sender);
     }
 
@@ -201,7 +205,7 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
         uint256 _pid,
         uint256 _wantAmt,
         address _to
-    ) external nonReentrant {
+    ) external override nonReentrant {
         _withdraw(_pid, _wantAmt, _to);
     }
 
@@ -257,7 +261,7 @@ contract VaultApeMaximizer is ReentrancyGuard, Ownable {
         emit Withdraw(msg.sender, _pid, _wantAmt);
     }
 
-    function withdrawAll(uint256 _pid) external nonReentrant {
+    function withdrawAll(uint256 _pid) external override nonReentrant {
         _withdraw(_pid, type(uint256).max, msg.sender);
     }
 
