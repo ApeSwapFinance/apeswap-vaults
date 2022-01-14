@@ -26,6 +26,7 @@ interface IMasterBelt {
 
     function userInfo(uint256, address)
         external
+        view
         returns (uint256 shares, uint256 rewardDebt);
 
     function totalAllocPoint() external returns (uint256);
