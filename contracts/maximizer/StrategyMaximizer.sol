@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../VaultApe.sol";
-import "../libs/IMasterchef.sol";
+import "../libs/IVaultApe.sol";
+import "../libs/IMasterApe.sol";
 import "../libs/IUniRouter02.sol";
 
 contract StrategyMaximizer is Ownable, ReentrancyGuard {
@@ -34,12 +34,11 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
     // Runtime data
     mapping(address => UserInfo) public userInfo; // Info of users
-    uint256 public accSharesPerStakedToken; // Accumulated MASTERAPE shares per staked token, times 1e18.
+    uint256 public accSharesPerStakedToken; // Accumulated BANANA_VAULT shares per staked token, times 1e18.
     uint256 public bonusAccSharesPerStakedToken; // Accumulated bonus shares per staked token, times 1e18.
 
     // Farm info
-    IMasterchef public immutable MASTERAPE; //MasterApe contract to put banana rewards in pool maximizing
-    IMasterchef public immutable MASTERCHEF; //MasterChef contract for farm interaction (can be MasterApe)
+    IMasterApe public immutable MASTERAPE;
     IERC20 public immutable FARM_REWARD_TOKEN;
     uint256 public immutable FARM_PID;
 
@@ -86,7 +85,6 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
     constructor(
         address _masterApe,
-        address _masterChef,
         uint256 _farmPid,
         address _stakedToken,
         address _farmRewardToken,
@@ -100,7 +98,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         address _platform,
         uint256 _buyBackRate,
         uint256 _platformFee
-    ) public {
+    ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
                 _pathToBanana[_pathToBanana.length - 1] == address(BANANA),
@@ -116,11 +114,10 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         require(_buyBackRate <= buyBackRateUL);
         require(_platformFee <= platformFeeUL);
 
-        MASTERAPE = IMasterchef(_masterApe);
-        MASTERCHEF = IMasterchef(_masterChef);
-        FARM_PID = _farmPid;
         STAKED_TOKEN = IERC20(_stakedToken);
+        MASTERAPE = IMasterApe(_masterApe);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
+        FARM_PID = _farmPid;
 
         router = IUniRouter02(_router);
         pathToBanana = _pathToBanana;
@@ -191,6 +188,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         }
 
         // Convert remaining rewards to BANANA
+        // TODO: Shouldn't need to convert BANANA tokens
         _swap(
             _rewardTokenBalance(),
             _minBananaOutput,
@@ -228,9 +226,9 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
             _amount
         );
 
-        _approveTokenIfNeeded(STAKED_TOKEN, _amount, address(MASTERCHEF));
+        _approveTokenIfNeeded(STAKED_TOKEN, _amount, address(MASTERAPE));
 
-        MASTERCHEF.deposit(FARM_PID, _amount);
+        MASTERAPE.deposit(FARM_PID, _amount);
 
         user.autoBananaShares = user.autoBananaShares.add(
             user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
@@ -256,7 +254,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
             "VaultApeMaximizer: withdraw amount exceeds balance"
         );
 
-        MASTERCHEF.withdraw(FARM_PID, _amount);
+        MASTERAPE.withdraw(FARM_PID, _amount);
 
         uint256 currentAmount = _amount;
 
@@ -351,7 +349,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         returns (uint256)
     {
         uint256 rewards = _rewardTokenBalance().add(
-            MASTERCHEF.pendingCake(FARM_PID, address(this))
+            MASTERAPE.pendingCake(FARM_PID, address(this))
         );
 
         uint256[] memory amounts = router.getAmountsOut(rewards, _path);
@@ -404,7 +402,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     }
 
     function totalStake() public view returns (uint256) {
-        (uint256 amount, ) = MASTERCHEF.userInfo(FARM_PID, address(this));
+        (uint256 amount, ) = MASTERAPE.userInfo(FARM_PID, address(this));
         return amount;
     }
 
