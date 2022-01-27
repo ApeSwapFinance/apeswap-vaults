@@ -1,26 +1,51 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
+/*
+  ______                     ______                                 
+ /      \                   /      \                                
+|  ▓▓▓▓▓▓\ ______   ______ |  ▓▓▓▓▓▓\__   __   __  ______   ______  
+| ▓▓__| ▓▓/      \ /      \| ▓▓___\▓▓  \ |  \ |  \|      \ /      \ 
+| ▓▓    ▓▓  ▓▓▓▓▓▓\  ▓▓▓▓▓▓\\▓▓    \| ▓▓ | ▓▓ | ▓▓ \▓▓▓▓▓▓\  ▓▓▓▓▓▓\
+| ▓▓▓▓▓▓▓▓ ▓▓  | ▓▓ ▓▓    ▓▓_\▓▓▓▓▓▓\ ▓▓ | ▓▓ | ▓▓/      ▓▓ ▓▓  | ▓▓
+| ▓▓  | ▓▓ ▓▓__/ ▓▓ ▓▓▓▓▓▓▓▓  \__| ▓▓ ▓▓_/ ▓▓_/ ▓▓  ▓▓▓▓▓▓▓ ▓▓__/ ▓▓
+| ▓▓  | ▓▓ ▓▓    ▓▓\▓▓     \\▓▓    ▓▓\▓▓   ▓▓   ▓▓\▓▓    ▓▓ ▓▓    ▓▓
+ \▓▓   \▓▓ ▓▓▓▓▓▓▓  \▓▓▓▓▓▓▓ \▓▓▓▓▓▓  \▓▓▓▓▓\▓▓▓▓  \▓▓▓▓▓▓▓ ▓▓▓▓▓▓▓ 
+         | ▓▓                                             | ▓▓      
+         | ▓▓                                             | ▓▓      
+          \▓▓                                              \▓▓         
+
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com
+ * Twitter:         https://twitter.com/ape_swap
+ * Discord:         https://discord.com/invite/apeswap
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../libs/IMasterApe.sol";
 
-contract BananaVault is Ownable, ReentrancyGuard {
+contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     struct UserInfo {
         uint256 shares; // number of shares for a user
         uint256 lastDepositedTime; // keeps track of deposited time for potential penalty
-        uint256 pacocaAtLastUserAction; // keeps track of pacoca deposited at the last user action
+        uint256 bananaAtLastUserAction; // keeps track of banana deposited at the last user action
         uint256 lastUserActionTime; // keeps track of the last user action time
     }
 
-    IERC20 public immutable token; // Pacoca token
-    IMasterApe public immutable masterape;
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER");
+    bytes32 public constant DEPOSIT_ROLE = keccak256("DEPOSIT");
+
+    IERC20 public immutable bananaToken;
+    IMasterApe public immutable masterApe;
 
     mapping(address => UserInfo) public userInfo;
 
@@ -28,7 +53,9 @@ contract BananaVault is Ownable, ReentrancyGuard {
     uint256 public lastHarvestedTime;
     address public treasury;
 
+    // TODO: Withdraw fee should be applied to the maximizer vault withdraws
     uint256 public withdrawFee;
+    // TODO: This is a constant
     uint256 public withdrawFeePeriod = 72 hours; // 3 days
     uint256 public constant MAX_WITHDRAW_FEE = 200; // 2%
 
@@ -39,44 +66,52 @@ contract BananaVault is Ownable, ReentrancyGuard {
         uint256 lastDepositedTime
     );
     event Withdraw(address indexed sender, uint256 amount, uint256 shares);
-    event Harvest(address indexed sender);
-    event SetTreasury(address treasury);
-    event SetWithdrawFee(uint256 withdrawFee);
+    event Earn(address indexed sender);
+    event SetTreasury(address indexed previousTreasury, address indexed newTreasury);
+    event SetWithdrawFee(uint256 previousWithdrawFee, uint256 newWithdrawFee);
+
 
     /**
      * @notice Constructor
-     * @param _token: Pacoca token contract
-     * @param _masterape: masterape contract
-     * @param _owner: address of the owner
+     * @param _bananaToken: Banana token contract
+     * @param _masterApe: Master Ape contract
+     * @param _admin: address of the owner
      * @param _treasury: address of the treasury (collects fees)
      */
     constructor(
-        IERC20 _token,
-        address _masterape,
-        address _owner,
+        IERC20 _bananaToken,
+        address _masterApe,
+        address _admin,
         address _treasury,
         uint256 _withdrawFee
     ) {
-        token = _token;
-        masterape = IMasterApe(_masterape);
+        bananaToken = _bananaToken;
+        masterApe = IMasterApe(_masterApe);
+        // TODO: DO we need these?
         treasury = _treasury;
         withdrawFee = _withdrawFee;
 
-        transferOwnership(_owner);
+        // Setup access control
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+        // A manager can be a vault contract which can add sub strategies to the deposit role
+        _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(DEPOSIT_ROLE, DEFAULT_ADMIN_ROLE);
+        // Allow managers to grant/revoke deposit roles
+        _setRoleAdmin(DEPOSIT_ROLE, MANAGER_ROLE);
     }
 
     /**
-     * @notice Deposits funds into the Pacoca Vault
-     * @param _amount: number of tokens to deposit (in PACOCA)
+     * @notice Deposits funds into the Banana Vault
+     * @param _amount: number of tokens to deposit (in BANANA)
      */
-    function deposit(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "PacocaVault: Nothing to deposit");
+    function deposit(uint256 _amount) external nonReentrant onlyRole(DEPOSIT_ROLE) {
+        require(_amount > 0, "BananaVault: Nothing to deposit");
 
-        uint256 pool = underlyingTokenBalance();
-        token.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 totalBananaTokens = underlyingTokenBalance();
+        bananaToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 currentShares = 0;
         if (totalShares != 0) {
-            currentShares = (_amount.mul(totalShares)).div(pool);
+            currentShares = (_amount.mul(totalShares)).div(totalBananaTokens);
         } else {
             currentShares = _amount;
         }
@@ -87,7 +122,7 @@ contract BananaVault is Ownable, ReentrancyGuard {
 
         totalShares = totalShares.add(currentShares);
 
-        user.pacocaAtLastUserAction = user
+        user.bananaAtLastUserAction = user
             .shares
             .mul(underlyingTokenBalance())
             .div(totalShares);
@@ -106,53 +141,51 @@ contract BananaVault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Reinvests PACOCA tokens into masterape
+     * @notice Reinvests BANANA tokens into MasterApe
      */
-    function harvest() external {
-        masterape.withdraw(0, 0);
+    function earn() external {
+        masterApe.enterStaking(0);
 
-        _earn();
+        _earn();   
 
-        emit Harvest(msg.sender);
+        emit Earn(msg.sender);
     }
 
     /**
      * @notice Sets treasury address
      * @dev Only callable by the contract owner.
      */
-    function setTreasury(address _treasury) external onlyOwner {
-        require(_treasury != address(0), "PacocaVault: Cannot be zero address");
+    function setTreasury(address _treasury) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_treasury != address(0), "BananaVault: Cannot be zero address");
 
+        emit SetTreasury(treasury, _treasury);
         treasury = _treasury;
-
-        emit SetTreasury(treasury);
     }
 
     /**
      * @notice Sets withdraw fee
      * @dev Only callable by the contract owner.
      */
-    function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
+    function setWithdrawFee(uint256 _withdrawFee) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
             _withdrawFee <= MAX_WITHDRAW_FEE,
-            "PacocaVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE"
+            "BananaVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE"
         );
 
+        emit SetWithdrawFee(withdrawFee, _withdrawFee);
         withdrawFee = _withdrawFee;
-
-        emit SetWithdrawFee(withdrawFee);
     }
 
     /**
      * @notice Calculates the total pending rewards that can be restaked
-     * @return Returns total pending Pacoca rewards
+     * @return Returns total pending Banana rewards
      */
-    function calculateTotalPendingPacocaRewards()
+    function calculateTotalPendingBananaRewards()
         external
         view
         returns (uint256)
     {
-        uint256 amount = masterape.pendingCake(0, address(this));
+        uint256 amount = masterApe.pendingCake(0, address(this));
         amount = amount.add(available());
 
         return amount;
@@ -169,60 +202,66 @@ contract BananaVault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Withdraws from funds from the Pacoca Vault
+     * @notice Withdraws from funds from the Banana Vault
      * @param _shares: Number of shares to withdraw
      */
     function withdraw(uint256 _shares) public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
 
-        require(_shares > 0, "PacocaVault: Nothing to withdraw");
+        require(_shares > 0, "BananaVault: Nothing to withdraw");
         require(
             _shares <= user.shares,
-            "PacocaVault: Withdraw amount exceeds balance"
+            "BananaVault: Withdraw amount exceeds balance"
         );
 
-        uint256 currentAmount = (underlyingTokenBalance().mul(_shares)).div(
+        uint256 bananaTokensToWithdraw = (underlyingTokenBalance().mul(_shares)).div(
             totalShares
         );
         user.shares = user.shares.sub(_shares);
         totalShares = totalShares.sub(_shares);
 
         uint256 bal = available();
-        if (bal < currentAmount) {
-            uint256 balWithdraw = currentAmount.sub(bal);
-            masterape.withdraw(0, balWithdraw);
+        if (bal < bananaTokensToWithdraw) {
+            uint256 balWithdraw = bananaTokensToWithdraw.sub(bal);
+            masterApe.leaveStaking(balWithdraw);
+            // Check if the withdraw deposited enough tokens into this contract
             uint256 balAfter = available();
-            uint256 diff = balAfter.sub(bal);
-            if (diff < balWithdraw) {
-                currentAmount = bal.add(diff);
+            if (balAfter < bananaTokensToWithdraw) {
+                bananaTokensToWithdraw = balAfter;
             }
         }
 
+        /**
+            TODO: Remove withdraw fee?
+         */
         if (
             withdrawFee > 0 &&
             block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)
         ) {
-            uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(
+            uint256 currentWithdrawFee = bananaTokensToWithdraw.mul(withdrawFee).div(
                 10000
             );
-            token.safeTransfer(treasury, currentWithdrawFee);
-            currentAmount = currentAmount.sub(currentWithdrawFee);
+            bananaToken.safeTransfer(treasury, currentWithdrawFee);
+            bananaTokensToWithdraw = bananaTokensToWithdraw.sub(currentWithdrawFee);
         }
+        /**
+            TODO: end 
+         */
 
         if (user.shares > 0) {
-            user.pacocaAtLastUserAction = user
+            user.bananaAtLastUserAction = user
                 .shares
                 .mul(underlyingTokenBalance())
                 .div(totalShares);
         } else {
-            user.pacocaAtLastUserAction = 0;
+            user.bananaAtLastUserAction = 0;
         }
 
         user.lastUserActionTime = block.timestamp;
 
-        token.safeTransfer(msg.sender, currentAmount);
+        bananaToken.safeTransfer(msg.sender, bananaTokensToWithdraw);
 
-        emit Withdraw(msg.sender, currentAmount, _shares);
+        emit Withdraw(msg.sender, bananaTokensToWithdraw, _shares);
     }
 
     /**
@@ -230,31 +269,31 @@ contract BananaVault is Ownable, ReentrancyGuard {
      * @dev The contract puts 100% of the tokens to work.
      */
     function available() public view returns (uint256) {
-        return token.balanceOf(address(this));
+        return bananaToken.balanceOf(address(this));
     }
 
     /**
      * @notice Calculates the total underlying tokens
-     * @dev It includes tokens held by the contract and held in masterape
+     * @dev It includes tokens held by the contract and held in MasterApe
      */
     function underlyingTokenBalance() public view returns (uint256) {
-        (uint256 amount, ) = masterape.userInfo(0, address(this));
+        (uint256 amount, ) = masterApe.userInfo(0, address(this));
 
-        return token.balanceOf(address(this)).add(amount);
+        return bananaToken.balanceOf(address(this)).add(amount);
     }
 
     /**
-     * @notice Deposits tokens into masterape to earn staking rewards
+     * @notice Deposits tokens into MasterApe to earn staking rewards
      */
     function _earn() internal {
         uint256 balance = available();
 
         if (balance > 0) {
-            if (token.allowance(address(this), address(masterape)) < balance) {
-                token.safeApprove(address(masterape), type(uint256).max);
+            if (bananaToken.allowance(address(this), address(masterApe)) < balance) {
+                bananaToken.safeApprove(address(masterApe), type(uint256).max);
             }
 
-            masterape.deposit(0, balance);
+            masterApe.enterStaking(balance);
         }
     }
 }
