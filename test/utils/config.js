@@ -46,7 +46,7 @@ const testStrategies = [
     contractName: 'StrategyMasterChefReflect',
     vault: MasterChefReflectVaults.bsc[0],
     wantToken: MasterChefReflectVaults.bsc[0].configAddresses[1],
-    tokensToLPAmount: "10000000000000000000",
+    tokensToLPAmount: "15000000000000000000",
     initParams: (vaultApeAddress) => {
       return [
         [vaultApeAddress, MasterChefReflectVaults.bsc[0].configAddresses[0], testConfig.routerAddress, MasterChefReflectVaults.bsc[0].configAddresses[1], MasterChefReflectVaults.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress],
@@ -82,7 +82,7 @@ const testStrategies = [
     contractName: 'StrategyMasterChefSingle',
     vault: MasterChefSingleVaults.bsc[0],
     wantToken: MasterChefSingleVaults.bsc[0].configAddresses[1],
-    tokensToLPAmount: "10000000000000000000",
+    tokensToLPAmount: "20000000000000000000",
     initParams: (vaultApeAddress) => {
       return [
         [vaultApeAddress, MasterChefSingleVaults.bsc[0].configAddresses[0], testConfig.routerAddress, MasterChefSingleVaults.bsc[0].configAddresses[1], MasterChefSingleVaults.bsc[0].configAddresses[2], testConfig.usdAddress, testConfig.bananaAddress],
