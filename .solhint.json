@@ -1,11 +1,12 @@
 {
-  "extends": "solhint:recommended",
-  "plugins": [],
-  "rules": {
-    "compiler-version": [ "error", "0.8.6" ],
-    "avoid-suicide": "error",
-    "avoid-sha3": "warn",
-    "not-rely-on-time": "off",
-    "reason-string": ["warn", { "maxLength": 64 }]
-  }
+    "extends": "solhint:recommended",
+    "plugins": [],
+    "rules": {
+        "compiler-version": ["error", "0.8.6"],
+        "avoid-suicide": "error",
+        "avoid-sha3": "warn",
+        "not-rely-on-time": "off",
+        "reason-string": ["warn", { "maxLength": 64 }],
+        "var-name-mixedcase": "off"
+    }
 }

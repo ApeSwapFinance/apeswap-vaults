@@ -47,13 +47,11 @@ contract BananaVault is Ownable, ReentrancyGuard {
      * @notice Constructor
      * @param _token: Pacoca token contract
      * @param _masterape: masterape contract
-     * @param _owner: address of the owner
      * @param _treasury: address of the treasury (collects fees)
      */
     constructor(
         IERC20 _token,
         address _masterape,
-        address _owner,
         address _treasury,
         uint256 _withdrawFee
     ) {
@@ -61,8 +59,6 @@ contract BananaVault is Ownable, ReentrancyGuard {
         masterape = IMasterApe(_masterape);
         treasury = _treasury;
         withdrawFee = _withdrawFee;
-
-        transferOwnership(_owner);
     }
 
     /**
@@ -70,7 +66,7 @@ contract BananaVault is Ownable, ReentrancyGuard {
      * @param _amount: number of tokens to deposit (in PACOCA)
      */
     function deposit(uint256 _amount) external nonReentrant {
-        require(_amount > 0, "PacocaVault: Nothing to deposit");
+        require(_amount > 0, "BananaVault: Nothing to deposit");
 
         uint256 pool = underlyingTokenBalance();
         token.safeTransferFrom(msg.sender, address(this), _amount);
@@ -109,7 +105,7 @@ contract BananaVault is Ownable, ReentrancyGuard {
      * @notice Reinvests PACOCA tokens into masterape
      */
     function harvest() external {
-        masterape.withdraw(0, 0);
+        masterape.leaveStaking(0);
 
         _earn();
 
@@ -121,7 +117,7 @@ contract BananaVault is Ownable, ReentrancyGuard {
      * @dev Only callable by the contract owner.
      */
     function setTreasury(address _treasury) external onlyOwner {
-        require(_treasury != address(0), "PacocaVault: Cannot be zero address");
+        require(_treasury != address(0), "BananaVault: Cannot be zero address");
 
         treasury = _treasury;
 
@@ -135,7 +131,7 @@ contract BananaVault is Ownable, ReentrancyGuard {
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
         require(
             _withdrawFee <= MAX_WITHDRAW_FEE,
-            "PacocaVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE"
+            "BananaVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE"
         );
 
         withdrawFee = _withdrawFee;
@@ -175,10 +171,10 @@ contract BananaVault is Ownable, ReentrancyGuard {
     function withdraw(uint256 _shares) public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
 
-        require(_shares > 0, "PacocaVault: Nothing to withdraw");
+        require(_shares > 0, "BananaVault: Nothing to withdraw");
         require(
             _shares <= user.shares,
-            "PacocaVault: Withdraw amount exceeds balance"
+            "BananaVault: Withdraw amount exceeds balance"
         );
 
         uint256 currentAmount = (underlyingTokenBalance().mul(_shares)).div(
@@ -190,7 +186,7 @@ contract BananaVault is Ownable, ReentrancyGuard {
         uint256 bal = available();
         if (bal < currentAmount) {
             uint256 balWithdraw = currentAmount.sub(bal);
-            masterape.withdraw(0, balWithdraw);
+            masterape.leaveStaking(balWithdraw);
             uint256 balAfter = available();
             uint256 diff = balAfter.sub(bal);
             if (diff < balWithdraw) {
@@ -254,7 +250,7 @@ contract BananaVault is Ownable, ReentrancyGuard {
                 token.safeApprove(address(masterape), type(uint256).max);
             }
 
-            masterape.deposit(0, balance);
+            masterape.enterStaking(balance);
         }
     }
 }

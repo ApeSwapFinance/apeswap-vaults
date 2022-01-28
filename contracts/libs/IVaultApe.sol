@@ -4,13 +4,15 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IVaultApe {
-
     struct PoolInfo {
         IERC20 want; // Address of the want token.
         address strat; // Strategy address that will auto compound want tokens
     }
 
-    function userInfo(uint256, address) external view returns (uint256 shares);
+    function userInfo(uint256 _pid, address _user)
+        external
+        view
+        returns (uint256 shares);
 
     function poolLength() external view returns (uint256);
 

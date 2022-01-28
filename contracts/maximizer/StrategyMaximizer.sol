@@ -8,10 +8,12 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../libs/IVaultApe.sol";
+import "../libs/IBananaVault.sol";
 import "../libs/IMasterApe.sol";
 import "../libs/IUniRouter02.sol";
+import "../libs/IStrategyMaximizer.sol";
 
-contract StrategyMaximizer is Ownable, ReentrancyGuard {
+contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -30,17 +32,18 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
     IERC20 public constant BANANA =
         IERC20(0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95);
-    IERC20 public immutable STAKED_TOKEN;
 
     // Runtime data
-    mapping(address => UserInfo) public userInfo; // Info of users
-    uint256 public accSharesPerStakedToken; // Accumulated BANANA_VAULT shares per staked token, times 1e18.
-    uint256 public bonusAccSharesPerStakedToken; // Accumulated bonus shares per staked token, times 1e18.
+    mapping(address => UserInfo) public override userInfo; // Info of users
+    uint256 public override accSharesPerStakedToken; // Accumulated BANANA_VAULT shares per staked token, times 1e18.
 
     // Farm info
     IMasterApe public immutable MASTERAPE;
+    address public override STAKED_TOKEN_ADDRESS;
+    IERC20 public immutable STAKED_TOKEN;
     IERC20 public immutable FARM_REWARD_TOKEN;
     uint256 public immutable FARM_PID;
+    IBananaVault public immutable BANANA_VAULT;
 
     // Settings
     IUniRouter02 public immutable router;
@@ -50,19 +53,19 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     address public treasury;
     address public keeper;
     uint256 public keeperFee = 50; // 0.5%
-    uint256 public constant keeperFeeUL = 100; // 1%
+    uint256 public constant KEEPER_FEE_UL = 100; // 1%
 
     address public platform;
     uint256 public platformFee;
-    uint256 public constant platformFeeUL = 500; // 5%
+    uint256 public constant PLATFORM_FEE_UL = 500; // 5%
 
     address public constant BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
     uint256 public buyBackRate;
-    uint256 public constant buyBackRateUL = 300; // 3%
+    uint256 public constant BUYBACK_RATE_UL = 300; // 3%
 
     uint256 public withdrawFee = 25; // 0.25%
-    uint256 public constant withdrawFeeUL = 300; // 3%
+    uint256 public constant WITHDRAW_FEE_UL = 300; // 3%
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
@@ -88,36 +91,42 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         uint256 _farmPid,
         address _stakedToken,
         address _farmRewardToken,
+        address _bananaVault,
         address _router,
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
-        address _owner,
         //TODO: check these for fees etc
-        address _treasury,
-        address _keeper,
-        address _platform,
+        address[] memory _addresses, //[_owner, _treasury, _keeper ,_platform]
         uint256 _buyBackRate,
         uint256 _platformFee
     ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
                 _pathToBanana[_pathToBanana.length - 1] == address(BANANA),
-            "VaultApeMaximizer: Incorrect path to BANANA"
+            "StrategyMaximizer: Incorrect path to BANANA"
         );
 
         require(
             _pathToWbnb[0] == address(_farmRewardToken) &&
                 _pathToWbnb[_pathToWbnb.length - 1] == WBNB,
-            "VaultApeMaximizer: Incorrect path to WBNB"
+            "StrategyMaximizer: Incorrect path to WBNB"
         );
 
-        require(_buyBackRate <= buyBackRateUL);
-        require(_platformFee <= platformFeeUL);
+        require(
+            _buyBackRate <= BUYBACK_RATE_UL,
+            "StrategyMaximizer: Buyback rate over upper limit"
+        );
+        require(
+            _platformFee <= PLATFORM_FEE_UL,
+            "StrategyMaximizer: platform fee over upper limit"
+        );
 
         STAKED_TOKEN = IERC20(_stakedToken);
+        STAKED_TOKEN_ADDRESS = _stakedToken;
         MASTERAPE = IMasterApe(_masterApe);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         FARM_PID = _farmPid;
+        BANANA_VAULT = IBananaVault(_bananaVault);
 
         router = IUniRouter02(_router);
         pathToBanana = _pathToBanana;
@@ -126,10 +135,10 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         buyBackRate = _buyBackRate;
         platformFee = _platformFee;
 
-        transferOwnership(_owner);
-        treasury = _treasury;
-        keeper = _keeper;
-        platform = _platform;
+        transferOwnership(_addresses[0]);
+        treasury = _addresses[1];
+        keeper = _addresses[2];
+        platform = _addresses[3];
     }
 
     /**
@@ -138,7 +147,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     modifier onlyKeeper() {
         require(
             keeper == msg.sender,
-            "VaultApeMaximizer: caller is not the keeper"
+            "StrategyMaximizer: caller is not the keeper"
         );
         _;
     }
@@ -152,7 +161,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
         uint256 _minBananaOutput
-    ) external onlyKeeper {
+    ) external override onlyKeeper {
         MASTERAPE.withdraw(FARM_PID, 0);
 
         uint256 rewardTokenBalance = _rewardTokenBalance();
@@ -188,22 +197,21 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         }
 
         // Convert remaining rewards to BANANA
-        // TODO: Shouldn't need to convert BANANA tokens
-        _swap(
-            _rewardTokenBalance(),
-            _minBananaOutput,
-            pathToBanana,
-            address(this)
-        );
-
-        MASTERAPE.leaveStaking(0);
+        if (address(FARM_REWARD_TOKEN) != address(BANANA)) {
+            _swap(
+                _rewardTokenBalance(),
+                _minBananaOutput,
+                pathToBanana,
+                address(this)
+            );
+        }
 
         uint256 previousShares = totalAutoBananaShares();
         uint256 bananaBalance = _bananaBalance();
 
-        _approveTokenIfNeeded(BANANA, bananaBalance, address(MASTERAPE));
+        _approveTokenIfNeeded(BANANA, bananaBalance, address(BANANA_VAULT));
 
-        MASTERAPE.enterStaking(bananaBalance);
+        BANANA_VAULT.deposit(bananaBalance);
 
         uint256 currentShares = totalAutoBananaShares();
 
@@ -212,19 +220,13 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         );
     }
 
-    function deposit(uint256 _amount) external nonReentrant {
+    function deposit(address _userAddress) external override nonReentrant {
+        uint256 _amount = STAKED_TOKEN.balanceOf(address(this));
         require(
             _amount > 0,
-            "VaultApeMaximizer: amount must be greater than zero"
+            "StrategyMaximizer: amount must be greater than zero"
         );
-
-        UserInfo storage user = userInfo[msg.sender];
-
-        STAKED_TOKEN.safeTransferFrom(
-            address(msg.sender),
-            address(this),
-            _amount
-        );
+        UserInfo storage user = userInfo[_userAddress];
 
         _approveTokenIfNeeded(STAKED_TOKEN, _amount, address(MASTERAPE));
 
@@ -238,26 +240,27 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         user.stake = user.stake.add(_amount);
         user.rewardDebt = user.stake.mul(accSharesPerStakedToken).div(1e18);
         user.lastDepositedTime = block.timestamp;
-
-        emit Deposit(msg.sender, _amount);
+        emit Deposit(_userAddress, _amount);
     }
 
-    function withdraw(uint256 _amount) external nonReentrant {
-        UserInfo storage user = userInfo[msg.sender];
+    function withdraw(address _userAddress, uint256 _amount)
+        external
+        override
+        nonReentrant
+    {
+        UserInfo storage user = userInfo[_userAddress];
 
         require(
             _amount > 0,
-            "VaultApeMaximizer: amount must be greater than zero"
+            "StrategyMaximizer: amount must be greater than zero"
         );
-        require(
-            user.stake >= _amount,
-            "VaultApeMaximizer: withdraw amount exceeds balance"
-        );
+        _amount = user.stake < _amount ? user.stake : _amount;
 
         MASTERAPE.withdraw(FARM_PID, _amount);
 
         uint256 currentAmount = _amount;
 
+        // Take withdraw fees
         uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(10000);
         STAKED_TOKEN.safeTransfer(treasury, currentWithdrawFee);
         currentAmount = currentAmount.sub(currentWithdrawFee);
@@ -272,20 +275,28 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
         // Withdraw banana rewards if user leaves
         if (user.stake == 0 && user.autoBananaShares > 0) {
-            _claimRewards(user.autoBananaShares, false);
+            _claimRewards(_userAddress, user.autoBananaShares, false);
         }
 
-        STAKED_TOKEN.safeTransfer(msg.sender, currentAmount);
+        STAKED_TOKEN.safeTransfer(_userAddress, currentAmount);
 
-        emit Withdraw(msg.sender, currentAmount);
+        emit Withdraw(_userAddress, currentAmount);
     }
 
-    function claimRewards(uint256 _shares) external nonReentrant {
-        _claimRewards(_shares, true);
+    function claimRewards(address _userAddress, uint256 _shares)
+        external
+        override
+        nonReentrant
+    {
+        _claimRewards(_userAddress, _shares, true);
     }
 
-    function _claimRewards(uint256 _shares, bool _update) private {
-        UserInfo storage user = userInfo[msg.sender];
+    function _claimRewards(
+        address _userAddress,
+        uint256 _shares,
+        bool _update
+    ) private {
+        UserInfo storage user = userInfo[_userAddress];
 
         if (_update) {
             user.autoBananaShares = user.autoBananaShares.add(
@@ -297,23 +308,25 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
             user.rewardDebt = user.stake.mul(accSharesPerStakedToken).div(1e18);
         }
 
-        require(
-            user.autoBananaShares >= _shares,
-            "VaultApeMaximizer: claim amount exceeds balance"
-        );
+        // require(
+        //     user.autoBananaShares >= _shares,
+        //     "SweetVault: claim amount exceeds balance"
+        // );
+        _shares = user.autoBananaShares < _shares
+            ? user.autoBananaShares
+            : _shares;
 
         user.autoBananaShares = user.autoBananaShares.sub(_shares);
 
         uint256 bananaBalanceBefore = _bananaBalance();
 
-        //TODO: check if rewards aren't too high as these share rewards aren't claimed yet.
-        MASTERAPE.leaveStaking(_shares);
+        BANANA_VAULT.withdraw(_shares);
 
         uint256 withdrawAmount = _bananaBalance().sub(bananaBalanceBefore);
 
-        _safeBANANATransfer(msg.sender, withdrawAmount);
+        _safeBANANATransfer(_userAddress, withdrawAmount);
 
-        emit ClaimRewards(msg.sender, _shares, withdrawAmount);
+        emit ClaimRewards(_userAddress, _shares, withdrawAmount);
     }
 
     //TODO
@@ -407,8 +420,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
     }
 
     function totalAutoBananaShares() public view returns (uint256) {
-        (uint256 amount, ) = MASTERAPE.userInfo(0, address(this));
-        return amount;
+        (uint256 shares, , , ) = BANANA_VAULT.userInfo(address(this));
+        return shares;
     }
 
     // Safe BANANA transfer function, just in case if rounding error causes pool to not have enough
@@ -443,7 +456,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
                 _path[_path.length - 1] == address(BANANA),
-            "VaultApeMaximizer: Incorrect path to BANANA"
+            "StrategyMaximizer: Incorrect path to BANANA"
         );
 
         address[] memory oldPath = pathToBanana;
@@ -457,7 +470,7 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
                 _path[_path.length - 1] == WBNB,
-            "VaultApeMaximizer: Incorrect path to WBNB"
+            "StrategyMaximizer: Incorrect path to WBNB"
         );
 
         address[] memory oldPath = pathToWbnb;
@@ -485,8 +498,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
     function setKeeperFee(uint256 _keeperFee) external onlyOwner {
         require(
-            _keeperFee <= keeperFeeUL,
-            "VaultApeMaximizer: Keeper fee too high"
+            _keeperFee <= KEEPER_FEE_UL,
+            "StrategyMaximizer: Keeper fee too high"
         );
 
         uint256 oldKeeperFee = keeperFee;
@@ -506,8 +519,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
     function setPlatformFee(uint256 _platformFee) external onlyOwner {
         require(
-            _platformFee <= platformFeeUL,
-            "VaultApeMaximizer: Platform fee too high"
+            _platformFee <= PLATFORM_FEE_UL,
+            "StrategyMaximizer: Platform fee too high"
         );
 
         uint256 oldPlatformFee = platformFee;
@@ -519,8 +532,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
     function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
         require(
-            _buyBackRate <= buyBackRateUL,
-            "VaultApeMaximizer: Buy back rate too high"
+            _buyBackRate <= BUYBACK_RATE_UL,
+            "StrategyMaximizer: Buy back rate too high"
         );
 
         uint256 oldBuyBackRate = buyBackRate;
@@ -532,8 +545,8 @@ contract StrategyMaximizer is Ownable, ReentrancyGuard {
 
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
         require(
-            _withdrawFee <= withdrawFeeUL,
-            "VaultApeMaximizer: Early withdraw fee too high"
+            _withdrawFee <= WITHDRAW_FEE_UL,
+            "StrategyMaximizer: Early withdraw fee too high"
         );
 
         uint256 oldWithdrawFee = withdrawFee;
