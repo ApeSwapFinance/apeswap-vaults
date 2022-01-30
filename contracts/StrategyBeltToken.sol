@@ -86,7 +86,7 @@ contract StrategyBeltToken is BaseStrategy, Initializable {
             earnedAmt = buyBack(earnedAmt);
 
             if (earnedAddress != oToken) {
-                // Swap earned to token0
+                // Swap earned to token which can be swapped to beltToken
                 _safeSwap(
                     earnedAmt,
                     earnedToWantPath,
@@ -143,7 +143,7 @@ contract StrategyBeltToken is BaseStrategy, Initializable {
             masterBelt,
             type(uint256).max
         );
-
+ 
         IERC20(earnedAddress).safeApprove(uniRouterAddress, uint256(0));
         IERC20(earnedAddress).safeIncreaseAllowance(
             uniRouterAddress,
