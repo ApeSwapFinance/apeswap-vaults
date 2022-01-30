@@ -335,6 +335,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     function getExpectedOutputs()
         external
         view
+        override
         returns (
             uint256 platformOutput,
             uint256 keeperOutput,
@@ -416,7 +417,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         return BANANA.balanceOf(address(this));
     }
 
-    function totalStake() public view returns (uint256) {
+    function totalStake() public view override returns (uint256) {
         (uint256 amount, ) = MASTERAPE.userInfo(FARM_PID, address(this));
         return amount;
     }

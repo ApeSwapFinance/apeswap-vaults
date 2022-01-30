@@ -8,6 +8,18 @@ interface IStrategyMaximizer {
 
     function accSharesPerStakedToken() external view returns (uint256);
 
+    function totalStake() external view returns (uint256);
+
+    function getExpectedOutputs()
+        external
+        view
+        returns (
+            uint256 platformOutput,
+            uint256 keeperOutput,
+            uint256 burnOutput,
+            uint256 bananaOutput
+        );
+
     function userInfo(address)
         external
         view
