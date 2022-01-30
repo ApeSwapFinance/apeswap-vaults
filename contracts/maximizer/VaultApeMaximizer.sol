@@ -16,7 +16,7 @@ contract VaultApeMaximizer is IVaultApeMaximizer, ReentrancyGuard, Ownable {
 
     address[] public vaults;
     mapping(address => bool) public strats;
-    IBananaVault BANANA_VAULT;
+    IBananaVault public BANANA_VAULT;
 
     event AddPool(address indexed strat);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -27,12 +27,17 @@ contract VaultApeMaximizer is IVaultApeMaximizer, ReentrancyGuard, Ownable {
         uint256 amount
     );
 
+    modifier onlyEOA() {
+        // only allowing externally owned addresses.
+        require(msg.sender == tx.origin, "VaultApeMaximizer: must use EOA");
+        _;
+    }
+
     constructor(address _bananaVault) {
         BANANA_VAULT = IBananaVault(_bananaVault);
     }
 
-    //TODO fix this interface for userInfo(2)
-    function userInfo2(uint256 _pid, address _user)
+    function userInfo(uint256 _pid, address _user)
         external
         view
         override
@@ -46,15 +51,6 @@ contract VaultApeMaximizer is IVaultApeMaximizer, ReentrancyGuard, Ownable {
         IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
         (stake, autoBananaShares, rewardDebt, lastDepositedTime) = strat
             .userInfo(_user);
-    }
-
-    function userInfo(uint256 _pid, address _user)
-        external
-        view
-        override
-        returns (uint256 shares)
-    {
-        uint256 shares = 0;
     }
 
     function accSharesPerStakedToken(uint256 _pid)
@@ -100,37 +96,16 @@ contract VaultApeMaximizer is IVaultApeMaximizer, ReentrancyGuard, Ownable {
         BANANA_VAULT.harvest();
     }
 
-    function deposit(
-        uint256 _pid,
-        uint256 _wantAmt,
-        address _to
-    ) external override nonReentrant {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
-        IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
-        wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
-        strat.deposit(_to);
-    }
-
     function deposit(uint256 _pid, uint256 _wantAmt)
         external
         override
         nonReentrant
+        onlyEOA
     {
         IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
         IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         strat.deposit(msg.sender);
-    }
-
-    //This needs to be removed as people can withdraw for others lol
-    //interface problem..
-    function withdraw(
-        uint256 _pid,
-        uint256 _wantAmt,
-        address _to
-    ) external override nonReentrant {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
-        strat.withdraw(_to, _wantAmt);
     }
 
     function withdraw(uint256 _pid, uint256 _wantAmt)
@@ -161,6 +136,7 @@ contract VaultApeMaximizer is IVaultApeMaximizer, ReentrancyGuard, Ownable {
         strat.claimRewards(msg.sender, type(uint256).max);
     }
 
+    // ===== OWNER functions =====
     function addPool(address _strat) external override onlyOwner {
         require(!strats[_strat], "Existing strategy");
         vaults.push(_strat);
@@ -175,12 +151,4 @@ contract VaultApeMaximizer is IVaultApeMaximizer, ReentrancyGuard, Ownable {
     {
         IERC20(_token).safeTransfer(msg.sender, _amount);
     }
-
-    //Unused functions
-    //TODO fix these function as tests are now annoying with {from: address} being last param
-    function emergencyWithdraw(uint256 _pid) external nonReentrant {}
-
-    function resetAllowances() external override {}
-
-    function resetSingleAllowance(uint256 _pid) external override {}
 }

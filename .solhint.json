@@ -7,6 +7,7 @@
         "avoid-sha3": "warn",
         "not-rely-on-time": "off",
         "reason-string": ["warn", { "maxLength": 64 }],
-        "var-name-mixedcase": "off"
+        "var-name-mixedcase": "off",
+        "no-inline-assembly": "off"
     }
 }

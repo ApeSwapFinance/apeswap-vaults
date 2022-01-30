@@ -11,8 +11,9 @@ const StrategyMaximizer = contract.fromArtifact("StrategyMaximizer");
 const BananaVault = contract.fromArtifact("BananaVault");
 
 describe('VaultApeMaximizer', function () {
-  this.timeout(60000);
+  this.timeout(9960000);
 
+  //0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69
   const testerAddress = "0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69";//testConfig.testAccount;
   const testerAddress2 = testConfig.testAccount2;
   const rewardAddress = testConfig.rewardAddress;
@@ -84,6 +85,8 @@ describe('VaultApeMaximizer', function () {
     //   toDeposit = (Math.floor(Number(LPTokens) * 0.1)).toString();
     //   await pair.transfer(testerAddress2, (Number(toDeposit)).toString(), { from: testerAddress });
     // }
+
+    await lpToken.transfer(testerAddress2, "1000000000000000000", { from: testerAddress });
   });
 
   beforeEach(async () => {
@@ -99,25 +102,26 @@ describe('VaultApeMaximizer', function () {
     // Approve want token
     const erc20Contract = new web3.eth.Contract(IERC20_ABI, lpTokenAddress);
     await erc20Contract.methods.approve(vaultApeMaximizer.address, MAX_UINT256).send({ from: testerAddress });
+    await erc20Contract.methods.approve(vaultApeMaximizer.address, MAX_UINT256).send({ from: testerAddress2 });
   });
 
   it('should deposit and have shares', async () => {
-    await vaultApeMaximizer.deposit(0, toDeposit, testerAddress, { from: testerAddress })
-    const userInfo = await vaultApeMaximizer.userInfo2(0, testerAddress);
+    await vaultApeMaximizer.deposit(0, toDeposit, { from: testerAddress })
+    const userInfo = await vaultApeMaximizer.userInfo(0, testerAddress);
     expect(userInfo.stake.toString()).equal(toDeposit)
   });
 
   it('should withdraw', async () => {
     const lpBalanceBefore = await lpToken.balanceOf(testerAddress);
 
-    await vaultApeMaximizer.deposit(0, toDeposit, testerAddress, { from: testerAddress })
+    await vaultApeMaximizer.deposit(0, toDeposit, { from: testerAddress })
 
-    let userInfo = await vaultApeMaximizer.userInfo2(0, testerAddress);
+    let userInfo = await vaultApeMaximizer.userInfo(0, testerAddress);
     expect(userInfo.stake.toString()).equal(toDeposit)
 
-    await vaultApeMaximizer.withdraw(0, toDeposit, testerAddress, { from: testerAddress })
+    await vaultApeMaximizer.withdraw(0, toDeposit, { from: testerAddress })
 
-    userInfo = await vaultApeMaximizer.userInfo2(0, testerAddress);
+    userInfo = await vaultApeMaximizer.userInfo(0, testerAddress);
     expect(Number(userInfo.stake)).equal(0)
 
     const lpBalanceAfter = await lpToken.balanceOf(testerAddress);
@@ -125,7 +129,7 @@ describe('VaultApeMaximizer', function () {
   });
 
   it('should put banana rewards in vault', async () => {
-    await vaultApeMaximizer.deposit(0, toDeposit, testerAddress, { from: testerAddress })
+    await vaultApeMaximizer.deposit(0, toDeposit, { from: testerAddress })
 
     const currentBlock = await time.latestBlock()
     await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
@@ -142,7 +146,7 @@ describe('VaultApeMaximizer', function () {
   });
 
   it('should get all rewards', async () => {
-    await vaultApeMaximizer.deposit(0, toDeposit, testerAddress, { from: testerAddress })
+    await vaultApeMaximizer.deposit(0, toDeposit, { from: testerAddress })
 
     const bananaBalanceBefore = await bananaToken.balanceOf(testerAddress);
 
@@ -155,7 +159,7 @@ describe('VaultApeMaximizer', function () {
     await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
     await vaultApeMaximizer.earnAll();
 
-    const userInfo = await vaultApeMaximizer.userInfo2(0, testerAddress);
+    const userInfo = await vaultApeMaximizer.userInfo(0, testerAddress);
     const accSharesPerStakedToken = await vaultApeMaximizer.accSharesPerStakedToken(0);
     console.log(accSharesPerStakedToken.toString());
     console.log(userInfo.stake.toString(), userInfo.autoBananaShares.toString());
@@ -166,9 +170,47 @@ describe('VaultApeMaximizer', function () {
     console.log(bananaBalanceBefore.toString(), bananaBalanceAfter.toString());
 
     //Check if banana rewards in pool also generate rewards
-    expect(Number(bananaBalanceAfter)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));
+    expect(Number(bananaBalanceAfter) - Number(bananaBalanceBefore)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));
     expect(Number(bananaBalanceAfter)).to.be.greaterThan(Number(bananaBalanceBefore));
 
+  });
+
+  it('multiple wallets should do everything', async () => {
+    const lpBalanceBefore = await lpToken.balanceOf(testerAddress);
+    await vaultApeMaximizer.deposit(0, toDeposit, { from: testerAddress })
+    let userInfo = await vaultApeMaximizer.userInfo(0, testerAddress);
+    expect(userInfo.stake.toString()).equal(toDeposit)
+    expect(Number(userInfo.rewardDebt)).equal(0)
+
+    let currentBlock = await time.latestBlock()
+    await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
+    await vaultApeMaximizer.earnAll();
+
+    await vaultApeMaximizer.deposit(0, toDeposit, testerAddress2, { from: testerAddress2 })
+    userInfo = await vaultApeMaximizer.userInfo(0, testerAddress2);
+    expect(userInfo.stake.toString()).equal(toDeposit)
+    expect(Number(userInfo.rewardDebt)).to.be.greaterThan(0)
+
+    currentBlock = await time.latestBlock()
+    await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
+    await vaultApeMaximizer.earnAll();
+
+    const bananaBalanceBefore1 = await bananaToken.balanceOf(testerAddress);
+    const bananaBalanceBefore2 = await bananaToken.balanceOf(testerAddress2);
+    await vaultApeMaximizer.withdrawAll(0, { from: testerAddress })
+    await vaultApeMaximizer.harvestAll(0, { from: testerAddress2 })
+    const bananaBalanceAfter1 = await bananaToken.balanceOf(testerAddress);
+    const bananaBalanceAfter2 = await bananaToken.balanceOf(testerAddress2);
+    const accSharesPerStakedToken = await vaultApeMaximizer.accSharesPerStakedToken(0);
+
+    const lpBalanceAfter = await lpToken.balanceOf(testerAddress);
+    expect(Number(lpBalanceAfter)).equal(Number(lpBalanceBefore) - (Number(toDeposit) * 0.0025)) //0.25% withdraw fees
+
+    expect(Number(bananaBalanceAfter1) - Number(bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));
+    expect(Number(bananaBalanceAfter1)).to.be.greaterThan(Number(bananaBalanceBefore1));
+    expect(Number(bananaBalanceAfter2)).to.be.greaterThan(Number(bananaBalanceBefore2));
+
+    expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(bananaBalanceAfter2 - bananaBalanceBefore2));
   });
 
 });

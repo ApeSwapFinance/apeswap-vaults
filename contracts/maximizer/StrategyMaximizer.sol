@@ -186,24 +186,26 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
             );
         }
 
-        // Collect Burn fees
-        if (buyBackRate > 0) {
-            _swap(
-                rewardTokenBalance.mul(buyBackRate).div(10000),
-                _minBurnOutput,
-                pathToBanana,
-                BURN_ADDRESS
-            );
-        }
-
         // Convert remaining rewards to BANANA
         if (address(FARM_REWARD_TOKEN) != address(BANANA)) {
+            // Collect Burn fees
+            if (buyBackRate > 0) {
+                _swap(
+                    rewardTokenBalance.mul(buyBackRate).div(10000),
+                    _minBurnOutput,
+                    pathToBanana,
+                    BURN_ADDRESS
+                );
+            }
+
             _swap(
                 _rewardTokenBalance(),
                 _minBananaOutput,
                 pathToBanana,
                 address(this)
             );
+        } else {
+            //TODO: buyback is now just burn
         }
 
         uint256 previousShares = totalAutoBananaShares();
