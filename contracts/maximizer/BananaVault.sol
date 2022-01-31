@@ -93,9 +93,9 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
 
         // Setup access control
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setupRole(MANAGER_ROLE, _admin);
         // A manager can be a vault contract which can add sub strategies to the deposit role
         _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-        _setRoleAdmin(DEPOSIT_ROLE, DEFAULT_ADMIN_ROLE);
         // Allow managers to grant/revoke deposit roles
         _setRoleAdmin(DEPOSIT_ROLE, MANAGER_ROLE);
     }
