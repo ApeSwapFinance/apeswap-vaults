@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 
@@ -11,8 +12,14 @@ import "../libs/IVaultApeMaximizer.sol";
 import "../libs/IStrategyMaximizer.sol";
 import "../libs/IBananaVault.sol";
 
-contract VaultApeMaximizerKeeper is Ownable, KeeperCompatibleInterface {
+contract VaultApeMaximizerKeeper is
+    ReentrancyGuard,
+    IVaultApeMaximizer,
+    Ownable,
+    KeeperCompatibleInterface
+{
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     struct VaultInfo {
         uint256 lastCompound;
@@ -29,6 +36,7 @@ contract VaultApeMaximizerKeeper is Ownable, KeeperCompatibleInterface {
 
     address[] public vaults;
     mapping(address => VaultInfo) public vaultInfos;
+    IBananaVault public BANANA_VAULT;
 
     address public keeper;
     address public moderator;
@@ -40,15 +48,27 @@ contract VaultApeMaximizerKeeper is Ownable, KeeperCompatibleInterface {
 
     event Compound(address indexed vault, uint256 timestamp);
 
-    constructor(address _keeper, address _owner) Ownable() {
+    constructor(
+        address _keeper,
+        address _owner,
+        address _bananaVault
+    ) Ownable() {
         keeper = _keeper;
 
         transferOwnership(_owner);
 
-        maxDelay = 1 days;
+        BANANA_VAULT = IBananaVault(_bananaVault);
+
+        maxDelay = 1 seconds; //1 days;
         minKeeperFee = 10000000000000000;
         slippageFactor = 9500;
         maxVaults = 2;
+    }
+
+    modifier onlyEOA() {
+        // only allowing externally owned addresses.
+        require(msg.sender == tx.origin, "VaultApeMaximizer: must use EOA");
+        _;
     }
 
     modifier onlyKeeper() {
@@ -109,7 +129,7 @@ contract VaultApeMaximizerKeeper is Ownable, KeeperCompatibleInterface {
                 uint256 platformOutput,
                 uint256 keeperOutput,
                 uint256 burnOutput,
-                uint256 pacocaOutput
+                uint256 bananaOutput
             ) = _getExpectedOutputs(vault);
 
             if (
@@ -126,7 +146,7 @@ contract VaultApeMaximizerKeeper is Ownable, KeeperCompatibleInterface {
                 tempCompoundInfo.minBurnOutputs[actualLength] = burnOutput
                     .mul(slippageFactor)
                     .div(10000);
-                tempCompoundInfo.minBananaOutputs[actualLength] = pacocaOutput
+                tempCompoundInfo.minBananaOutputs[actualLength] = bananaOutput
                     .mul(slippageFactor)
                     .div(10000);
 
@@ -276,11 +296,106 @@ contract VaultApeMaximizerKeeper is Ownable, KeeperCompatibleInterface {
         ) = IStrategyMaximizer(_vault).getExpectedOutputs();
     }
 
-    function vaultsLength() external view returns (uint256) {
+    function vaultsLength() external view override returns (uint256) {
         return vaults.length;
     }
 
-    function addVault(address _vault) public onlyOwner {
+    function userInfo(uint256 _pid, address _user)
+        external
+        view
+        override
+        returns (
+            uint256 stake,
+            uint256 autoBananaShares,
+            uint256 rewardDebt,
+            uint256 lastDepositedTime
+        )
+    {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        (stake, autoBananaShares, rewardDebt, lastDepositedTime) = strat
+            .userInfo(_user);
+    }
+
+    function stakedWantTokens(uint256 _pid, address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        (uint256 stake, , , ) = strat.userInfo(_user);
+        return stake;
+    }
+
+    function accSharesPerStakedToken(uint256 _pid)
+        external
+        view
+        returns (uint256)
+    {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        return strat.accSharesPerStakedToken();
+    }
+
+    // function earnAll() public override {
+    //     for (uint256 i = 0; i < vaults.length; i++) {
+    //         IStrategyMaximizer(vaults[i]).earn(0, 0, 0, 0);
+    //     }
+
+    //     BANANA_VAULT.harvest();
+    // }
+
+    // function earnSome(uint256[] memory pids) external override {
+    //     for (uint256 i = 0; i < pids.length; i++) {
+    //         if (vaults.length >= pids[i]) {
+    //             IStrategyMaximizer(vaults[pids[i]]).earn(0, 0, 0, 0);
+    //         }
+    //     }
+
+    //     BANANA_VAULT.harvest();
+    // }
+
+    function deposit(uint256 _pid, uint256 _wantAmt)
+        external
+        override
+        nonReentrant
+        onlyEOA
+    {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
+        wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
+        strat.deposit(msg.sender);
+    }
+
+    function withdraw(uint256 _pid, uint256 _wantAmt)
+        external
+        override
+        nonReentrant
+    {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        strat.withdraw(msg.sender, _wantAmt);
+    }
+
+    function withdrawAll(uint256 _pid) external override nonReentrant {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        strat.withdraw(msg.sender, type(uint256).max);
+    }
+
+    function harvest(uint256 _pid, uint256 _wantAmt)
+        external
+        override
+        nonReentrant
+    {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        strat.claimRewards(msg.sender, _wantAmt);
+    }
+
+    function harvestAll(uint256 _pid) external override nonReentrant {
+        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        strat.claimRewards(msg.sender, type(uint256).max);
+    }
+
+    // ===== OWNER only functions =====
+    function addVault(address _vault) public override onlyOwner {
         require(
             vaultInfos[_vault].lastCompound == 0,
             "VaultApeMaximizerKeeper: addVault: Vault already exists"
@@ -295,6 +410,13 @@ contract VaultApeMaximizerKeeper is Ownable, KeeperCompatibleInterface {
         for (uint256 index = 0; index < _vaults.length; ++index) {
             addVault(_vaults[index]);
         }
+    }
+
+    function inCaseTokensGetStuck(address _token, uint256 _amount)
+        external
+        onlyOwner
+    {
+        IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 
     function enableVault(address _vault) external onlyOwner {

@@ -14,9 +14,9 @@ interface IVaultApeMaximizer {
             uint256 lastDepositedTime
         );
 
-    function poolLength() external view returns (uint256);
+    function vaultsLength() external view returns (uint256);
 
-    function addPool(address _strat) external;
+    function addVault(address _strat) external;
 
     function stakedWantTokens(uint256 _pid, address _user)
         external
@@ -29,9 +29,9 @@ interface IVaultApeMaximizer {
 
     function withdrawAll(uint256 _pid) external;
 
-    function earnAll() external;
+    // function earnAll() external;
 
-    function earnSome(uint256[] memory pids) external;
+    // function earnSome(uint256[] memory pids) external;
 
     function harvest(uint256 _pid, uint256 _wantAmt) external;
 

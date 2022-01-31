@@ -51,7 +51,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     address[] public pathToWbnb; // Path from staked token to WBNB
 
     address public treasury;
-    address public keeper;
+    address public vaultApe;
     uint256 public keeperFee = 50; // 0.5%
     uint256 public constant KEEPER_FEE_UL = 100; // 1%
 
@@ -137,17 +137,17 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
 
         transferOwnership(_addresses[0]);
         treasury = _addresses[1];
-        keeper = _addresses[2];
+        vaultApe = _addresses[2];
         platform = _addresses[3];
     }
 
     /**
-     * @dev Throws if called by any account other than the keeper.
+     * @dev Throws if called by any account other than the VaultApe.
      */
-    modifier onlyKeeper() {
+    modifier onlyVaultApe() {
         require(
-            keeper == msg.sender,
-            "StrategyMaximizer: caller is not the keeper"
+            vaultApe == msg.sender,
+            "StrategyMaximizer: caller is not the VaultApe"
         );
         _;
     }
@@ -161,7 +161,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
         uint256 _minBananaOutput
-    ) external override onlyKeeper {
+    ) external override onlyVaultApe {
         MASTERAPE.withdraw(FARM_PID, 0);
 
         uint256 rewardTokenBalance = _rewardTokenBalance();
@@ -205,7 +205,10 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
                 address(this)
             );
         } else {
-            //TODO: buyback is now just burn
+            BANANA.transfer(
+                BURN_ADDRESS,
+                rewardTokenBalance.mul(buyBackRate).div(10000)
+            );
         }
 
         uint256 previousShares = totalAutoBananaShares();
@@ -222,7 +225,12 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         );
     }
 
-    function deposit(address _userAddress) external override nonReentrant {
+    function deposit(address _userAddress)
+        external
+        override
+        nonReentrant
+        onlyVaultApe
+    {
         uint256 _amount = STAKED_TOKEN.balanceOf(address(this));
         require(
             _amount > 0,
@@ -331,7 +339,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         emit ClaimRewards(_userAddress, _shares, withdrawAmount);
     }
 
-    //TODO
+    //TODO: check all functions below and try understand what they actually do
     function getExpectedOutputs()
         external
         view
@@ -368,9 +376,12 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
             MASTERAPE.pendingCake(FARM_PID, address(this))
         );
 
-        uint256[] memory amounts = router.getAmountsOut(rewards, _path);
-
-        return amounts[amounts.length.sub(1)];
+        if (_path.length <= 1) {
+            return rewards;
+        } else {
+            uint256[] memory amounts = router.getAmountsOut(rewards, _path);
+            return amounts[amounts.length.sub(1)];
+        }
     }
 
     function balanceOf(address _user)
@@ -491,12 +502,12 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         emit SetTreasury(oldTreasury, treasury);
     }
 
-    function setKeeper(address _keeper) external onlyOwner {
-        address oldKeeper = keeper;
+    function setVaultApe(address _vaultApe) external onlyOwner {
+        address oldKeeper = vaultApe;
 
-        keeper = _keeper;
+        vaultApe = _vaultApe;
 
-        emit SetKeeper(oldKeeper, keeper);
+        emit SetKeeper(oldKeeper, vaultApe);
     }
 
     function setKeeperFee(uint256 _keeperFee) external onlyOwner {

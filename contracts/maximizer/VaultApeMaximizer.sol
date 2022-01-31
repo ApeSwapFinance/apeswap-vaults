@@ -28,7 +28,7 @@ contract VaultApeMaximizer is
     uint256 public immutable interval;
     uint256 public lastTimeStamp;
 
-    event AddPool(address indexed strat);
+    event AddVault(address indexed strat);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -74,7 +74,7 @@ contract VaultApeMaximizer is
         return strat.accSharesPerStakedToken();
     }
 
-    function poolLength() external view override returns (uint256) {
+    function vaultsLength() external view override returns (uint256) {
         return vaults.length;
     }
 
@@ -90,7 +90,7 @@ contract VaultApeMaximizer is
         return stake;
     }
 
-    function earnAll() public override {
+    function earnAll() public {
         for (uint256 i = 0; i < vaults.length; i++) {
             IStrategyMaximizer(vaults[i]).earn(0, 0, 0, 0);
         }
@@ -98,7 +98,7 @@ contract VaultApeMaximizer is
         BANANA_VAULT.harvest();
     }
 
-    function earnSome(uint256[] memory pids) external override {
+    function earnSome(uint256[] memory pids) external {
         for (uint256 i = 0; i < pids.length; i++) {
             if (vaults.length >= pids[i]) {
                 IStrategyMaximizer(vaults[pids[i]]).earn(0, 0, 0, 0);
@@ -155,12 +155,10 @@ contract VaultApeMaximizer is
         external
         view
         override
-        returns (
-            bool upkeepNeeded,
-            bytes memory /* performData */
-        )
+        returns (bool upkeepNeeded, bytes memory performData)
     {
         upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+        return (upkeepNeeded, "");
     }
 
     function performUpkeep(
@@ -171,12 +169,12 @@ contract VaultApeMaximizer is
     }
 
     // ===== OWNER functions =====
-    function addPool(address _strat) external override onlyOwner {
+    function addVault(address _strat) external override onlyOwner {
         require(!strats[_strat], "Existing strategy");
         vaults.push(_strat);
         strats[_strat] = true;
 
-        emit AddPool(_strat);
+        emit AddVault(_strat);
     }
 
     function inCaseTokensGetStuck(address _token, uint256 _amount)
