@@ -3,10 +3,11 @@ const { MasterChefVaults, MasterApeSingleVaults, KoalaChefSingleVaults, MasterCh
 
 const testConfig = {
   //0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5 has a lot of busd and bnb and wbnb
-  //0xF0eFA30090FED96C5d8A0B089C8aD56f1388A608 has a lot of bananas
+  //0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6 has a lot of bananas
   testAccount: '0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5',//'0x41f2E851431Ae142edE42B6C467515EF5053061d',
   testAccount2: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
-  adminAddress: "0x0341242Eb1995A9407F1bf632E8dA206858fBB3a",
+  testAccount3: '0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6',
+  adminAddress: "0xD183F2BBF8b28d9fec8367cb06FE72B88778C86B",
   //PCS Router: 0x10ED43C718714eb63d5aA57B78B54704E256024E
   //ApeSwap Router: 0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7
   routerAddress: "0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7",
@@ -16,6 +17,7 @@ const testConfig = {
   bananaAddress: "0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95",
   wrappedNative: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
   autoFarm: "0x0895196562C7868C5Be92459FaE7f877ED450452",
+  masterApe: "0x5c8D727b265DBAfaba67E050f2f739cAeEB4A6F9",
   masterBelt: "0xd4bbc80b9b102b77b21a06cb77e954049605e6c1",
   rewardAddress: "0x4EB6b0A7543508f6EbD81c2E9c7cA7A471475e73",
   buyBackAddress: "0xa22c3fAc4B4a4dfbF6a8F5F8fe85d9478acE2B0C",
