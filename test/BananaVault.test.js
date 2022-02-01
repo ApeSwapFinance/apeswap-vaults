@@ -1,5 +1,5 @@
 const { expectRevert, time, ether, constants, BN } = require('@openzeppelin/test-helpers');
-const { farm } = require('@apeswapfinance/test-helpers');
+const { farm } = require('@apeswap.finance/test-helpers');
 const { accounts, contract } = require('@openzeppelin/test-environment');
 const { expect, assert } = require('chai');
 const { addBNStr, subBNStr, mulBNStr, divBNStr, isWithinLimit, formatBNObjectToString } = require('./helpers/bnHelper');

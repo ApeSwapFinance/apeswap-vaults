@@ -11,10 +11,10 @@
     deep-eql "^0.1.3"
     keypather "^1.10.2"
 
-"@apeswapfinance/test-helpers@^0.1.0":
-  version "0.1.0"
-  resolved "https://npm.pkg.github.com/download/@apeswapfinance/test-helpers/0.1.0/ab07f8e1d4c9860f298a086e1b95a72db7cfed54c918d1b65bf28bc7663e51b3#e08ce4f80dbed0398e88366fa2b57a30c291c579"
-  integrity sha512-pVqE7Ftax+sj6AGWebuTeyJwoMhHfnQWq/rv+402wOclFu/y99fJWbMuMdp43TGGB2G9p9BjhSXQ8oI2pmI6NA==
+"@apeswap.finance/test-helpers@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@apeswap.finance/test-helpers/-/test-helpers-0.2.0.tgz#fecaca3ce27b39e3ad509d6e43b7fecb9925553d"
+  integrity sha512-TnTwlJ5HmgjXELfhYdsMevkGtqiBVclansClBF8Y05EDFPDLt3v6A6bOC+dhp98lNBw+SXF6pVEc1SJSEX922w==
   dependencies:
     "@openzeppelin/contract-loader" "^0.6.2"
     "@openzeppelin/test-environment" "^0.1.9"
