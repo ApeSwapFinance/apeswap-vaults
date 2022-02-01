@@ -33,7 +33,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@apeswapfinance/test-helpers": "^0.0.1",
+    "@apeswapfinance/test-helpers": "^0.1.0",
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
     "@openzeppelin/contracts": "^4.3.0",

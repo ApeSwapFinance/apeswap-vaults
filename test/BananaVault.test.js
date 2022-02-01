@@ -1,4 +1,4 @@
-const { expectRevert, time, ether, constants } = require('@openzeppelin/test-helpers');
+const { expectRevert, time, ether, constants, BN } = require('@openzeppelin/test-helpers');
 const { farm } = require('@apeswapfinance/test-helpers');
 const { accounts, contract } = require('@openzeppelin/test-environment');
 const { expect, assert } = require('chai');
@@ -8,22 +8,24 @@ const { addBNStr, subBNStr, mulBNStr, divBNStr, isWithinLimit, formatBNObjectToS
 // Load compiled artifacts
 const BananaVault = contract.fromArtifact('BananaVault');
 
+async function advanceNumBlocks(numberOfBlocks) {
+  await time.advanceBlockTo((await time.latestBlock()).add(new BN(numberOfBlocks)));
+}
+
 describe('BananaVault', function () {
   this.timeout(60000);
   const [feeTo, treasury, admin, manager, alice, bob] = accounts;
 
   beforeEach(async () => {
-    // FIXME: In the test helpers, it seems that the MasterApe is not the owner of the BananaToken
     const {
       bananaToken,
       bananaSplitBar,
       masterApe,
-    } = await farm.deployMockFarm([admin, feeTo]); // accounts passed will be used in the deployment
+    } = await farm.deployMockFarm([admin, feeTo], {
+      initialMint: ether('25000')
+    }); // accounts passed will be used in the deployment
     this.masterApe = masterApe;
     this.bananaToken = bananaToken;
-    // Set ownership of tokens to MasterApe
-    this.bananaToken.transferOwnership(this.masterApe.address, { from: admin });
-    bananaSplitBar.transferOwnership(this.masterApe.address, { from: admin });
 
     // Admin receives an initial mint of 25000
     // Transfer to users
@@ -57,26 +59,12 @@ describe('BananaVault', function () {
   it('should allow a user to deposit', async () => {
     await this.bananaToken.approve(this.bananaVault.address, constants.MAX_UINT256, { from: alice });
     await this.bananaVault.deposit(ether('10000'), { from: alice });
-
-    const userInfoBananaVault = await this.bananaVault.userInfo(alice);
-    console.dir(formatBNObjectToString(userInfoBananaVault));
-    const userInfoMasterApe = await this.masterApe.userInfo(0, this.bananaVault.address);
-    console.dir(formatBNObjectToString(userInfoMasterApe));
-
-    await time.advanceBlock('10');
-    await this.masterApe.updatePool(0);
-    console.dir({ pendingBanana: (await this.masterApe.pendingCake(0, this.bananaVault.address)).toString() });
-    console.dir({ vaultPendingBanana: (await this.bananaVault.calculateTotalPendingBananaRewards()).toString() });
-    console.dir({ vaultAvailableBanana: (await this.bananaVault.available()).toString() });
-
     await this.bananaToken.approve(this.bananaVault.address, constants.MAX_UINT256, { from: bob });
-    console.dir({ vaultBananaValue: (await this.bananaToken.balanceOf(this.bananaVault.address)).toString() });
-    await this.masterApe.updatePool(0);
-    // FIXME: Returned error: VM Exception while processing transaction: revert
+    await this.bananaVault.deposit(ether('10000'), { from: bob });
+
     await this.bananaVault.earn();
-    // await this.bananaVault.deposit(ether('10000'), { from: bob });
-    // await expectRevert(
-    //   this.mock.transfer(bob, ether('11'), { from: alice }), 'ERC20: transfer amount exceeds balance'
-    // );
+
+    await this.bananaVault.withdraw(ether('10000'), { from: alice });
+    await this.bananaVault.withdraw(ether('10000'), { from: bob });
   });
 });
