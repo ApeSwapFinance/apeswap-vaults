@@ -38,11 +38,12 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     uint256 public override accSharesPerStakedToken; // Accumulated BANANA_VAULT shares per staked token, times 1e18.
 
     // Farm info
-    IMasterApe public immutable MASTERAPE;
+    IMasterApe public immutable STAKED_TOKEN_FARM;
     address public override STAKED_TOKEN_ADDRESS;
     IERC20 public immutable STAKED_TOKEN;
     IERC20 public immutable FARM_REWARD_TOKEN;
     uint256 public immutable FARM_PID;
+    bool public immutable IS_CAKE_STAKING;
     IBananaVault public immutable BANANA_VAULT;
 
     // Settings
@@ -89,6 +90,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     constructor(
         address _masterApe,
         uint256 _farmPid,
+        bool _isCakeStaking,
         address _stakedToken,
         address _farmRewardToken,
         address _bananaVault,
@@ -97,8 +99,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         address[] memory _pathToWbnb,
         //TODO: check these for fees etc
         address[] memory _addresses, //[_owner, _treasury, _keeper ,_platform]
-        uint256 _buyBackRate,
-        uint256 _platformFee
+        uint256[] memory _fees //[_buyBackRate, _platformFee]
     ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
@@ -113,27 +114,28 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         );
 
         require(
-            _buyBackRate <= BUYBACK_RATE_UL,
+            _fees[0] <= BUYBACK_RATE_UL,
             "StrategyMaximizer: Buyback rate over upper limit"
         );
         require(
-            _platformFee <= PLATFORM_FEE_UL,
+            _fees[1] <= PLATFORM_FEE_UL,
             "StrategyMaximizer: platform fee over upper limit"
         );
 
         STAKED_TOKEN = IERC20(_stakedToken);
         STAKED_TOKEN_ADDRESS = _stakedToken;
-        MASTERAPE = IMasterApe(_masterApe);
+        STAKED_TOKEN_FARM = IMasterApe(_masterApe);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         FARM_PID = _farmPid;
+        IS_CAKE_STAKING = _isCakeStaking;
         BANANA_VAULT = IBananaVault(_bananaVault);
 
         router = IUniRouter02(_router);
         pathToBanana = _pathToBanana;
         pathToWbnb = _pathToWbnb;
 
-        buyBackRate = _buyBackRate;
-        platformFee = _platformFee;
+        buyBackRate = _fees[0];
+        platformFee = _fees[1];
 
         transferOwnership(_addresses[0]);
         treasury = _addresses[1];
@@ -162,7 +164,11 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         uint256 _minBurnOutput,
         uint256 _minBananaOutput
     ) external override onlyVaultApe {
-        MASTERAPE.withdraw(FARM_PID, 0);
+        if (IS_CAKE_STAKING) {
+            STAKED_TOKEN_FARM.leaveStaking(0);
+        } else {
+            STAKED_TOKEN_FARM.withdraw(FARM_PID, 0);
+        }
 
         uint256 rewardTokenBalance = _rewardTokenBalance();
 
@@ -238,9 +244,17 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         );
         UserInfo storage user = userInfo[_userAddress];
 
-        _approveTokenIfNeeded(STAKED_TOKEN, _amount, address(MASTERAPE));
+        _approveTokenIfNeeded(
+            STAKED_TOKEN,
+            _amount,
+            address(STAKED_TOKEN_FARM)
+        );
 
-        MASTERAPE.deposit(FARM_PID, _amount);
+        if (IS_CAKE_STAKING) {
+            STAKED_TOKEN_FARM.enterStaking(_amount);
+        } else {
+            STAKED_TOKEN_FARM.deposit(FARM_PID, _amount);
+        }
 
         user.autoBananaShares = user.autoBananaShares.add(
             user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
@@ -266,7 +280,16 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         );
         _amount = user.stake < _amount ? user.stake : _amount;
 
-        MASTERAPE.withdraw(FARM_PID, _amount);
+        // uint256 preBalance = STAKED_TOKEN.balanceOf(address(this));
+
+        if (IS_CAKE_STAKING) {
+            STAKED_TOKEN_FARM.leaveStaking(_amount);
+        } else {
+            STAKED_TOKEN_FARM.withdraw(FARM_PID, _amount);
+        }
+
+        // uint256 currentAmount = STAKED_TOKEN.balanceOf(address(this)) -
+        //     preBalance;
 
         uint256 currentAmount = _amount;
 
@@ -373,7 +396,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         returns (uint256)
     {
         uint256 rewards = _rewardTokenBalance().add(
-            MASTERAPE.pendingCake(FARM_PID, address(this))
+            STAKED_TOKEN_FARM.pendingCake(FARM_PID, address(this))
         );
 
         if (_path.length <= 1) {
@@ -404,7 +427,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         stake = user.stake;
         autoBananaShares = user.autoBananaShares.add(pendingShares);
 
-        (uint256 amount, ) = MASTERAPE.userInfo(0, address(this));
+        (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(0, address(this));
         uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(amount);
 
         banana = autoBananaShares.mul(pricePerFullShare).div(1e18);
@@ -429,7 +452,10 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     }
 
     function totalStake() public view override returns (uint256) {
-        (uint256 amount, ) = MASTERAPE.userInfo(FARM_PID, address(this));
+        (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(
+            FARM_PID,
+            address(this)
+        );
         return amount;
     }
 
