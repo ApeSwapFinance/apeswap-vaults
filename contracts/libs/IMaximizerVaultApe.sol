@@ -29,9 +29,9 @@ interface IMaximizerVaultApe {
 
     function withdrawAll(uint256 _pid) external;
 
-    // function earnAll() external;
+    function earnAll() external;
 
-    // function earnSome(uint256[] memory pids) external;
+    function earnSome(uint256[] memory pids) external;
 
     function harvest(uint256 _pid, uint256 _wantAmt) external;
 
