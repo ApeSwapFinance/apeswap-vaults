@@ -78,7 +78,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     event SetPathToWbnb(address[] oldPath, address[] newPath);
     event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate);
     event SetTreasury(address oldTreasury, address newTreasury);
-    event SetKeeper(address oldKeeper, address newKeeper);
+    event SetVaultApe(address oldVaultApe, address newVaultApe);
     event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee);
     event SetPlatform(address oldPlatform, address newPlatform);
     event SetPlatformFee(uint256 oldPlatformFee, uint256 newPlatformFee);
@@ -361,7 +361,11 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         emit ClaimRewards(_userAddress, _shares, withdrawAmount);
     }
 
-    //TODO: check all functions below and try understand what they actually do
+    /// @notice Using total harvestable rewards as the input, find the outputs for each respective output
+    /// @return platformOutput WBNB output amount which goes to the platform 
+    /// @return keeperOutput WBNB output amount which goes to the keeper
+    /// @return burnOutput BANANA amount which goes to the burn address
+    /// @return bananaOutput BANANA amount which goes to compounding
     function getExpectedOutputs()
         external
         view
@@ -373,13 +377,15 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             uint256 bananaOutput
         )
     {
+        // Find the expected WBNB value of the current harvestable rewards
         uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
+        // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
-
+        // Calculate the WBNB values
         platformOutput = wbnbOutput.mul(platformFee).div(10000);
         keeperOutput = wbnbOutput.mul(keeperFee).div(10000);
+        // Calculate the BANANA values
         burnOutput = bananaOutputWithoutFees.mul(buyBackRate).div(10000);
-
         bananaOutput = bananaOutputWithoutFees.sub(
             bananaOutputWithoutFees
                 .mul(platformFee)
@@ -389,6 +395,9 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         );
     }
 
+    /// @notice Using total rewards as the input, find the output based on the path provided
+    /// @param _path Array of token addresses which compose the path from index 0 to n
+    /// @return Reward output amount based on path
     function _getExpectedOutput(address[] memory _path)
         private
         view
@@ -520,19 +529,13 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     }
 
     function setTreasury(address _treasury) external onlyOwner {
-        address oldTreasury = treasury;
-
+        emit SetTreasury(treasury, _treasury);
         treasury = _treasury;
-
-        emit SetTreasury(oldTreasury, treasury);
     }
 
     function setVaultApe(address _vaultApe) external onlyOwner {
-        address oldKeeper = vaultApe;
-
+        emit SetVaultApe(vaultApe, _vaultApe);
         vaultApe = _vaultApe;
-
-        emit SetKeeper(oldKeeper, vaultApe);
     }
 
     function setKeeperFee(uint256 _keeperFee) external onlyOwner {
@@ -540,20 +543,13 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             _keeperFee <= KEEPER_FEE_UL,
             "StrategyMaximizerMasterApe: Keeper fee too high"
         );
-
-        uint256 oldKeeperFee = keeperFee;
-
+        emit SetKeeperFee(keeperFee, _keeperFee);
         keeperFee = _keeperFee;
-
-        emit SetKeeperFee(oldKeeperFee, keeperFee);
     }
 
     function setPlatform(address _platform) external onlyOwner {
-        address oldPlatform = platform;
-
+        emit SetPlatform(platform, _platform);
         platform = _platform;
-
-        emit SetPlatform(oldPlatform, platform);
     }
 
     function setPlatformFee(uint256 _platformFee) external onlyOwner {
@@ -561,12 +557,8 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             _platformFee <= PLATFORM_FEE_UL,
             "StrategyMaximizerMasterApe: Platform fee too high"
         );
-
-        uint256 oldPlatformFee = platformFee;
-
+        emit SetPlatformFee(platformFee, _platformFee);
         platformFee = _platformFee;
-
-        emit SetPlatformFee(oldPlatformFee, platformFee);
     }
 
     function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
@@ -574,12 +566,9 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             _buyBackRate <= BUYBACK_RATE_UL,
             "StrategyMaximizerMasterApe: Buy back rate too high"
         );
-
-        uint256 oldBuyBackRate = buyBackRate;
-
+        emit SetBuyBackRate(buyBackRate, _buyBackRate);
         buyBackRate = _buyBackRate;
 
-        emit SetBuyBackRate(oldBuyBackRate, buyBackRate);
     }
 
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
@@ -587,11 +576,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             _withdrawFee <= WITHDRAW_FEE_UL,
             "StrategyMaximizerMasterApe: Early withdraw fee too high"
         );
-
-        uint256 oldWithdrawFee = withdrawFee;
-
+        emit SetWithdrawFee(withdrawFee, _withdrawFee);
         withdrawFee = _withdrawFee;
-
-        emit SetWithdrawFee(oldWithdrawFee, withdrawFee);
     }
 }

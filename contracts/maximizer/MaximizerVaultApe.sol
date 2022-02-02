@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
-
 import "../libs/IMaximizerVaultApe.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
 import "../libs/IBananaVault.sol";
@@ -15,8 +13,7 @@ import "../libs/IBananaVault.sol";
 contract MaximizerVaultApe is
     ReentrancyGuard,
     IMaximizerVaultApe,
-    Ownable,
-    KeeperCompatibleInterface
+    Ownable
 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -38,7 +35,6 @@ contract MaximizerVaultApe is
     mapping(address => VaultInfo) public vaultInfos;
     IBananaVault public BANANA_VAULT;
 
-    address public keeper;
     address public moderator;
 
     uint256 public maxDelay;
@@ -49,12 +45,9 @@ contract MaximizerVaultApe is
     event Compound(address indexed vault, uint256 timestamp);
 
     constructor(
-        address _keeper,
         address _owner,
         address _bananaVault
     ) Ownable() {
-        keeper = _keeper;
-
         transferOwnership(_owner);
 
         BANANA_VAULT = IBananaVault(_bananaVault);
@@ -69,29 +62,6 @@ contract MaximizerVaultApe is
         // only allowing externally owned addresses.
         require(msg.sender == tx.origin, "VaultApeMaximizer: must use EOA");
         _;
-    }
-
-    modifier onlyKeeper() {
-        require(
-            msg.sender == keeper,
-            "MaximizerVaultApe: onlyKeeper: Not keeper"
-        );
-        _;
-    }
-
-    function checkUpkeep(bytes calldata)
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
-        (upkeepNeeded, performData) = checkVaultCompound();
-
-        if (upkeepNeeded) {
-            return (upkeepNeeded, performData);
-        }
-
-        return (false, "");
     }
 
     function checkVaultCompound()
@@ -190,33 +160,6 @@ contract MaximizerVaultApe is
         return (false, "");
     }
 
-    function performUpkeep(bytes calldata performData)
-        external
-        override
-        onlyKeeper
-    {
-        (
-            address[] memory _vaults,
-            uint256[] memory _minPlatformOutputs,
-            uint256[] memory _minKeeperOutputs,
-            uint256[] memory _minBurnOutputs,
-            uint256[] memory _minBananaOutputs
-        ) = abi.decode(
-                performData,
-                (address[], uint256[], uint256[], uint256[], uint256[])
-            );
-
-        _earn(
-            _vaults,
-            _minPlatformOutputs,
-            _minKeeperOutputs,
-            _minBurnOutputs,
-            _minBananaOutputs
-        );
-
-        BANANA_VAULT.earn();
-    }
-
     function compound(address _vault) public {
         VaultInfo memory vaultInfo = vaultInfos[_vault];
         uint256 timestamp = block.timestamp;
@@ -236,7 +179,7 @@ contract MaximizerVaultApe is
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
         uint256 timestamp
-    ) private {
+    ) internal {
         IStrategyMaximizerMasterApe(_vault).earn(
             _minPlatformOutput,
             _minKeeperOutput,
@@ -247,28 +190,6 @@ contract MaximizerVaultApe is
         vaultInfos[_vault].lastCompound = timestamp;
 
         emit Compound(_vault, timestamp);
-    }
-
-    function _earn(
-        address[] memory _vaults,
-        uint256[] memory _minPlatformOutputs,
-        uint256[] memory _minKeeperOutputs,
-        uint256[] memory _minBurnOutputs,
-        uint256[] memory _minBananaOutputs
-    ) private {
-        uint256 timestamp = block.timestamp;
-        uint256 length = _vaults.length;
-
-        for (uint256 index = 0; index < length; ++index) {
-            _compoundVault(
-                _vaults[index],
-                _minPlatformOutputs[index],
-                _minKeeperOutputs[index],
-                _minBurnOutputs[index],
-                _minBananaOutputs[index],
-                timestamp
-            );
-        }
     }
 
     function _getExpectedOutputs(address _vault)
@@ -428,10 +349,6 @@ contract MaximizerVaultApe is
 
     function disableVault(address _vault) external onlyOwner {
         vaultInfos[_vault].enabled = false;
-    }
-
-    function setKeeper(address _keeper) public onlyOwner {
-        keeper = _keeper;
     }
 
     function setModerator(address _moderator) public onlyOwner {
