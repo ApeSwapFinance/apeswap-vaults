@@ -403,6 +403,9 @@ contract VaultApeMaximizerKeeper is
 
         vaultInfos[_vault] = VaultInfo(block.timestamp, true);
 
+        bytes32 DEPOSIT_ROLE = BANANA_VAULT.DEPOSIT_ROLE();
+        BANANA_VAULT.grantRole(DEPOSIT_ROLE, _vault);
+
         vaults.push(_vault);
     }
 

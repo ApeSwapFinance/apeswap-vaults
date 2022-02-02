@@ -29,9 +29,8 @@ describe('VaultApeMaximizerKeeper', function () {
   beforeEach(async () => {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
-    bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, rewardAddress, 0);
+    bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress, rewardAddress, 0);
     vaultApeMaximizerKeeper = await VaultApeMaximizerKeeper.new(adminAddress, adminAddress, bananaVault.address);
-    await bananaVault.transferOwnership(vaultApeMaximizerKeeper.address);
   });
 
   // const farms = [
@@ -123,9 +122,13 @@ describe('VaultApeMaximizerKeeper', function () {
       beforeEach(async () => {
         // Add Strategy
         this.strategy = await StrategyMaximizer.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2", vaultApeMaximizerKeeper.address, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2"], [0, 0]);
-        await vaultApeMaximizerKeeper.addVault(this.strategy.address, { from: adminAddress });
+        
+        // Define roles
+        this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
+        // Grant roles
+        await bananaVault.grantRole(this.MANAGER_ROLE, vaultApeMaximizerKeeper.address, { from: adminAddress });
 
-        // await this.strategy.setWithdrawFee(100, { from: adminAddress });
+        await vaultApeMaximizerKeeper.addVault(this.strategy.address, { from: adminAddress });
 
         // Approve want token
         const erc20Contract = new web3.eth.Contract(IERC20_ABI, farmInfo.wantAddress);
