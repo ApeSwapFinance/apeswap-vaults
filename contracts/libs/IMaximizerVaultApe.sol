@@ -3,7 +3,7 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-interface IVaultApeMaximizer {
+interface IMaximizerVaultApe {
     function userInfo(uint256 _pid, address _user)
         external
         view

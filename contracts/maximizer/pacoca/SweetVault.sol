@@ -1,4 +1,4 @@
-// //StrategyMaximizer https://bscscan.com/address/0xD0CEd165609Aa0eB471ee93F60a47c4f302F313c#code
+// //StrategyMaximizerMasterApe https://bscscan.com/address/0xD0CEd165609Aa0eB471ee93F60a47c4f302F313c#code
 
 // contract SweetVault is Ownable, ReentrancyGuard {
 //     using SafeMath for uint256;

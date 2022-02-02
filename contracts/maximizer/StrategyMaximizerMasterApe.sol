@@ -11,9 +11,9 @@ import "../libs/IVaultApe.sol";
 import "../libs/IBananaVault.sol";
 import "../libs/IMasterApe.sol";
 import "../libs/IUniRouter02.sol";
-import "../libs/IStrategyMaximizer.sol";
-
-contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
+import "../libs/IStrategyMaximizerMasterApe.sol";
+ 
+contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -103,22 +103,22 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
                 _pathToBanana[_pathToBanana.length - 1] == address(BANANA),
-            "StrategyMaximizer: Incorrect path to BANANA"
+            "StrategyMaximizerMasterApe: Incorrect path to BANANA"
         );
 
         require(
             _pathToWbnb[0] == address(_farmRewardToken) &&
                 _pathToWbnb[_pathToWbnb.length - 1] == WBNB,
-            "StrategyMaximizer: Incorrect path to WBNB"
+            "StrategyMaximizerMasterApe: Incorrect path to WBNB"
         );
 
         require(
             _fees[0] <= BUYBACK_RATE_UL,
-            "StrategyMaximizer: Buyback rate over upper limit"
+            "StrategyMaximizerMasterApe: Buyback rate over upper limit"
         );
         require(
             _fees[1] <= PLATFORM_FEE_UL,
-            "StrategyMaximizer: platform fee over upper limit"
+            "StrategyMaximizerMasterApe: platform fee over upper limit"
         );
 
         STAKED_TOKEN = IERC20(_stakedToken);
@@ -148,7 +148,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     modifier onlyVaultApe() {
         require(
             vaultApe == msg.sender,
-            "StrategyMaximizer: caller is not the VaultApe"
+            "StrategyMaximizerMasterApe: caller is not the VaultApe"
         );
         _;
     }
@@ -239,7 +239,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         uint256 _amount = STAKED_TOKEN.balanceOf(address(this));
         require(
             _amount > 0,
-            "StrategyMaximizer: amount must be greater than zero"
+            "StrategyMaximizerMasterApe: amount must be greater than zero"
         );
         UserInfo storage user = userInfo[_userAddress];
 
@@ -275,7 +275,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
 
         require(
             _amount > 0,
-            "StrategyMaximizer: amount must be greater than zero"
+            "StrategyMaximizerMasterApe: amount must be greater than zero"
         );
         _amount = user.stake < _amount ? user.stake : _amount;
 
@@ -495,7 +495,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
                 _path[_path.length - 1] == address(BANANA),
-            "StrategyMaximizer: Incorrect path to BANANA"
+            "StrategyMaximizerMasterApe: Incorrect path to BANANA"
         );
 
         address[] memory oldPath = pathToBanana;
@@ -509,7 +509,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
                 _path[_path.length - 1] == WBNB,
-            "StrategyMaximizer: Incorrect path to WBNB"
+            "StrategyMaximizerMasterApe: Incorrect path to WBNB"
         );
 
         address[] memory oldPath = pathToWbnb;
@@ -538,7 +538,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     function setKeeperFee(uint256 _keeperFee) external onlyOwner {
         require(
             _keeperFee <= KEEPER_FEE_UL,
-            "StrategyMaximizer: Keeper fee too high"
+            "StrategyMaximizerMasterApe: Keeper fee too high"
         );
 
         uint256 oldKeeperFee = keeperFee;
@@ -559,7 +559,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     function setPlatformFee(uint256 _platformFee) external onlyOwner {
         require(
             _platformFee <= PLATFORM_FEE_UL,
-            "StrategyMaximizer: Platform fee too high"
+            "StrategyMaximizerMasterApe: Platform fee too high"
         );
 
         uint256 oldPlatformFee = platformFee;
@@ -572,7 +572,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
         require(
             _buyBackRate <= BUYBACK_RATE_UL,
-            "StrategyMaximizer: Buy back rate too high"
+            "StrategyMaximizerMasterApe: Buy back rate too high"
         );
 
         uint256 oldBuyBackRate = buyBackRate;
@@ -585,7 +585,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
         require(
             _withdrawFee <= WITHDRAW_FEE_UL,
-            "StrategyMaximizer: Early withdraw fee too high"
+            "StrategyMaximizerMasterApe: Early withdraw fee too high"
         );
 
         uint256 oldWithdrawFee = withdrawFee;

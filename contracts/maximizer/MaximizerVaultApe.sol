@@ -8,13 +8,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 
-import "../libs/IVaultApeMaximizer.sol";
-import "../libs/IStrategyMaximizer.sol";
+import "../libs/IMaximizerVaultApe.sol";
+import "../libs/IStrategyMaximizerMasterApe.sol";
 import "../libs/IBananaVault.sol";
 
-contract VaultApeMaximizerKeeper is
+contract MaximizerVaultApe is
     ReentrancyGuard,
-    IVaultApeMaximizer,
+    IMaximizerVaultApe,
     Ownable,
     KeeperCompatibleInterface
 {
@@ -74,7 +74,7 @@ contract VaultApeMaximizerKeeper is
     modifier onlyKeeper() {
         require(
             msg.sender == keeper,
-            "VaultApeMaximizerKeeper: onlyKeeper: Not keeper"
+            "MaximizerVaultApe: onlyKeeper: Not keeper"
         );
         _;
     }
@@ -120,7 +120,7 @@ contract VaultApeMaximizerKeeper is
 
             if (
                 !vaultInfo.enabled ||
-                IStrategyMaximizer(vault).totalStake() == 0
+                IStrategyMaximizerMasterApe(vault).totalStake() == 0
             ) {
                 continue;
             }
@@ -223,7 +223,7 @@ contract VaultApeMaximizerKeeper is
 
         require(
             vaultInfo.lastCompound < timestamp - 12 hours,
-            "VaultApeMaximizerKeeper: compound: Too soon"
+            "MaximizerVaultApe: compound: Too soon"
         );
 
         return _compoundVault(_vault, 0, 0, 0, 0, timestamp);
@@ -237,7 +237,7 @@ contract VaultApeMaximizerKeeper is
         uint256 _minBananaOutput,
         uint256 timestamp
     ) private {
-        IStrategyMaximizer(_vault).earn(
+        IStrategyMaximizerMasterApe(_vault).earn(
             _minPlatformOutput,
             _minKeeperOutput,
             _minBurnOutput,
@@ -281,7 +281,7 @@ contract VaultApeMaximizerKeeper is
             uint256 bananaOutput
         )
     {
-        // try IStrategyMaximizer(_vault).getExpectedOutputs() returns (
+        // try IStrategyMaximizerMasterApe(_vault).getExpectedOutputs() returns (
         //     uint256,
         //     uint256,
         //     uint256,
@@ -295,7 +295,7 @@ contract VaultApeMaximizerKeeper is
             keeperOutput,
             burnOutput,
             bananaOutput
-        ) = IStrategyMaximizer(_vault).getExpectedOutputs();
+        ) = IStrategyMaximizerMasterApe(_vault).getExpectedOutputs();
     }
 
     function vaultsLength() external view override returns (uint256) {
@@ -313,7 +313,9 @@ contract VaultApeMaximizerKeeper is
             uint256 lastDepositedTime
         )
     {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         (stake, autoBananaShares, rewardDebt, lastDepositedTime) = strat
             .userInfo(_user);
     }
@@ -324,7 +326,9 @@ contract VaultApeMaximizerKeeper is
         override
         returns (uint256)
     {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         (uint256 stake, , , ) = strat.userInfo(_user);
         return stake;
     }
@@ -334,7 +338,9 @@ contract VaultApeMaximizerKeeper is
         view
         returns (uint256)
     {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         return strat.accSharesPerStakedToken();
     }
 
@@ -344,7 +350,9 @@ contract VaultApeMaximizerKeeper is
         nonReentrant
         onlyEOA
     {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         strat.deposit(msg.sender);
@@ -355,12 +363,16 @@ contract VaultApeMaximizerKeeper is
         override
         nonReentrant
     {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         strat.withdraw(msg.sender, _wantAmt);
     }
 
     function withdrawAll(uint256 _pid) external override nonReentrant {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         strat.withdraw(msg.sender, type(uint256).max);
     }
 
@@ -369,12 +381,16 @@ contract VaultApeMaximizerKeeper is
         override
         nonReentrant
     {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         strat.claimRewards(msg.sender, _wantAmt);
     }
 
     function harvestAll(uint256 _pid) external override nonReentrant {
-        IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
         strat.claimRewards(msg.sender, type(uint256).max);
     }
 
@@ -382,7 +398,7 @@ contract VaultApeMaximizerKeeper is
     function addVault(address _vault) public override onlyOwner {
         require(
             vaultInfos[_vault].lastCompound == 0,
-            "VaultApeMaximizerKeeper: addVault: Vault already exists"
+            "MaximizerVaultApe: addVault: Vault already exists"
         );
 
         vaultInfos[_vault] = VaultInfo(block.timestamp, true);

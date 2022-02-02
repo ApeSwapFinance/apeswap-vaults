@@ -8,11 +8,11 @@ const { farms } = require('../configs/farms.js');
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 
 // Load compiled artifacts
-const VaultApeMaximizerKeeper = contract.fromArtifact('VaultApeMaximizerKeeper');
-const StrategyMaximizer = contract.fromArtifact("StrategyMaximizer");
+const MaximizerVaultApe = contract.fromArtifact('MaximizerVaultApe');
+const StrategyMaximizerMasterApe = contract.fromArtifact("StrategyMaximizerMasterApe");
 const BananaVault = contract.fromArtifact("BananaVault");
 
-describe('VaultApeMaximizerKeeper', function () {
+describe('MaximizerVaultApe', function () {
   this.timeout(9960000);
 
   //0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69
@@ -21,7 +21,7 @@ describe('VaultApeMaximizerKeeper', function () {
   const rewardAddress = testConfig.rewardAddress;
   const buyBackAddress = testConfig.buyBackAddress;
   const adminAddress = testConfig.adminAddress;
-  let vaultApeMaximizerKeeper, bananaVault, router;
+  let maximizerVaultApe, bananaVault, router;
   let usdToken, bananaToken, wantToken;
 
   const blocksToAdvance = 10;
@@ -30,7 +30,7 @@ describe('VaultApeMaximizerKeeper', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    vaultApeMaximizerKeeper = await VaultApeMaximizerKeeper.new(adminAddress, adminAddress, bananaVault.address);
+    maximizerVaultApe = await MaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address);
   });
 
   farms.forEach(farm => {
@@ -113,39 +113,39 @@ describe('VaultApeMaximizerKeeper', function () {
 
       beforeEach(async () => {
         // Add Strategy
-        this.strategy = await StrategyMaximizer.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2", vaultApeMaximizerKeeper.address, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2"], [0, 0]);
+        this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2", maximizerVaultApe.address, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2"], [0, 0]);
         
         // Define roles and grant roles
         this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
-        await bananaVault.grantRole(this.MANAGER_ROLE, vaultApeMaximizerKeeper.address, { from: adminAddress });
+        await bananaVault.grantRole(this.MANAGER_ROLE, maximizerVaultApe.address, { from: adminAddress });
 
         //Add vault
-        await vaultApeMaximizerKeeper.addVault(this.strategy.address, { from: adminAddress });
+        await maximizerVaultApe.addVault(this.strategy.address, { from: adminAddress });
 
         // Approve want token
         const erc20Contract = new web3.eth.Contract(IERC20_ABI, farmInfo.wantAddress);
-        await erc20Contract.methods.approve(vaultApeMaximizerKeeper.address, MAX_UINT256).send({ from: testerAddress });
-        await erc20Contract.methods.approve(vaultApeMaximizerKeeper.address, MAX_UINT256).send({ from: testerAddress2 });
+        await erc20Contract.methods.approve(maximizerVaultApe.address, MAX_UINT256).send({ from: testerAddress });
+        await erc20Contract.methods.approve(maximizerVaultApe.address, MAX_UINT256).send({ from: testerAddress2 });
 
       });
 
       it('should deposit and have shares', async () => {
-        await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress })
-        const userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress);
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
+        const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(userInfo.stake.toString()).equal(toDeposit)
       });
 
       it('should withdraw', async () => {
         const wantBalanceBefore = await wantToken.balanceOf(testerAddress);
 
-        await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress })
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
 
-        let userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress);
+        let userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(userInfo.stake.toString()).equal(toDeposit)
 
-        await vaultApeMaximizerKeeper.withdraw(0, toDeposit, { from: testerAddress })
+        await maximizerVaultApe.withdraw(0, toDeposit, { from: testerAddress })
 
-        userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress);
+        userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(Number(userInfo.stake)).equal(0)
 
         const wantBalanceAfter = await wantToken.balanceOf(testerAddress);
@@ -157,16 +157,16 @@ describe('VaultApeMaximizerKeeper', function () {
       });
 
       it('should put banana rewards in vault', async () => {
-        await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress })
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
 
         const currentBlock = await time.latestBlock()
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
 
-        const checkUpkeep = await vaultApeMaximizerKeeper.checkUpkeep("0x");
+        const checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         expect(checkUpkeep.upkeepNeeded).to.be.true;
-        await vaultApeMaximizerKeeper.performUpkeep(checkUpkeep.performData, { from: adminAddress });
+        await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
-        const accSharesPerStakedToken = await vaultApeMaximizerKeeper.accSharesPerStakedToken(0);
+        const accSharesPerStakedToken = await maximizerVaultApe.accSharesPerStakedToken(0);
         expect(Number(accSharesPerStakedToken)).to.be.greaterThan(0)
 
         const share = await masterApe.userInfo(0, bananaVault.address);
@@ -174,27 +174,27 @@ describe('VaultApeMaximizerKeeper', function () {
       });
 
       it('should get all rewards', async () => {
-        await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress })
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
 
         const bananaBalanceBefore = await bananaToken.balanceOf(testerAddress);
 
         let currentBlock = await time.latestBlock()
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
-        let checkUpkeep = await vaultApeMaximizerKeeper.checkUpkeep("0x");
+        let checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         expect(checkUpkeep.upkeepNeeded).to.be.true;
-        await vaultApeMaximizerKeeper.performUpkeep(checkUpkeep.performData, { from: adminAddress });
+        await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
         //second time performUpkeep to check if bananas in pool also compound and generate more rewards
         currentBlock = await time.latestBlock();
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
-        checkUpkeep = await vaultApeMaximizerKeeper.checkUpkeep("0x");
+        checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         expect(checkUpkeep.upkeepNeeded).to.be.true;
-        await vaultApeMaximizerKeeper.performUpkeep(checkUpkeep.performData, { from: adminAddress });
+        await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
-        const userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress);
-        const accSharesPerStakedToken = await vaultApeMaximizerKeeper.accSharesPerStakedToken(0);
+        const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
+        const accSharesPerStakedToken = await maximizerVaultApe.accSharesPerStakedToken(0);
 
-        await vaultApeMaximizerKeeper.harvestAll(0, { from: testerAddress });
+        await maximizerVaultApe.harvestAll(0, { from: testerAddress });
 
         const bananaBalanceAfter = await bananaToken.balanceOf(testerAddress);
 
@@ -206,35 +206,35 @@ describe('VaultApeMaximizerKeeper', function () {
 
       it('multiple wallets should do everything', async () => {
         const wantBalanceBefore = await wantToken.balanceOf(testerAddress);
-        await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress })
-        let userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress);
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
+        let userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(userInfo.stake.toString()).equal(toDeposit)
         expect(Number(userInfo.rewardDebt)).equal(0)
 
         let currentBlock = await time.latestBlock()
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
-        let checkUpkeep = await vaultApeMaximizerKeeper.checkUpkeep("0x");
+        let checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         expect(checkUpkeep.upkeepNeeded).to.be.true;
-        await vaultApeMaximizerKeeper.performUpkeep(checkUpkeep.performData, { from: adminAddress });
+        await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
-        await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress2 })
-        userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress2);
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress2 })
+        userInfo = await maximizerVaultApe.userInfo(0, testerAddress2);
         expect(userInfo.stake.toString()).equal(toDeposit)
         expect(Number(userInfo.rewardDebt)).to.be.greaterThan(0)
 
         currentBlock = await time.latestBlock()
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
-        checkUpkeep = await vaultApeMaximizerKeeper.checkUpkeep("0x");
+        checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         expect(checkUpkeep.upkeepNeeded).to.be.true;
-        await vaultApeMaximizerKeeper.performUpkeep(checkUpkeep.performData, { from: adminAddress });
+        await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
         const bananaBalanceBefore1 = await bananaToken.balanceOf(testerAddress);
         const bananaBalanceBefore2 = await bananaToken.balanceOf(testerAddress2);
-        await vaultApeMaximizerKeeper.withdrawAll(0, { from: testerAddress })
-        await vaultApeMaximizerKeeper.harvestAll(0, { from: testerAddress2 })
+        await maximizerVaultApe.withdrawAll(0, { from: testerAddress })
+        await maximizerVaultApe.harvestAll(0, { from: testerAddress2 })
         const bananaBalanceAfter1 = await bananaToken.balanceOf(testerAddress);
         const bananaBalanceAfter2 = await bananaToken.balanceOf(testerAddress2);
-        const accSharesPerStakedToken = await vaultApeMaximizerKeeper.accSharesPerStakedToken(0);
+        const accSharesPerStakedToken = await maximizerVaultApe.accSharesPerStakedToken(0);
 
         const wantBalanceAfter = await wantToken.balanceOf(testerAddress);
         const withdrawFee = new BN(toDeposit).mul(new BN("25")).div(new BN("10000")); //0.25% withdraw fees
