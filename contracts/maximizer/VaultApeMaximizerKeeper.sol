@@ -213,6 +213,8 @@ contract VaultApeMaximizerKeeper is
             _minBurnOutputs,
             _minBananaOutputs
         );
+
+        BANANA_VAULT.earn();
     }
 
     function compound(address _vault) public {
@@ -335,24 +337,6 @@ contract VaultApeMaximizerKeeper is
         IStrategyMaximizer strat = IStrategyMaximizer(vaults[_pid]);
         return strat.accSharesPerStakedToken();
     }
-
-    // function earnAll() public override {
-    //     for (uint256 i = 0; i < vaults.length; i++) {
-    //         IStrategyMaximizer(vaults[i]).earn(0, 0, 0, 0);
-    //     }
-
-    //     BANANA_VAULT.harvest();
-    // }
-
-    // function earnSome(uint256[] memory pids) external override {
-    //     for (uint256 i = 0; i < pids.length; i++) {
-    //         if (vaults.length >= pids[i]) {
-    //             IStrategyMaximizer(vaults[pids[i]]).earn(0, 0, 0, 0);
-    //         }
-    //     }
-
-    //     BANANA_VAULT.harvest();
-    // }
 
     function deposit(uint256 _pid, uint256 _wantAmt)
         external

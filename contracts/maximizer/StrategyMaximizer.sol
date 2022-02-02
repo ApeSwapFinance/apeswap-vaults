@@ -97,7 +97,6 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
         address _router,
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
-        //TODO: check these for fees etc
         address[] memory _addresses, //[_owner, _treasury, _keeper ,_platform]
         uint256[] memory _fees //[_buyBackRate, _platformFee]
     ) {
@@ -210,7 +209,7 @@ contract StrategyMaximizer is IStrategyMaximizer, Ownable, ReentrancyGuard {
                 pathToBanana,
                 address(this)
             );
-        } else {
+        } else if (buyBackRate > 0) {
             BANANA.transfer(
                 BURN_ADDRESS,
                 rewardTokenBalance.mul(buyBackRate).div(10000)

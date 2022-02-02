@@ -14,7 +14,7 @@ async function advanceNumBlocks(numberOfBlocks) {
 
 describe('BananaVault', function () {
   this.timeout(60000);
-  const [feeTo, treasury, admin, manager, alice, bob] = accounts;
+  const [feeTo, treasury, admin, manager, alice, bob, carol] = accounts;
 
   beforeEach(async () => {
     const {
@@ -35,9 +35,7 @@ describe('BananaVault', function () {
     this.bananaVault = await BananaVault.new(
       this.bananaToken.address,
       this.masterApe.address,
-      admin,
-      treasury,
-      0, // Withdraw Fee
+      admin
     )
     // Define roles
     this.DEFAULT_ADMIN_ROLE = await this.bananaVault.DEFAULT_ADMIN_ROLE();
@@ -56,7 +54,7 @@ describe('BananaVault', function () {
     assert.equal(await this.bananaVault.hasRole(this.DEPOSIT_ROLE, bob), true, 'depositor does not have DEPOSITOR role');
   });
 
-  it('should allow a user to deposit', async () => {
+  it('should allow a user with right role to deposit', async () => {
     await this.bananaToken.approve(this.bananaVault.address, constants.MAX_UINT256, { from: alice });
     await this.bananaVault.deposit(ether('10000'), { from: alice });
     await this.bananaToken.approve(this.bananaVault.address, constants.MAX_UINT256, { from: bob });
@@ -66,5 +64,10 @@ describe('BananaVault', function () {
 
     await this.bananaVault.withdraw(ether('10000'), { from: alice });
     await this.bananaVault.withdraw(ether('10000'), { from: bob });
+  });
+
+  it('should not allow a user without role to deposit', async () => {
+    await this.bananaToken.approve(this.bananaVault.address, constants.MAX_UINT256, { from: carol });
+    await expectRevert.unspecified(this.bananaVault.deposit(ether('10000'), { from: carol }));
   });
 });

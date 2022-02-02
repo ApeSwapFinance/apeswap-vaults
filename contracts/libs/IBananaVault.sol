@@ -16,7 +16,7 @@ interface IBananaVault is IAccessControlEnumerable {
             uint256 lastUserActionTime
         );
 
-    function harvest() external;
+    function earn() external;
 
     function deposit(uint256 _amount) external;
 

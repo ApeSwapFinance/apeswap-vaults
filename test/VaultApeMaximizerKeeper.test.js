@@ -29,17 +29,9 @@ describe('VaultApeMaximizerKeeper', function () {
   beforeEach(async () => {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
-    bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress, rewardAddress, 0);
+    bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
     vaultApeMaximizerKeeper = await VaultApeMaximizerKeeper.new(adminAddress, adminAddress, bananaVault.address);
   });
-
-  // const farms = [
-  //   { pid: 1, name: 'ApeSwap BNB-BANANA vault', masterchef: testConfig.masterApe, address: '0xF65C1C0478eFDe3c19b49EcBE7ACc57BB6B1D713', router: testConfig.farmInfo.router, tokensToLPAmount: "100000000000000000000" },
-  //   { pid: 3, name: 'ApeSwap BNB-BUSD vault', masterchef: testConfig.masterApe, address: '0x51e6D27FA57373d8d4C256231241053a70Cb1d93', router: testConfig.farmInfo.router, tokensToLPAmount: "100000000000000000000" },
-  //   { pid: 8, name: 'ApeSwap USDC-BUSD vault', masterchef: testConfig.masterApe, address: '0xC087C78AbaC4A0E900a327444193dBF9BA69058E', router: testConfig.farmInfo.router, tokensToLPAmount: "100000000000000000000" },
-  //   { pid: 17, name: 'Pacoca BNB-BANANA vault', masterchef: "0x55410D946DFab292196462ca9BE9f3E4E4F337Dd", address: '0xF65C1C0478eFDe3c19b49EcBE7ACc57BB6B1D713', router: testConfig.farmInfo.router, tokensToLPAmount: "100000000000000000000" },
-  //   { pid: 0, name: 'PCS CAKE-BNB vault', masterchef: "0x73feaa1eE314F8c655E354234017bE2193C9E24E", address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', router: "0x10ED43C718714eb63d5aA57B78B54704E256024E", tokensToLPAmount: "100000000000000000000" }
-  // ]
 
   farms.forEach(farm => {
     const farmInfo = farm;
@@ -123,11 +115,11 @@ describe('VaultApeMaximizerKeeper', function () {
         // Add Strategy
         this.strategy = await StrategyMaximizer.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2", vaultApeMaximizerKeeper.address, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2"], [0, 0]);
         
-        // Define roles
+        // Define roles and grant roles
         this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
-        // Grant roles
         await bananaVault.grantRole(this.MANAGER_ROLE, vaultApeMaximizerKeeper.address, { from: adminAddress });
 
+        //Add vault
         await vaultApeMaximizerKeeper.addVault(this.strategy.address, { from: adminAddress });
 
         // Approve want token
@@ -138,10 +130,6 @@ describe('VaultApeMaximizerKeeper', function () {
       });
 
       it('should deposit and have shares', async () => {
-        wantToken = contract.fromArtifact('ERC20', farmInfo.wantAddress);
-        const balance = await wantToken.balanceOf(testerAddress);
-        const approved = await wantToken.allowance(testerAddress, vaultApeMaximizerKeeper.address);
-        console.log(toDeposit, balance.toString(), approved.toString());
         await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress })
         const userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress);
         expect(userInfo.stake.toString()).equal(toDeposit)
@@ -149,7 +137,6 @@ describe('VaultApeMaximizerKeeper', function () {
 
       it('should withdraw', async () => {
         const wantBalanceBefore = await wantToken.balanceOf(testerAddress);
-        console.log(toDeposit);
 
         await vaultApeMaximizerKeeper.deposit(0, toDeposit, { from: testerAddress })
 
@@ -180,11 +167,9 @@ describe('VaultApeMaximizerKeeper', function () {
         await vaultApeMaximizerKeeper.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
         const accSharesPerStakedToken = await vaultApeMaximizerKeeper.accSharesPerStakedToken(0);
-        console.log(accSharesPerStakedToken.toString());
         expect(Number(accSharesPerStakedToken)).to.be.greaterThan(0)
 
         const share = await masterApe.userInfo(0, bananaVault.address);
-        console.log(share.amount.toString())
         expect(Number(share.amount)).to.be.greaterThan(0)
       });
 
@@ -208,13 +193,10 @@ describe('VaultApeMaximizerKeeper', function () {
 
         const userInfo = await vaultApeMaximizerKeeper.userInfo(0, testerAddress);
         const accSharesPerStakedToken = await vaultApeMaximizerKeeper.accSharesPerStakedToken(0);
-        console.log(accSharesPerStakedToken.toString());
-        console.log(userInfo.stake.toString(), userInfo.autoBananaShares.toString());
 
         await vaultApeMaximizerKeeper.harvestAll(0, { from: testerAddress });
 
         const bananaBalanceAfter = await bananaToken.balanceOf(testerAddress);
-        console.log(bananaBalanceBefore.toString(), bananaBalanceAfter.toString());
 
         //Check if banana rewards in pool also generate rewards
         expect(Number(bananaBalanceAfter) - Number(bananaBalanceBefore)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));

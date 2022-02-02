@@ -53,12 +53,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     uint256 public lastHarvestedTime;
     address public treasury;
 
-    // TODO: Withdraw fee should be applied to the maximizer vault withdraws
-    uint256 public withdrawFee;
-    // TODO: This is a constant
-    uint256 public withdrawFeePeriod = 72 hours; // 3 days
-    uint256 public constant MAX_WITHDRAW_FEE = 200; // 2%
-
     event Deposit(
         address indexed sender,
         uint256 amount,
@@ -76,20 +70,14 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
      * @param _bananaToken: Banana token contract
      * @param _masterApe: Master Ape contract
      * @param _admin: address of the owner
-     * @param _treasury: address of the treasury (collects fees)
      */
     constructor(
         IERC20 _bananaToken,
         address _masterApe,
-        address _admin,
-        address _treasury,
-        uint256 _withdrawFee
+        address _admin
     ) {
         bananaToken = _bananaToken;
         masterApe = IMasterApe(_masterApe);
-        // TODO: DO we need these?
-        treasury = _treasury;
-        withdrawFee = _withdrawFee;
 
         // Setup access control
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -163,20 +151,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     }
 
     /**
-     * @notice Sets withdraw fee
-     * @dev Only callable by the contract owner.
-     */
-    function setWithdrawFee(uint256 _withdrawFee) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            _withdrawFee <= MAX_WITHDRAW_FEE,
-            "BananaVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE"
-        );
-
-        emit SetWithdrawFee(withdrawFee, _withdrawFee);
-        withdrawFee = _withdrawFee;
-    }
-
-    /**
      * @notice Calculates the total pending rewards that can be restaked
      * @return Returns total pending Banana rewards
      */
@@ -230,23 +204,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
                 bananaTokensToWithdraw = balAfter;
             }
         }
-
-        /**
-            TODO: Remove withdraw fee?
-         */
-        if (
-            withdrawFee > 0 &&
-            block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)
-        ) {
-            uint256 currentWithdrawFee = bananaTokensToWithdraw.mul(withdrawFee).div(
-                10000
-            );
-            bananaToken.safeTransfer(treasury, currentWithdrawFee);
-            bananaTokensToWithdraw = bananaTokensToWithdraw.sub(currentWithdrawFee);
-        }
-        /**
-            TODO: end 
-         */
 
         if (user.shares > 0) {
             user.bananaAtLastUserAction = user
