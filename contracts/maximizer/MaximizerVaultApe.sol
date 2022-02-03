@@ -45,6 +45,23 @@ contract MaximizerVaultApe is
     uint256 public slippageFactor;
     uint16 public maxVaults;
 
+    // ===== Strategy default values =====
+    address public override defaultTreasury;
+
+    uint256 public override defaultKeeperFee = 50; // 0.5%
+    uint256 public constant override KEEPER_FEE_UL = 100; // 1%
+
+    address public override defaultPlatform;
+    uint256 public override defaultPlatformFee;
+    uint256 public constant override PLATFORM_FEE_UL = 500; // 5%
+
+    uint256 public override defaultBuyBackRate;
+    uint256 public constant override BUYBACK_RATE_UL = 300; // 3%
+
+    uint256 public override defaultWithdrawFee = 25; // 0.25%
+    uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
+    uint256 public override defaultWithdrawFeePeriod = 3 days;
+
     event Compound(address indexed vault, uint256 timestamp);
 
     constructor(
@@ -508,5 +525,115 @@ contract MaximizerVaultApe is
 
     function setKeeper(address _keeper) public onlyOwner {
         keeper = _keeper;
+    }
+
+    // ===== Strategy value setters =====
+    function setTreasuryAllStrategies(address _treasury) external onlyOwner {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setTreasury(_treasury);
+        }
+    }
+
+    function setKeeperFeeAllStrategies(uint256 _keeperFee) external onlyOwner {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setKeeperFee(_keeperFee);
+        }
+    }
+
+    function setPlatformAllStrategies(address _platform) external onlyOwner {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setPlatform(_platform);
+        }
+    }
+
+    function setPlatformFeeAllStrategies(uint256 _platformFee)
+        external
+        onlyOwner
+    {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setPlatformFee(
+                _platformFee
+            );
+        }
+    }
+
+    function setBuyBackRateAllStrategies(uint256 _buyBackRate)
+        external
+        onlyOwner
+    {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setBuyBackRate(
+                _buyBackRate
+            );
+        }
+    }
+
+    function setWithdrawFeeAllStrategies(uint256 _withdrawFee)
+        external
+        onlyOwner
+    {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setWithdrawFee(
+                _withdrawFee
+            );
+        }
+    }
+
+    function setWithdrawFeePeriodAllStrategies(uint256 _withdrawFeePeriod)
+        external
+        onlyOwner
+    {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setWithdrawFeePeriod(
+                _withdrawFeePeriod
+            );
+        }
+    }
+
+    function setVaultApeAllStrategies(address _vaultApe) external onlyOwner {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setVaultApe(_vaultApe);
+        }
+    }
+
+    // ===== setters default values =====
+    function setDefaultTreasury(address _defaultTreasury) external onlyOwner {
+        defaultTreasury = _defaultTreasury;
+    }
+
+    function setDefaultKeeperFee(uint256 _defaultKeeperFee) external onlyOwner {
+        defaultKeeperFee = _defaultKeeperFee;
+    }
+
+    function setDefaultPlatform(address _defaultPlatform) external onlyOwner {
+        defaultPlatform = _defaultPlatform;
+    }
+
+    function setDefaultPlatformFee(uint256 _defaultPlatformFee)
+        external
+        onlyOwner
+    {
+        defaultPlatformFee = _defaultPlatformFee;
+    }
+
+    function setDefaultBuyBackRate(uint256 _defaultBuyBackRate)
+        external
+        onlyOwner
+    {
+        defaultBuyBackRate = _defaultBuyBackRate;
+    }
+
+    function setDefaultWithdrawFee(uint256 _defaultWithdrawFee)
+        external
+        onlyOwner
+    {
+        defaultWithdrawFee = _defaultWithdrawFee;
+    }
+
+    function setDefaultWithdrawFeePeriod(uint256 _defaultWithdrawFeePeriod)
+        external
+        onlyOwner
+    {
+        defaultWithdrawFeePeriod = _defaultWithdrawFeePeriod;
     }
 }

@@ -12,6 +12,7 @@ import "../libs/IBananaVault.sol";
 import "../libs/IMasterApe.sol";
 import "../libs/IUniRouter02.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
+import "../libs/IMaximizerVaultApe.sol";
 
 contract StrategyMaximizerMasterApe is
     IStrategyMaximizerMasterApe,
@@ -55,22 +56,18 @@ contract StrategyMaximizerMasterApe is
     address[] public pathToBanana; // Path from staked token to BANANA
     address[] public pathToWbnb; // Path from staked token to WBNB
 
+    IMaximizerVaultApe public vaultApe;
     address public treasury;
-    address public vaultApe;
-    uint256 public keeperFee = 50; // 0.5%
-    uint256 public constant KEEPER_FEE_UL = 100; // 1%
+    uint256 public keeperFee;
 
     address public platform;
     uint256 public platformFee;
-    uint256 public constant PLATFORM_FEE_UL = 500; // 5%
 
     address public constant BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
     uint256 public buyBackRate;
-    uint256 public constant BUYBACK_RATE_UL = 300; // 3%
 
-    uint256 public withdrawFee = 25; // 0.25%
-    uint256 public constant WITHDRAW_FEE_UL = 300; // 3%
+    uint256 public withdrawFee;
     uint256 public withdrawFeePeriod = 3 days;
 
     event Deposit(address indexed user, uint256 amount);
@@ -102,8 +99,8 @@ contract StrategyMaximizerMasterApe is
         address _router,
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
-        address[] memory _addresses, //[_owner, _treasury, _keeper ,_platform]
-        uint256[] memory _fees //[_buyBackRate, _platformFee]
+        address _owner,
+        address _keeper
     ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
@@ -115,15 +112,6 @@ contract StrategyMaximizerMasterApe is
             _pathToWbnb[0] == address(_farmRewardToken) &&
                 _pathToWbnb[_pathToWbnb.length - 1] == WBNB,
             "StrategyMaximizerMasterApe: Incorrect path to WBNB"
-        );
-
-        require(
-            _fees[0] <= BUYBACK_RATE_UL,
-            "StrategyMaximizerMasterApe: Buyback rate over upper limit"
-        );
-        require(
-            _fees[1] <= PLATFORM_FEE_UL,
-            "StrategyMaximizerMasterApe: platform fee over upper limit"
         );
 
         STAKED_TOKEN = IERC20(_stakedToken);
@@ -138,13 +126,16 @@ contract StrategyMaximizerMasterApe is
         pathToBanana = _pathToBanana;
         pathToWbnb = _pathToWbnb;
 
-        buyBackRate = _fees[0];
-        platformFee = _fees[1];
+        transferOwnership(_owner);
+        vaultApe = IMaximizerVaultApe(_keeper);
 
-        transferOwnership(_addresses[0]);
-        treasury = _addresses[1];
-        vaultApe = _addresses[2];
-        platform = _addresses[3];
+        treasury = vaultApe.defaultTreasury();
+        keeperFee = vaultApe.defaultKeeperFee();
+        platform = vaultApe.defaultPlatform();
+        platformFee = vaultApe.defaultPlatformFee();
+        buyBackRate = vaultApe.defaultBuyBackRate();
+        withdrawFee = vaultApe.defaultWithdrawFee();
+        withdrawFeePeriod = vaultApe.defaultWithdrawFeePeriod();
     }
 
     /**
@@ -152,7 +143,7 @@ contract StrategyMaximizerMasterApe is
      */
     modifier onlyVaultApe() {
         require(
-            vaultApe == msg.sender,
+            address(vaultApe) == msg.sender,
             "StrategyMaximizerMasterApe: caller is not the VaultApe"
         );
         _;
@@ -533,51 +524,51 @@ contract StrategyMaximizerMasterApe is
         emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
-    function setTreasury(address _treasury) external onlyOwner {
+    function setTreasury(address _treasury) external override onlyOwner {
         emit SetTreasury(treasury, _treasury);
         treasury = _treasury;
     }
 
-    function setVaultApe(address _vaultApe) external onlyOwner {
-        emit SetVaultApe(vaultApe, _vaultApe);
-        vaultApe = _vaultApe;
+    function setVaultApe(address _vaultApe) external override onlyOwner {
+        emit SetVaultApe(address(vaultApe), _vaultApe);
+        vaultApe = IMaximizerVaultApe(_vaultApe);
     }
 
-    function setKeeperFee(uint256 _keeperFee) external onlyOwner {
+    function setKeeperFee(uint256 _keeperFee) external override onlyOwner {
         require(
-            _keeperFee <= KEEPER_FEE_UL,
+            _keeperFee <= IMaximizerVaultApe(vaultApe).KEEPER_FEE_UL(),
             "StrategyMaximizerMasterApe: Keeper fee too high"
         );
         emit SetKeeperFee(keeperFee, _keeperFee);
         keeperFee = _keeperFee;
     }
 
-    function setPlatform(address _platform) external onlyOwner {
+    function setPlatform(address _platform) external override onlyOwner {
         emit SetPlatform(platform, _platform);
         platform = _platform;
     }
 
-    function setPlatformFee(uint256 _platformFee) external onlyOwner {
+    function setPlatformFee(uint256 _platformFee) external override onlyOwner {
         require(
-            _platformFee <= PLATFORM_FEE_UL,
+            _platformFee <= IMaximizerVaultApe(vaultApe).PLATFORM_FEE_UL(),
             "StrategyMaximizerMasterApe: Platform fee too high"
         );
         emit SetPlatformFee(platformFee, _platformFee);
         platformFee = _platformFee;
     }
 
-    function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
+    function setBuyBackRate(uint256 _buyBackRate) external override onlyOwner {
         require(
-            _buyBackRate <= BUYBACK_RATE_UL,
+            _buyBackRate <= IMaximizerVaultApe(vaultApe).BUYBACK_RATE_UL(),
             "StrategyMaximizerMasterApe: Buy back rate too high"
         );
         emit SetBuyBackRate(buyBackRate, _buyBackRate);
         buyBackRate = _buyBackRate;
     }
 
-    function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
+    function setWithdrawFee(uint256 _withdrawFee) external override onlyOwner {
         require(
-            _withdrawFee <= WITHDRAW_FEE_UL,
+            _withdrawFee <= IMaximizerVaultApe(vaultApe).WITHDRAW_FEE_UL(),
             "StrategyMaximizerMasterApe: Early withdraw fee too high"
         );
         emit SetWithdrawFee(withdrawFee, _withdrawFee);
@@ -586,6 +577,7 @@ contract StrategyMaximizerMasterApe is
 
     function setWithdrawFeePeriod(uint256 _withdrawFeePeriod)
         external
+        override
         onlyOwner
     {
         emit SetWithdrawFee(withdrawFeePeriod, _withdrawFeePeriod);
