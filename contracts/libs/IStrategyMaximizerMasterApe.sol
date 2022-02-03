@@ -62,4 +62,6 @@ interface IStrategyMaximizerMasterApe {
     function setWithdrawFee(uint256 _withdrawFee) external;
 
     function setWithdrawFeePeriod(uint256 _withdrawFeePeriod) external;
+
+    function setWithdrawRewardsFee(uint256 _withdrawRewardsFee) external;
 }

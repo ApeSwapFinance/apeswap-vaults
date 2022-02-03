@@ -18,6 +18,8 @@ interface IMaximizerVaultApe {
 
     function defaultWithdrawFeePeriod() external view returns (uint256);
 
+    function defaulWithdrawRewardsFee() external view returns (uint256);
+
     function KEEPER_FEE_UL() external view returns (uint256);
 
     function PLATFORM_FEE_UL() external view returns (uint256);

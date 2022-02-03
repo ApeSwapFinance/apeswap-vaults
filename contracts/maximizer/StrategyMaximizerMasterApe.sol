@@ -70,6 +70,8 @@ contract StrategyMaximizerMasterApe is
     uint256 public withdrawFee;
     uint256 public withdrawFeePeriod = 3 days;
 
+    uint256 public withdrawRewardsFee;
+
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event EarlyWithdraw(address indexed user, uint256 amount, uint256 fee);
@@ -84,6 +86,10 @@ contract StrategyMaximizerMasterApe is
     event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee);
     event SetPlatform(address oldPlatform, address newPlatform);
     event SetPlatformFee(uint256 oldPlatformFee, uint256 newPlatformFee);
+    event SetWithdrawRewardsFee(
+        uint256 oldWithdrawRewardsFee,
+        uint256 newWithdrawRewardsFee
+    );
     event SetWithdrawFee(
         uint256 oldEarlyWithdrawFee,
         uint256 newEarlyWithdrawFee
@@ -136,6 +142,7 @@ contract StrategyMaximizerMasterApe is
         buyBackRate = vaultApe.defaultBuyBackRate();
         withdrawFee = vaultApe.defaultWithdrawFee();
         withdrawFeePeriod = vaultApe.defaultWithdrawFeePeriod();
+        withdrawRewardsFee = vaultApe.defaulWithdrawRewardsFee();
     }
 
     /**
@@ -351,6 +358,14 @@ contract StrategyMaximizerMasterApe is
         BANANA_VAULT.withdraw(_shares);
 
         uint256 withdrawAmount = _bananaBalance().sub(bananaBalanceBefore);
+
+        if (withdrawRewardsFee > 0) {
+            uint256 rewardFee = withdrawAmount.mul(withdrawRewardsFee).div(
+                10000
+            );
+            _safeBANANATransfer(treasury, rewardFee);
+            withdrawAmount = withdrawAmount.sub(rewardFee);
+        }
 
         _safeBANANATransfer(_userAddress, withdrawAmount);
 
@@ -582,5 +597,14 @@ contract StrategyMaximizerMasterApe is
     {
         emit SetWithdrawFee(withdrawFeePeriod, _withdrawFeePeriod);
         withdrawFeePeriod = _withdrawFeePeriod;
+    }
+
+    function setWithdrawRewardsFee(uint256 _withdrawRewardsFee)
+        external
+        override
+        onlyOwner
+    {
+        emit SetWithdrawRewardsFee(withdrawRewardsFee, _withdrawRewardsFee);
+        withdrawRewardsFee = _withdrawRewardsFee;
     }
 }

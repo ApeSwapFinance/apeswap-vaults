@@ -30,7 +30,7 @@ describe('MaximizerVaultApe', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    maximizerVaultApe = await MaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address);
+    maximizerVaultApe = await MaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, adminAddress, adminAddress);
   });
 
   farms.forEach(farm => {
@@ -199,7 +199,8 @@ describe('MaximizerVaultApe', function () {
         const bananaBalanceAfter = await bananaToken.balanceOf(testerAddress);
 
         //Check if banana rewards in pool also generate rewards
-        expect(Number(bananaBalanceAfter) - Number(bananaBalanceBefore)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));
+        expect(Number(bananaBalanceAfter - bananaBalanceBefore)).to.be.greaterThan(Number(accSharesPerStakedToken * 0.99 * (toDeposit / 1e18))); //0.99 = 1% withdral rewards fee
+
         expect(Number(bananaBalanceAfter)).to.be.greaterThan(Number(bananaBalanceBefore));
 
       });
@@ -241,7 +242,7 @@ describe('MaximizerVaultApe', function () {
         const shouldBeBalance = wantBalanceBefore.sub(withdrawFee);
         expect(wantBalanceAfter.toString()).equal(shouldBeBalance.toString());
 
-        expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));
+        expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * 0.99 * (toDeposit / 1e18))); //0.99 = 1% withdral rewards fee
         expect(Number(bananaBalanceAfter1)).to.be.greaterThan(Number(bananaBalanceBefore1));
         expect(Number(bananaBalanceAfter2)).to.be.greaterThan(Number(bananaBalanceBefore2));
 

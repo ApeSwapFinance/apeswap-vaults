@@ -52,26 +52,33 @@ contract MaximizerVaultApe is
     uint256 public constant override KEEPER_FEE_UL = 100; // 1%
 
     address public override defaultPlatform;
-    uint256 public override defaultPlatformFee;
+    uint256 public override defaultPlatformFee = 0;
     uint256 public constant override PLATFORM_FEE_UL = 500; // 5%
 
-    uint256 public override defaultBuyBackRate;
+    uint256 public override defaultBuyBackRate = 0;
     uint256 public constant override BUYBACK_RATE_UL = 300; // 3%
 
     uint256 public override defaultWithdrawFee = 25; // 0.25%
     uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
     uint256 public override defaultWithdrawFeePeriod = 3 days;
 
+    uint256 public override defaulWithdrawRewardsFee = 100; //1%
+
     event Compound(address indexed vault, uint256 timestamp);
 
     constructor(
         address _owner,
         address _keeper,
-        address _bananaVault
+        address _bananaVault,
+        address _defaultTreasury,
+        address _defaultPlatform
     ) Ownable() {
         transferOwnership(_owner);
         keeper = _keeper;
         BANANA_VAULT = IBananaVault(_bananaVault);
+
+        defaultTreasury = _defaultTreasury;
+        defaultPlatform = _defaultPlatform;
 
         maxDelay = 1 seconds; //1 days;
         minKeeperFee = 10000000000000000;
@@ -596,6 +603,17 @@ contract MaximizerVaultApe is
         }
     }
 
+    function setWithdrawRewardsFeeAllStrategies(uint256 _withdrawRewardsFee)
+        external
+        onlyOwner
+    {
+        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
+            IStrategyMaximizerMasterApe(vaults[_pid]).setWithdrawRewardsFee(
+                _withdrawRewardsFee
+            );
+        }
+    }
+
     // ===== setters default values =====
     function setDefaultTreasury(address _defaultTreasury) external onlyOwner {
         defaultTreasury = _defaultTreasury;
@@ -635,5 +653,12 @@ contract MaximizerVaultApe is
         onlyOwner
     {
         defaultWithdrawFeePeriod = _defaultWithdrawFeePeriod;
+    }
+
+    function setDefaulWithdrawRewardsFee(uint256 _defaulWithdrawRewardsFee)
+        external
+        onlyOwner
+    {
+        defaulWithdrawRewardsFee = _defaulWithdrawRewardsFee;
     }
 }
