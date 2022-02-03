@@ -5,6 +5,7 @@ pragma solidity ^0.8.6;
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 
 import "../libs/IMaximizerVaultApe.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
@@ -13,7 +14,8 @@ import "../libs/IBananaVault.sol";
 contract MaximizerVaultApe is
     ReentrancyGuard,
     IMaximizerVaultApe,
-    Ownable
+    Ownable,
+    KeeperCompatibleInterface
 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -36,23 +38,22 @@ contract MaximizerVaultApe is
     IBananaVault public BANANA_VAULT;
 
     address public moderator;
+    address public keeper;
 
     uint256 public maxDelay;
     uint256 public minKeeperFee;
     uint256 public slippageFactor;
     uint16 public maxVaults;
-    uint256 public minCompoundDelay = 12 hours;
 
     event Compound(address indexed vault, uint256 timestamp);
-    event SetMinCompoundDelay(uint256 previousMinCompoundDelay, uint256 newMinCompoundDelay);
-
 
     constructor(
         address _owner,
+        address _keeper,
         address _bananaVault
     ) Ownable() {
         transferOwnership(_owner);
-
+        keeper = _keeper;
         BANANA_VAULT = IBananaVault(_bananaVault);
 
         maxDelay = 1 seconds; //1 days;
@@ -65,6 +66,79 @@ contract MaximizerVaultApe is
         // only allowing externally owned addresses.
         require(msg.sender == tx.origin, "VaultApeMaximizer: must use EOA");
         _;
+    }
+
+    modifier onlyKeeper() {
+        require(
+            msg.sender == keeper,
+            "MaximizerVaultApe: onlyKeeper: Not keeper"
+        );
+        _;
+    }
+
+    function checkUpkeep(bytes calldata)
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
+        (upkeepNeeded, performData) = checkVaultCompound();
+
+        if (upkeepNeeded) {
+            return (upkeepNeeded, performData);
+        }
+
+        return (false, "");
+    }
+
+    function performUpkeep(bytes calldata performData)
+        external
+        override
+        onlyKeeper
+    {
+        (
+            address[] memory _vaults,
+            uint256[] memory _minPlatformOutputs,
+            uint256[] memory _minKeeperOutputs,
+            uint256[] memory _minBurnOutputs,
+            uint256[] memory _minBananaOutputs
+        ) = abi.decode(
+                performData,
+                (address[], uint256[], uint256[], uint256[], uint256[])
+            );
+
+        _earn(
+            _vaults,
+            _minPlatformOutputs,
+            _minKeeperOutputs,
+            _minBurnOutputs,
+            _minBananaOutputs
+        );
+
+        BANANA_VAULT.earn();
+    }
+
+    function _earn(
+        address[] memory _vaults,
+        uint256[] memory _minPlatformOutputs,
+        uint256[] memory _minKeeperOutputs,
+        uint256[] memory _minBurnOutputs,
+        uint256[] memory _minBananaOutputs
+    ) private {
+        uint256 timestamp = block.timestamp;
+        uint256 length = _vaults.length;
+
+        for (uint256 index = 0; index < length; ++index) {
+            _compoundVault(
+                _vaults[index],
+                _minPlatformOutputs[index],
+                _minKeeperOutputs[index],
+                _minBurnOutputs[index],
+                _minBananaOutputs[index],
+                timestamp,
+                true
+            );
+        }
     }
 
     function checkVaultCompound()
@@ -182,12 +256,11 @@ contract MaximizerVaultApe is
     /// @param _pid The pid of the vault
     function earn(uint256 _pid) external {
         _earn(_pid, true);
-
     }
 
     function _earn(uint256 _pid, bool _revert) private {
-        if(_pid >= vaults.length) {
-            if(_revert) {
+        if (_pid >= vaults.length) {
+            if (_revert) {
                 revert("vault pid out of bounds");
             } else {
                 return;
@@ -196,34 +269,36 @@ contract MaximizerVaultApe is
         address vaultAddress = vaults[_pid];
         VaultInfo memory vaultInfo = vaultInfos[vaultAddress];
         // Check if vault is enabled
-        if(vaultInfo.enabled) {
-            uint256 timestamp = block.timestamp;
+        if (vaultInfo.enabled) {
             // Earn if vault is enabled
-            if(vaultInfo.lastCompound < timestamp - minCompoundDelay) {
-                // Earn if the compound time is over the minDelay
-                return _compoundVault(vaultAddress, 0, 0, 0, 0, timestamp);
-            } else {
-                if(_revert) {
-                    revert("last compound does not satisfy min delay");
-                }
-            }
+            (
+                uint256 platformOutput,
+                uint256 keeperOutput,
+                uint256 burnOutput,
+                uint256 bananaOutput
+            ) = _getExpectedOutputs(vaultAddress);
+
+            platformOutput = platformOutput.mul(slippageFactor).div(10000);
+            keeperOutput = keeperOutput.mul(slippageFactor).div(10000);
+            burnOutput = burnOutput.mul(slippageFactor).div(10000);
+            bananaOutput = bananaOutput.mul(slippageFactor).div(10000);
+            uint256 timestamp = block.timestamp;
+
+            return
+                _compoundVault(
+                    vaultAddress,
+                    platformOutput,
+                    keeperOutput,
+                    burnOutput,
+                    bananaOutput,
+                    timestamp,
+                    false
+                );
         } else {
-            if(_revert) {
+            if (_revert) {
                 revert("vault is disabled");
             }
         }
-    }
-
-    function compound(address _vault) public {
-        VaultInfo memory vaultInfo = vaultInfos[_vault];
-        uint256 timestamp = block.timestamp;
-
-        require(
-            vaultInfo.lastCompound < timestamp - minCompoundDelay,
-            "MaximizerVaultApe: compound: Too soon"
-        );
-
-        return _compoundVault(_vault, 0, 0, 0, 0, timestamp);
     }
 
     function _compoundVault(
@@ -232,13 +307,15 @@ contract MaximizerVaultApe is
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
-        uint256 timestamp
+        uint256 timestamp,
+        bool _takeKeeperFee
     ) internal {
         IStrategyMaximizerMasterApe(_vault).earn(
             _minPlatformOutput,
             _minKeeperOutput,
             _minBurnOutput,
-            _minBananaOutput
+            _minBananaOutput,
+            _takeKeeperFee
         );
 
         vaultInfos[_vault].lastCompound = timestamp;
@@ -325,8 +402,12 @@ contract MaximizerVaultApe is
         nonReentrant
         onlyEOA
     {
+        address vaultAddress = vaults[_pid];
+        VaultInfo memory vaultInfo = vaultInfos[vaultAddress];
+        require(vaultInfo.enabled, "MaximizerVaultApe: vault is disabled");
+
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
-            vaults[_pid]
+            vaultAddress
         );
         IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
@@ -417,17 +498,15 @@ contract MaximizerVaultApe is
         minKeeperFee = _minKeeperFee;
     }
 
-    function setMinCompoundDelay(uint256 _minCompoundDelay) public onlyOwner {
-        require(_minCompoundDelay < 2 days, "delay too long");
-        emit SetMinCompoundDelay(minCompoundDelay, _minCompoundDelay);
-        minCompoundDelay = _minCompoundDelay;
-    }
-
     function setSlippageFactor(uint256 _slippageFactor) public onlyOwner {
         slippageFactor = _slippageFactor;
     }
 
     function setMaxVaults(uint16 _maxVaults) public onlyOwner {
         maxVaults = _maxVaults;
+    }
+
+    function setKeeper(address _keeper) public onlyOwner {
+        keeper = _keeper;
     }
 }

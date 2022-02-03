@@ -12,8 +12,12 @@ import "../libs/IBananaVault.sol";
 import "../libs/IMasterApe.sol";
 import "../libs/IUniRouter02.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
- 
-contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, ReentrancyGuard {
+
+contract StrategyMaximizerMasterApe is
+    IStrategyMaximizerMasterApe,
+    Ownable,
+    ReentrancyGuard
+{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -67,6 +71,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
 
     uint256 public withdrawFee = 25; // 0.25%
     uint256 public constant WITHDRAW_FEE_UL = 300; // 3%
+    uint256 public withdrawFeePeriod = 3 days;
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
@@ -161,7 +166,8 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         uint256 _minPlatformOutput,
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
-        uint256 _minBananaOutput
+        uint256 _minBananaOutput,
+        bool _takeKeeperFee
     ) external override onlyVaultApe {
         if (IS_CAKE_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(0);
@@ -182,7 +188,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         }
 
         // Collect keeper fees
-        if (keeperFee > 0) {
+        if (_takeKeeperFee && keeperFee > 0) {
             _swap(
                 rewardTokenBalance.mul(keeperFee).div(10000),
                 _minKeeperOutput,
@@ -279,23 +285,22 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         );
         _amount = user.stake < _amount ? user.stake : _amount;
 
-        // uint256 preBalance = STAKED_TOKEN.balanceOf(address(this));
-
         if (IS_CAKE_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(_amount);
         } else {
             STAKED_TOKEN_FARM.withdraw(FARM_PID, _amount);
         }
 
-        // uint256 currentAmount = STAKED_TOKEN.balanceOf(address(this)) -
-        //     preBalance;
-
         uint256 currentAmount = _amount;
 
-        // Take withdraw fees
-        uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(10000);
-        STAKED_TOKEN.safeTransfer(treasury, currentWithdrawFee);
-        currentAmount = currentAmount.sub(currentWithdrawFee);
+        if (block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)) {
+            // Take withdraw fees
+            uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(
+                10000
+            );
+            STAKED_TOKEN.safeTransfer(treasury, currentWithdrawFee);
+            currentAmount = currentAmount.sub(currentWithdrawFee);
+        }
 
         user.autoBananaShares = user.autoBananaShares.add(
             user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
@@ -362,7 +367,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     }
 
     /// @notice Using total harvestable rewards as the input, find the outputs for each respective output
-    /// @return platformOutput WBNB output amount which goes to the platform 
+    /// @return platformOutput WBNB output amount which goes to the platform
     /// @return keeperOutput WBNB output amount which goes to the keeper
     /// @return burnOutput BANANA amount which goes to the burn address
     /// @return bananaOutput BANANA amount which goes to compounding
@@ -568,7 +573,6 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         );
         emit SetBuyBackRate(buyBackRate, _buyBackRate);
         buyBackRate = _buyBackRate;
-
     }
 
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
@@ -578,5 +582,13 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         );
         emit SetWithdrawFee(withdrawFee, _withdrawFee);
         withdrawFee = _withdrawFee;
+    }
+
+    function setWithdrawFeePeriod(uint256 _withdrawFeePeriod)
+        external
+        onlyOwner
+    {
+        emit SetWithdrawFee(withdrawFeePeriod, _withdrawFeePeriod);
+        withdrawFeePeriod = _withdrawFeePeriod;
     }
 }

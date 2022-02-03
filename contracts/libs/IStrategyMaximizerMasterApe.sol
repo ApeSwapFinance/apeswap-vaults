@@ -35,7 +35,8 @@ interface IStrategyMaximizerMasterApe {
         uint256 _minPlatformOutput,
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
-        uint256 _minBananaOutput
+        uint256 _minBananaOutput,
+        bool _takeKeeperFee
     ) external;
 
     // Transfer want tokens autoFarm -> strategy

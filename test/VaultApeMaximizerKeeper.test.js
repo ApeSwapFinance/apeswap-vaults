@@ -8,11 +8,11 @@ const { farms } = require('../configs/farms.js');
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 
 // Load compiled artifacts
-const KeeperMaximizerVaultApe = contract.fromArtifact('KeeperMaximizerVaultApe');
+const MaximizerVaultApe = contract.fromArtifact('MaximizerVaultApe');
 const StrategyMaximizerMasterApe = contract.fromArtifact("StrategyMaximizerMasterApe");
 const BananaVault = contract.fromArtifact("BananaVault");
 
-describe('KeeperMaximizerVaultApe', function () {
+describe('MaximizerVaultApe', function () {
   this.timeout(9960000);
 
   //0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69
@@ -30,7 +30,7 @@ describe('KeeperMaximizerVaultApe', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address);
+    maximizerVaultApe = await MaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address);
   });
 
   farms.forEach(farm => {
@@ -114,7 +114,7 @@ describe('KeeperMaximizerVaultApe', function () {
       beforeEach(async () => {
         // Add Strategy
         this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2", maximizerVaultApe.address, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2"], [0, 0]);
-        
+
         // Define roles and grant roles
         this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
         await bananaVault.grantRole(this.MANAGER_ROLE, maximizerVaultApe.address, { from: adminAddress });
