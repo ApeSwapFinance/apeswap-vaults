@@ -43,7 +43,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     IERC20 public immutable STAKED_TOKEN;
     IERC20 public immutable FARM_REWARD_TOKEN;
     uint256 public immutable FARM_PID;
-    bool public immutable IS_CAKE_STAKING;
+    bool public immutable IS_BANANA_STAKING;
     IBananaVault public immutable BANANA_VAULT;
 
     // Settings
@@ -52,7 +52,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     address[] public pathToWbnb; // Path from staked token to WBNB
 
     address public treasury;
-    address public vaultApe;
+    address public immutable override vaultApe;
     uint256 public keeperFee = 50; // 0.5%
     uint256 public constant KEEPER_FEE_UL = 100; // 1%
 
@@ -126,7 +126,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         STAKED_TOKEN_FARM = IMasterApe(_masterApe);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         FARM_PID = _farmPid;
-        IS_CAKE_STAKING = _isCakeStaking;
+        IS_BANANA_STAKING = _isCakeStaking;
         BANANA_VAULT = IBananaVault(_bananaVault);
 
         router = IUniRouter02(_router);
@@ -163,7 +163,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         uint256 _minBurnOutput,
         uint256 _minBananaOutput
     ) external override onlyVaultApe {
-        if (IS_CAKE_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(0);
         } else {
             STAKED_TOKEN_FARM.withdraw(FARM_PID, 0);
@@ -249,7 +249,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             address(STAKED_TOKEN_FARM)
         );
 
-        if (IS_CAKE_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.enterStaking(_amount);
         } else {
             STAKED_TOKEN_FARM.deposit(FARM_PID, _amount);
@@ -270,6 +270,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         external
         override
         nonReentrant
+        onlyVaultApe
     {
         UserInfo storage user = userInfo[_userAddress];
 
@@ -278,25 +279,27 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             "StrategyMaximizerMasterApe: amount must be greater than zero"
         );
         _amount = user.stake < _amount ? user.stake : _amount;
-
+        // FIXME: commented code
         // uint256 preBalance = STAKED_TOKEN.balanceOf(address(this));
 
-        if (IS_CAKE_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(_amount);
         } else {
             STAKED_TOKEN_FARM.withdraw(FARM_PID, _amount);
         }
-
+        // FIXME: commented code
         // uint256 currentAmount = STAKED_TOKEN.balanceOf(address(this)) -
         //     preBalance;
 
         uint256 currentAmount = _amount;
 
+        if(withdrawFee > 0) {
         // Take withdraw fees
-        uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(10000);
-        STAKED_TOKEN.safeTransfer(treasury, currentWithdrawFee);
-        currentAmount = currentAmount.sub(currentWithdrawFee);
-
+            uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(10000);
+            STAKED_TOKEN.safeTransfer(treasury, currentWithdrawFee);
+            currentAmount = currentAmount.sub(currentWithdrawFee);
+        }
+        // Add claimable Banana to user state and update debt
         user.autoBananaShares = user.autoBananaShares.add(
             user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
                 user.rewardDebt
@@ -319,6 +322,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         external
         override
         nonReentrant
+        onlyVaultApe
     {
         _claimRewards(_userAddress, _shares, true);
     }
@@ -331,6 +335,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         UserInfo storage user = userInfo[_userAddress];
 
         if (_update) {
+            // Add claimable Banana to user state and update debt
             user.autoBananaShares = user.autoBananaShares.add(
                 user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
                     user.rewardDebt
@@ -379,6 +384,10 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     {
         // Find the expected WBNB value of the current harvestable rewards
         uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
+        if(wbnbOutput == 0) {
+            // If there are no rewards then return 0
+            return (0,0,0,0);
+        }
         // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
         // Calculate the WBNB values
@@ -407,7 +416,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             STAKED_TOKEN_FARM.pendingCake(FARM_PID, address(this))
         );
 
-        if (_path.length <= 1) {
+        if (_path.length <= 1 || rewards == 0) {
             return rewards;
         } else {
             uint256[] memory amounts = router.getAmountsOut(rewards, _path);
@@ -437,7 +446,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
 
         (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(0, address(this));
         uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(amount);
-
+        // TEST: This value appears to be coming back as zero
         banana = autoBananaShares.mul(pricePerFullShare).div(1e18);
     }
 
@@ -531,11 +540,6 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     function setTreasury(address _treasury) external onlyOwner {
         emit SetTreasury(treasury, _treasury);
         treasury = _treasury;
-    }
-
-    function setVaultApe(address _vaultApe) external onlyOwner {
-        emit SetVaultApe(vaultApe, _vaultApe);
-        vaultApe = _vaultApe;
     }
 
     function setKeeperFee(uint256 _keeperFee) external onlyOwner {

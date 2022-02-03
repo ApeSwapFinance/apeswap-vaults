@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 // For interacting with our own strategy
 interface IStrategyMaximizerMasterApe {
     function STAKED_TOKEN_ADDRESS() external returns (address);
+    
+    function vaultApe() external returns (address);
 
     function accSharesPerStakedToken() external view returns (uint256);
 
