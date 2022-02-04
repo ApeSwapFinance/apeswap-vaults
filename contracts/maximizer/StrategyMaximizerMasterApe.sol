@@ -106,7 +106,7 @@ contract StrategyMaximizerMasterApe is
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
         address _owner,
-        address _keeper
+        address _vaultApe
     ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
@@ -133,7 +133,7 @@ contract StrategyMaximizerMasterApe is
         pathToWbnb = _pathToWbnb;
 
         transferOwnership(_owner);
-        vaultApe = IMaximizerVaultApe(_keeper);
+        vaultApe = IMaximizerVaultApe(_vaultApe);
 
         treasury = vaultApe.defaultTreasury();
         keeperFee = vaultApe.defaultKeeperFee();

@@ -8,11 +8,11 @@ const { farms } = require('../configs/farms.js');
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 
 // Load compiled artifacts
-const MaximizerVaultApe = contract.fromArtifact('MaximizerVaultApe');
+const KeeperMaximizerVaultApe = contract.fromArtifact('KeeperMaximizerVaultApe');
 const StrategyMaximizerMasterApe = contract.fromArtifact("StrategyMaximizerMasterApe");
 const BananaVault = contract.fromArtifact("BananaVault");
 
-describe('MaximizerVaultApe', function () {
+describe('KeeperMaximizerVaultApe', function () {
   this.timeout(9960000);
 
   //0x94bfE225859347f2B2dd7EB8CBF35B84b4e8Df69
@@ -30,7 +30,7 @@ describe('MaximizerVaultApe', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    maximizerVaultApe = await MaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, adminAddress, adminAddress);
+    maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, adminAddress, adminAddress);
   });
 
   farms.forEach(farm => {
