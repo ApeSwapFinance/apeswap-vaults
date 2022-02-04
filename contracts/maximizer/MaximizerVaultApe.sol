@@ -1,6 +1,28 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.6;
+
+/*
+  ______                     ______                                 
+ /      \                   /      \                                
+|  ▓▓▓▓▓▓\ ______   ______ |  ▓▓▓▓▓▓\__   __   __  ______   ______  
+| ▓▓__| ▓▓/      \ /      \| ▓▓___\▓▓  \ |  \ |  \|      \ /      \ 
+| ▓▓    ▓▓  ▓▓▓▓▓▓\  ▓▓▓▓▓▓\\▓▓    \| ▓▓ | ▓▓ | ▓▓ \▓▓▓▓▓▓\  ▓▓▓▓▓▓\
+| ▓▓▓▓▓▓▓▓ ▓▓  | ▓▓ ▓▓    ▓▓_\▓▓▓▓▓▓\ ▓▓ | ▓▓ | ▓▓/      ▓▓ ▓▓  | ▓▓
+| ▓▓  | ▓▓ ▓▓__/ ▓▓ ▓▓▓▓▓▓▓▓  \__| ▓▓ ▓▓_/ ▓▓_/ ▓▓  ▓▓▓▓▓▓▓ ▓▓__/ ▓▓
+| ▓▓  | ▓▓ ▓▓    ▓▓\▓▓     \\▓▓    ▓▓\▓▓   ▓▓   ▓▓\▓▓    ▓▓ ▓▓    ▓▓
+ \▓▓   \▓▓ ▓▓▓▓▓▓▓  \▓▓▓▓▓▓▓ \▓▓▓▓▓▓  \▓▓▓▓▓\▓▓▓▓  \▓▓▓▓▓▓▓ ▓▓▓▓▓▓▓ 
+         | ▓▓                                             | ▓▓      
+         | ▓▓                                             | ▓▓      
+          \▓▓                                              \▓▓         
+
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com
+ * Twitter:         https://twitter.com/ape_swap
+ * Discord:         https://discord.com/invite/apeswap
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,6 +32,9 @@ import "../libs/IMaximizerVaultApe.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
 import "../libs/IBananaVault.sol";
 
+/// @title Maximizer VaultApe
+/// @author ApeSwapFinance
+/// @notice Interaction contract for all maximizer vault strategies
 contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -83,6 +108,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         _;
     }
 
+    /// @notice Chainlink keeper - Check what vaults need compounding
     function checkVaultCompound()
         public
         view
@@ -292,10 +318,14 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         ) = IStrategyMaximizerMasterApe(_vault).getExpectedOutputs();
     }
 
+    /// @notice Get amount of vaults
     function vaultsLength() external view override returns (uint256) {
         return vaults.length;
     }
 
+    /// @notice Get user info of a specific vault
+    /// @param _pid pid of vault
+    /// @param _user user address
     function userInfo(uint256 _pid, address _user)
         external
         view
@@ -314,6 +344,9 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             .userInfo(_user);
     }
 
+    /// @notice Get staked want tokens of a specific vault
+    /// @param _pid pid of vault
+    /// @param _user user address
     function stakedWantTokens(uint256 _pid, address _user)
         external
         view
@@ -327,6 +360,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         return stake;
     }
 
+    /// @notice Get shares per staked token of a specific vault
+    /// @param _pid pid of vault
     function accSharesPerStakedToken(uint256 _pid)
         external
         view
@@ -338,6 +373,9 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         return strat.accSharesPerStakedToken();
     }
 
+    /// @notice User deposit for specific vault
+    /// @param _pid pid of vault
+    /// @param _wantAmt amount of tokens to deposit
     function deposit(uint256 _pid, uint256 _wantAmt)
         external
         override
@@ -356,6 +394,9 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         strat.deposit(msg.sender);
     }
 
+    /// @notice User withdraw for specific vault
+    /// @param _pid pid of vault
+    /// @param _wantAmt amount of tokens to withdraw
     function withdraw(uint256 _pid, uint256 _wantAmt)
         external
         override
@@ -367,6 +408,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         strat.withdraw(msg.sender, _wantAmt);
     }
 
+    /// @notice User withdraw all for specific vault
+    /// @param _pid pid of vault
     function withdrawAll(uint256 _pid) external override nonReentrant {
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
             vaults[_pid]
@@ -374,6 +417,9 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         strat.withdraw(msg.sender, type(uint256).max);
     }
 
+    /// @notice User harvest rewards for specific vault
+    /// @param _pid pid of vault
+    /// @param _wantAmt amount of reward tokens to claim
     function harvest(uint256 _pid, uint256 _wantAmt)
         external
         override
@@ -385,6 +431,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         strat.claimRewards(msg.sender, _wantAmt);
     }
 
+    /// @notice User harvest all rewards for specific vault
+    /// @param _pid pid of vault
     function harvestAll(uint256 _pid) external override nonReentrant {
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
             vaults[_pid]
@@ -393,6 +441,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     }
 
     // ===== OWNER only functions =====
+
+    /// @notice Add a new vault address
+    /// @param _vault vault address to add
+    /// @dev Only callable by the contract owner
     function addVault(address _vault) public override onlyOwner {
         require(
             vaultInfos[_vault].lastCompound == 0,
@@ -407,6 +459,9 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         vaults.push(_vault);
     }
 
+    /// @notice Add new vaults
+    /// @param _vaults vault addresses to add
+    /// @dev Only callable by the contract owner
     function addVaults(address[] memory _vaults) public onlyOwner {
         for (uint256 index = 0; index < _vaults.length; ++index) {
             addVault(_vaults[index]);

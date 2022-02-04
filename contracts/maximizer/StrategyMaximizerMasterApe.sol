@@ -1,6 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
+/*
+  ______                     ______                                 
+ /      \                   /      \                                
+|  ▓▓▓▓▓▓\ ______   ______ |  ▓▓▓▓▓▓\__   __   __  ______   ______  
+| ▓▓__| ▓▓/      \ /      \| ▓▓___\▓▓  \ |  \ |  \|      \ /      \ 
+| ▓▓    ▓▓  ▓▓▓▓▓▓\  ▓▓▓▓▓▓\\▓▓    \| ▓▓ | ▓▓ | ▓▓ \▓▓▓▓▓▓\  ▓▓▓▓▓▓\
+| ▓▓▓▓▓▓▓▓ ▓▓  | ▓▓ ▓▓    ▓▓_\▓▓▓▓▓▓\ ▓▓ | ▓▓ | ▓▓/      ▓▓ ▓▓  | ▓▓
+| ▓▓  | ▓▓ ▓▓__/ ▓▓ ▓▓▓▓▓▓▓▓  \__| ▓▓ ▓▓_/ ▓▓_/ ▓▓  ▓▓▓▓▓▓▓ ▓▓__/ ▓▓
+| ▓▓  | ▓▓ ▓▓    ▓▓\▓▓     \\▓▓    ▓▓\▓▓   ▓▓   ▓▓\▓▓    ▓▓ ▓▓    ▓▓
+ \▓▓   \▓▓ ▓▓▓▓▓▓▓  \▓▓▓▓▓▓▓ \▓▓▓▓▓▓  \▓▓▓▓▓\▓▓▓▓  \▓▓▓▓▓▓▓ ▓▓▓▓▓▓▓ 
+         | ▓▓                                             | ▓▓      
+         | ▓▓                                             | ▓▓      
+          \▓▓                                              \▓▓         
+
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com
+ * Twitter:         https://twitter.com/ape_swap
+ * Discord:         https://discord.com/invite/apeswap
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -14,6 +37,9 @@ import "../libs/IUniRouter02.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
 import "../libs/IMaximizerVaultApe.sol";
 
+/// @title Strategy Maximizer - MasterApe
+/// @author ApeSwapFinance
+/// @notice MasterApe strategy for maximizer vaults
 contract StrategyMaximizerMasterApe is
     IStrategyMaximizerMasterApe,
     Ownable,
@@ -160,6 +186,12 @@ contract StrategyMaximizerMasterApe is
     // 2. Collect fees
     // 3. Convert rewards to $BANANA
     // 4. Stake to banana auto-compound vault
+    /// @notice compound of vault
+    /// @param _minPlatformOutput Minimum platform fee output
+    /// @param _minKeeperOutput Minimum keeper fee output
+    /// @param _minBurnOutput Minimum burn fee output
+    /// @param _minBananaOutput Minimum banana output
+    /// @param _takeKeeperFee Take keeper fee for chainlink keeper
     function earn(
         uint256 _minPlatformOutput,
         uint256 _minKeeperOutput,
@@ -234,6 +266,8 @@ contract StrategyMaximizerMasterApe is
         );
     }
 
+    /// @notice deposit in vault
+    /// @param _userAddress user address
     function deposit(address _userAddress)
         external
         override
@@ -270,6 +304,9 @@ contract StrategyMaximizerMasterApe is
         emit Deposit(_userAddress, _amount);
     }
 
+    /// @notice withdraw tokens from vault
+    /// @param _userAddress user address
+    /// @param _amount amount to withdraw
     function withdraw(address _userAddress, uint256 _amount)
         external
         override
@@ -318,6 +355,9 @@ contract StrategyMaximizerMasterApe is
         emit Withdraw(_userAddress, currentAmount);
     }
 
+    /// @notice claim rewards
+    /// @param _userAddress user address
+    /// @param _shares shares to withdraw
     function claimRewards(address _userAddress, uint256 _shares)
         external
         override
@@ -426,7 +466,9 @@ contract StrategyMaximizerMasterApe is
         }
     }
 
-    function balanceOf(address _user)
+    /// @notice Get all balances of a user
+    /// @param _userAddress user address
+    function balanceOf(address _userAddress)
         external
         view
         returns (
@@ -435,7 +477,7 @@ contract StrategyMaximizerMasterApe is
             uint256 autoBananaShares
         )
     {
-        UserInfo memory user = userInfo[_user];
+        UserInfo memory user = userInfo[_userAddress];
 
         uint256 pendingShares = user
             .stake
@@ -470,6 +512,7 @@ contract StrategyMaximizerMasterApe is
         return BANANA.balanceOf(address(this));
     }
 
+    /// @notice total staked tokens of vault in farm
     function totalStake() public view override returns (uint256) {
         (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(
             FARM_PID,
@@ -478,6 +521,7 @@ contract StrategyMaximizerMasterApe is
         return amount;
     }
 
+    /// @notice total rewarded banana shares in banana vault
     function totalAutoBananaShares() public view returns (uint256) {
         (uint256 shares, , , ) = BANANA_VAULT.userInfo(address(this));
         return shares;
