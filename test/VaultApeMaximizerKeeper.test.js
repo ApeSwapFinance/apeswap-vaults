@@ -113,7 +113,7 @@ describe('KeeperMaximizerVaultApe', function () {
 
       beforeEach(async () => {
         // Add Strategy
-        this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, adminAddress, maximizerVaultApe.address);
+        this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, farmInfo.earnedToLinkPath, [adminAddress, maximizerVaultApe.address]);
 
         // Define roles and grant roles
         this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();

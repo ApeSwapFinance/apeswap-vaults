@@ -61,6 +61,7 @@ contract StrategyMaximizerMasterApe is
 
     // Addresses
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public constant LINK = 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD;
     IERC20 public constant BANANA =
         IERC20(0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95);
 
@@ -81,6 +82,7 @@ contract StrategyMaximizerMasterApe is
     IUniRouter02 public immutable router;
     address[] public pathToBanana; // Path from staked token to BANANA
     address[] public pathToWbnb; // Path from staked token to WBNB
+    address[] public pathToLink; // Path from staked token to LINK
 
     IMaximizerVaultApe public vaultApe;
     address public treasury;
@@ -106,6 +108,7 @@ contract StrategyMaximizerMasterApe is
     // Setting updates
     event SetPathToBanana(address[] oldPath, address[] newPath);
     event SetPathToWbnb(address[] oldPath, address[] newPath);
+    event SetPathToLink(address[] oldPath, address[] newPath);
     event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate);
     event SetTreasury(address oldTreasury, address newTreasury);
     event SetVaultApe(address oldVaultApe, address newVaultApe);
@@ -131,8 +134,8 @@ contract StrategyMaximizerMasterApe is
         address _router,
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
-        address _owner,
-        address _vaultApe
+        address[] memory _pathToLink,
+        address[] memory _addresses //[_owner, _vaultApe]
     ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
@@ -157,9 +160,10 @@ contract StrategyMaximizerMasterApe is
         router = IUniRouter02(_router);
         pathToBanana = _pathToBanana;
         pathToWbnb = _pathToWbnb;
+        pathToLink = _pathToLink;
 
-        transferOwnership(_owner);
-        vaultApe = IMaximizerVaultApe(_vaultApe);
+        transferOwnership(_addresses[0]);
+        vaultApe = IMaximizerVaultApe(_addresses[1]);
 
         treasury = vaultApe.defaultTreasury();
         keeperFee = vaultApe.defaultKeeperFee();
@@ -222,9 +226,11 @@ contract StrategyMaximizerMasterApe is
             _swap(
                 rewardTokenBalance.mul(keeperFee).div(10000),
                 _minKeeperOutput,
-                pathToWbnb,
+                pathToLink,
                 treasury
             );
+            IERC20 link = IERC20(LINK);
+            link.safeTransfer(address(vaultApe), link.balanceOf(address(this)));
         }
 
         // Convert remaining rewards to BANANA
@@ -430,11 +436,12 @@ contract StrategyMaximizerMasterApe is
     {
         // Find the expected WBNB value of the current harvestable rewards
         uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
+        uint256 linkOutput = _getExpectedOutput(pathToLink);
         // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
         // Calculate the WBNB values
         platformOutput = wbnbOutput.mul(platformFee).div(10000);
-        keeperOutput = wbnbOutput.mul(keeperFee).div(10000);
+        keeperOutput = linkOutput.mul(keeperFee).div(10000);
         // Calculate the BANANA values
         burnOutput = bananaOutputWithoutFees.mul(buyBackRate).div(10000);
         bananaOutput = bananaOutputWithoutFees.sub(
@@ -581,6 +588,20 @@ contract StrategyMaximizerMasterApe is
         pathToWbnb = _path;
 
         emit SetPathToWbnb(oldPath, pathToWbnb);
+    }
+
+        function setPathToLink(address[] memory _path) external onlyOwner {
+        require(
+            _path[0] == address(FARM_REWARD_TOKEN) &&
+                _path[_path.length - 1] == LINK,
+            "StrategyMaximizerMasterApe: Incorrect path to LINK"
+        );
+
+        address[] memory oldPath = pathToLink;
+
+        pathToLink = _path;
+
+        emit SetPathToLink(oldPath, pathToLink);
     }
 
     function setTreasury(address _treasury) external override onlyOwner {
