@@ -17,29 +17,42 @@ function divBNStr(bnStrA, bnStrB) {
 }
 
 /**
- * Pass an BN object returned from a smart contract and convert all BN values to strings to easily read them.
+ * Pass BN object, BN, or string returned from a smart contract and convert all BN values to strings to easily read them.
  * 
- * @param {*} bigNumberObject 
- * @returns 
+ * @param {*} bigNumberObject BN, Object of BNs or string
+ * @returns All values are converted to a string
  */
 function formatBNObjectToString(bigNumberObject) {
-  let formattedObj = {}
-
-  for (let [key, value] of Object.entries(bigNumberObject)) {
-    if (typeof value == 'boolean') {
-      formattedObj[key] = value;
-    } else {
-      formattedObj[key] = value.toString();
-    }
+  // If value is a string then return
+  if (typeof bigNumberObject == 'string') {
+    return bigNumberObject;
   }
-  return formattedObj;
+
+  try {
+    // Attempt to decode keys if this is an object
+    let formattedObj = {}
+
+    for (let [key, value] of Object.entries(bigNumberObject)) {
+      if (typeof value == 'boolean') {
+        formattedObj[key] = value;
+      } else {
+        formattedObj[key] = value.toString();
+      }
+    }
+    return formattedObj;
+  } catch { 
+    // Skipping error handling
+  }
+  // Getting to this point assumes this is a BN
+  // NOTE: If this value does not have a `.toString()` method then this will throw
+  return bigNumberObject.toString();
 }
 
 /**
  * Check that a BN/BN String is within a percentage tolerance of another big number
  * 
- * @param {*} bnToCheck Value to check
- * @param {*} bnExpected Expected value
+ * @param {*} bnToCheck BN or string of the value to check
+ * @param {*} bnExpected BN or string of the value to compare against
  * @param {*} tolerancePercentage Percentage to add/subtract from expected value to check tolerance
  * @returns boolean
  */
@@ -64,8 +77,8 @@ function isWithinLimit(bnToCheck, bnExpected, tolerancePercentage = 2) {
 /**
  * Check that a BN/BN String is within a percentage tolerance of another big number
  * 
- * @param {*} bnToCheck Value to check
- * @param {*} bnExpected Expected value
+ * @param {*} bnToCheck BN or string of the value to check
+ * @param {*} bnExpected BN or string of the value to compare against
  * @param {*} tolerance Wei amount within limits
  * @returns boolean
  */

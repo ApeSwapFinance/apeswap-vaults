@@ -75,7 +75,7 @@ contract StrategyMaximizerMasterApe is
     IERC20 public immutable STAKED_TOKEN;
     IERC20 public immutable FARM_REWARD_TOKEN;
     uint256 public immutable FARM_PID;
-    bool public immutable IS_CAKE_STAKING;
+    bool public immutable IS_BANANA_STAKING;
     IBananaVault public immutable BANANA_VAULT;
 
     // Settings
@@ -84,7 +84,7 @@ contract StrategyMaximizerMasterApe is
     address[] public pathToWbnb; // Path from staked token to WBNB
     address[] public pathToLink; // Path from staked token to LINK
 
-    IMaximizerVaultApe public vaultApe;
+    IMaximizerVaultApe public override vaultApe;
     address public treasury;
     uint256 public keeperFee;
 
@@ -154,7 +154,7 @@ contract StrategyMaximizerMasterApe is
         STAKED_TOKEN_FARM = IMasterApe(_masterApe);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         FARM_PID = _farmPid;
-        IS_CAKE_STAKING = _isCakeStaking;
+        IS_BANANA_STAKING = _isCakeStaking;
         BANANA_VAULT = IBananaVault(_bananaVault);
 
         router = IUniRouter02(_router);
@@ -203,7 +203,7 @@ contract StrategyMaximizerMasterApe is
         uint256 _minBananaOutput,
         bool _takeKeeperFee
     ) external override onlyVaultApe {
-        if (IS_CAKE_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(0);
         } else {
             STAKED_TOKEN_FARM.withdraw(FARM_PID, 0);
@@ -293,7 +293,7 @@ contract StrategyMaximizerMasterApe is
             address(STAKED_TOKEN_FARM)
         );
 
-        if (IS_CAKE_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.enterStaking(_amount);
         } else {
             STAKED_TOKEN_FARM.deposit(FARM_PID, _amount);
@@ -317,6 +317,7 @@ contract StrategyMaximizerMasterApe is
         external
         override
         nonReentrant
+        onlyVaultApe
     {
         UserInfo storage user = userInfo[_userAddress];
 
@@ -326,7 +327,7 @@ contract StrategyMaximizerMasterApe is
         );
         _amount = user.stake < _amount ? user.stake : _amount;
 
-        if (IS_CAKE_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(_amount);
         } else {
             STAKED_TOKEN_FARM.withdraw(FARM_PID, _amount);
@@ -334,7 +335,7 @@ contract StrategyMaximizerMasterApe is
 
         uint256 currentAmount = _amount;
 
-        if (block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)) {
+        if (withdrawFee > 0 && block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)) {
             // Take withdraw fees
             uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(
                 10000
@@ -368,6 +369,7 @@ contract StrategyMaximizerMasterApe is
         external
         override
         nonReentrant
+        onlyVaultApe
     {
         _claimRewards(_userAddress, _shares, true);
     }
@@ -380,6 +382,7 @@ contract StrategyMaximizerMasterApe is
         UserInfo storage user = userInfo[_userAddress];
 
         if (_update) {
+            // Add claimable Banana to user state and update debt
             user.autoBananaShares = user.autoBananaShares.add(
                 user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
                     user.rewardDebt
@@ -465,7 +468,7 @@ contract StrategyMaximizerMasterApe is
             STAKED_TOKEN_FARM.pendingCake(FARM_PID, address(this))
         );
 
-        if (_path.length <= 1) {
+        if (_path.length <= 1 || rewards == 0) {
             return rewards;
         } else {
             uint256[] memory amounts = router.getAmountsOut(rewards, _path);
@@ -497,7 +500,7 @@ contract StrategyMaximizerMasterApe is
 
         (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(0, address(this));
         uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(amount);
-
+        // TEST: This value appears to be coming back as zero
         banana = autoBananaShares.mul(pricePerFullShare).div(1e18);
     }
 

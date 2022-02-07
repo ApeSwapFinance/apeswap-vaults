@@ -1,13 +1,14 @@
 const { MasterChefVaults, MasterApeSingleVaults, KoalaChefSingleVaults, MasterChefReflectVaults, MasterChefSingleVaults, BeltTokenVaults, Belt4TokenVaults } = require('../../configs/vaults');
 
-
 const testConfig = {
-  //0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5 has a lot of busd and bnb and wbnb
-  //0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6 has a lot of bananas
-  testAccount: '0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5',//'0x41f2E851431Ae142edE42B6C467515EF5053061d',
-  testAccount2: '0xF977814e90dA44bFA03b6295A0616a897441aceC',
-  testAccount3: '0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6',
-  adminAddress: "0xD183F2BBF8b28d9fec8367cb06FE72B88778C86B",
+  // Test accounts are unlocked mainnet accounts in test-environment.config.js
+  // 0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5 has a lot of busd and bnb and wbnb
+  // 0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6 has a lot of bananas
+  // 0x41f2E851431Ae142edE42B6C467515EF5053061d
+  testAccount: '0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5', // https://bscscan.com/address/0x9f6609Ec4601F7974d4adA0c73e6bf1ddC29A0E5
+  testAccount2: '0xF977814e90dA44bFA03b6295A0616a897441aceC', // https://bscscan.com/address/0xF977814e90dA44bFA03b6295A0616a897441aceC
+  testAccount3: '0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6', // https://bscscan.com/address/0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6
+  adminAddress: "0xD183F2BBF8b28d9fec8367cb06FE72B88778C86B", // https://bscscan.com/address/0xD183F2BBF8b28d9fec8367cb06FE72B88778C86B
   //PCS Router: 0x10ED43C718714eb63d5aA57B78B54704E256024E
   //ApeSwap Router: 0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7
   routerAddress: "0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7",

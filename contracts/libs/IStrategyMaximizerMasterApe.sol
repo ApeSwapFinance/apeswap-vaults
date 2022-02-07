@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../libs/IMaximizerVaultApe.sol";
 
 // For interacting with our own strategy
 interface IStrategyMaximizerMasterApe {
     function STAKED_TOKEN_ADDRESS() external returns (address);
+    
+    function vaultApe() external returns (IMaximizerVaultApe);
 
     function accSharesPerStakedToken() external view returns (uint256);
 

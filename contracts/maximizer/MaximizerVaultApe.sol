@@ -102,6 +102,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         maxVaults = 2;
     }
 
+    // TODO: Allow whitelist contracts?
     modifier onlyEOA() {
         // only allowing externally owned addresses.
         require(msg.sender == tx.origin, "VaultApeMaximizer: must use EOA");
@@ -148,7 +149,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             ) = _getExpectedOutputs(vault);
 
             if (
-                block.timestamp >= vaultInfo.lastCompound + maxDelay ||
+                block.timestamp >= vaultInfo.lastCompound + maxDelay || // TODO: there are two delays in state. Combine into one
                 keeperOutput >= minKeeperFee
             ) {
                 tempCompoundInfo.vaults[actualLength] = vault;
@@ -389,6 +390,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
             vaultAddress
         );
+        // TODO: Disable deposits if disabled
         IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         strat.deposit(msg.sender);
@@ -450,9 +452,13 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             vaultInfos[_vault].lastCompound == 0,
             "MaximizerVaultApe: addVault: Vault already exists"
         );
-
+        // Verify that this strategy is assigned to this vault
+        require(
+            address(IStrategyMaximizerMasterApe(_vault).vaultApe()) == address(this), 
+            "strategy vault ape not set to this address"
+        );
         vaultInfos[_vault] = VaultInfo(block.timestamp, true);
-
+        // Whitelist vault address on BANANA Vault
         bytes32 DEPOSIT_ROLE = BANANA_VAULT.DEPOSIT_ROLE();
         BANANA_VAULT.grantRole(DEPOSIT_ROLE, _vault);
 
