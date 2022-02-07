@@ -453,7 +453,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             "MaximizerVaultApe: addVault: Vault already exists"
         );
         // Verify that this strategy is assigned to this vault
-        require(IStrategyMaximizerMasterApe(_vault).vaultApe() == address(this), "strategy vault ape not set to this address");
+        require(
+            address(IStrategyMaximizerMasterApe(_vault).vaultApe()) == address(this), 
+            "strategy vault ape not set to this address"
+        );
         vaultInfos[_vault] = VaultInfo(block.timestamp, true);
         // Whitelist vault address on BANANA Vault
         bytes32 DEPOSIT_ROLE = BANANA_VAULT.DEPOSIT_ROLE();
