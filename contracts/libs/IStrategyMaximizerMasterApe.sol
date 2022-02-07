@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../libs/IMaximizerVaultApe.sol";
 
 // For interacting with our own strategy
 interface IStrategyMaximizerMasterApe {
     function STAKED_TOKEN_ADDRESS() external returns (address);
     
-    function vaultApe() external returns (address);
+    function vaultApe() external returns (IMaximizerVaultApe);
 
     function accSharesPerStakedToken() external view returns (uint256);
 
@@ -37,7 +38,8 @@ interface IStrategyMaximizerMasterApe {
         uint256 _minPlatformOutput,
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
-        uint256 _minBananaOutput
+        uint256 _minBananaOutput,
+        bool _takeKeeperFee
     ) external;
 
     // Transfer want tokens autoFarm -> strategy
@@ -47,4 +49,22 @@ interface IStrategyMaximizerMasterApe {
     function withdraw(address _userAddress, uint256 _wantAmt) external;
 
     function claimRewards(address _userAddress, uint256 _shares) external;
+
+    function setTreasury(address _treasury) external;
+
+    function setVaultApe(address _vaultApe) external;
+
+    function setKeeperFee(uint256 _keeperFee) external;
+
+    function setPlatform(address _platform) external;
+
+    function setPlatformFee(uint256 _platformFee) external;
+
+    function setBuyBackRate(uint256 _buyBackRate) external;
+
+    function setWithdrawFee(uint256 _withdrawFee) external;
+
+    function setWithdrawFeePeriod(uint256 _withdrawFeePeriod) external;
+
+    function setWithdrawRewardsFee(uint256 _withdrawRewardsFee) external;
 }

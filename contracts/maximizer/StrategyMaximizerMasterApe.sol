@@ -1,6 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
+/*
+  ______                     ______                                 
+ /      \                   /      \                                
+|  ▓▓▓▓▓▓\ ______   ______ |  ▓▓▓▓▓▓\__   __   __  ______   ______  
+| ▓▓__| ▓▓/      \ /      \| ▓▓___\▓▓  \ |  \ |  \|      \ /      \ 
+| ▓▓    ▓▓  ▓▓▓▓▓▓\  ▓▓▓▓▓▓\\▓▓    \| ▓▓ | ▓▓ | ▓▓ \▓▓▓▓▓▓\  ▓▓▓▓▓▓\
+| ▓▓▓▓▓▓▓▓ ▓▓  | ▓▓ ▓▓    ▓▓_\▓▓▓▓▓▓\ ▓▓ | ▓▓ | ▓▓/      ▓▓ ▓▓  | ▓▓
+| ▓▓  | ▓▓ ▓▓__/ ▓▓ ▓▓▓▓▓▓▓▓  \__| ▓▓ ▓▓_/ ▓▓_/ ▓▓  ▓▓▓▓▓▓▓ ▓▓__/ ▓▓
+| ▓▓  | ▓▓ ▓▓    ▓▓\▓▓     \\▓▓    ▓▓\▓▓   ▓▓   ▓▓\▓▓    ▓▓ ▓▓    ▓▓
+ \▓▓   \▓▓ ▓▓▓▓▓▓▓  \▓▓▓▓▓▓▓ \▓▓▓▓▓▓  \▓▓▓▓▓\▓▓▓▓  \▓▓▓▓▓▓▓ ▓▓▓▓▓▓▓ 
+         | ▓▓                                             | ▓▓      
+         | ▓▓                                             | ▓▓      
+          \▓▓                                              \▓▓         
+
+ * App:             https://apeswap.finance
+ * Medium:          https://ape-swap.medium.com
+ * Twitter:         https://twitter.com/ape_swap
+ * Discord:         https://discord.com/invite/apeswap
+ * Telegram:        https://t.me/ape_swap
+ * Announcements:   https://t.me/ape_swap_news
+ * GitHub:          https://github.com/ApeSwapFinance
+ */
+
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -12,8 +35,16 @@ import "../libs/IBananaVault.sol";
 import "../libs/IMasterApe.sol";
 import "../libs/IUniRouter02.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
- 
-contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, ReentrancyGuard {
+import "../libs/IMaximizerVaultApe.sol";
+
+/// @title Strategy Maximizer - MasterApe
+/// @author ApeSwapFinance
+/// @notice MasterApe strategy for maximizer vaults
+contract StrategyMaximizerMasterApe is
+    IStrategyMaximizerMasterApe,
+    Ownable,
+    ReentrancyGuard
+{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -30,6 +61,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
 
     // Addresses
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public constant LINK = 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD;
     IERC20 public constant BANANA =
         IERC20(0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95);
 
@@ -50,23 +82,23 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     IUniRouter02 public immutable router;
     address[] public pathToBanana; // Path from staked token to BANANA
     address[] public pathToWbnb; // Path from staked token to WBNB
+    address[] public pathToLink; // Path from staked token to LINK
 
+    IMaximizerVaultApe public override vaultApe;
     address public treasury;
-    address public immutable override vaultApe;
-    uint256 public keeperFee = 50; // 0.5%
-    uint256 public constant KEEPER_FEE_UL = 100; // 1%
+    uint256 public keeperFee;
 
     address public platform;
     uint256 public platformFee;
-    uint256 public constant PLATFORM_FEE_UL = 500; // 5%
 
     address public constant BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
     uint256 public buyBackRate;
-    uint256 public constant BUYBACK_RATE_UL = 300; // 3%
 
-    uint256 public withdrawFee = 25; // 0.25%
-    uint256 public constant WITHDRAW_FEE_UL = 300; // 3%
+    uint256 public withdrawFee;
+    uint256 public withdrawFeePeriod = 3 days;
+
+    uint256 public withdrawRewardsFee;
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
@@ -76,12 +108,17 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     // Setting updates
     event SetPathToBanana(address[] oldPath, address[] newPath);
     event SetPathToWbnb(address[] oldPath, address[] newPath);
+    event SetPathToLink(address[] oldPath, address[] newPath);
     event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate);
     event SetTreasury(address oldTreasury, address newTreasury);
     event SetVaultApe(address oldVaultApe, address newVaultApe);
     event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee);
     event SetPlatform(address oldPlatform, address newPlatform);
     event SetPlatformFee(uint256 oldPlatformFee, uint256 newPlatformFee);
+    event SetWithdrawRewardsFee(
+        uint256 oldWithdrawRewardsFee,
+        uint256 newWithdrawRewardsFee
+    );
     event SetWithdrawFee(
         uint256 oldEarlyWithdrawFee,
         uint256 newEarlyWithdrawFee
@@ -97,8 +134,8 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         address _router,
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
-        address[] memory _addresses, //[_owner, _treasury, _keeper ,_platform]
-        uint256[] memory _fees //[_buyBackRate, _platformFee]
+        address[] memory _pathToLink,
+        address[] memory _addresses //[_owner, _vaultApe]
     ) {
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
@@ -112,15 +149,6 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             "StrategyMaximizerMasterApe: Incorrect path to WBNB"
         );
 
-        require(
-            _fees[0] <= BUYBACK_RATE_UL,
-            "StrategyMaximizerMasterApe: Buyback rate over upper limit"
-        );
-        require(
-            _fees[1] <= PLATFORM_FEE_UL,
-            "StrategyMaximizerMasterApe: platform fee over upper limit"
-        );
-
         STAKED_TOKEN = IERC20(_stakedToken);
         STAKED_TOKEN_ADDRESS = _stakedToken;
         STAKED_TOKEN_FARM = IMasterApe(_masterApe);
@@ -132,14 +160,19 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         router = IUniRouter02(_router);
         pathToBanana = _pathToBanana;
         pathToWbnb = _pathToWbnb;
-
-        buyBackRate = _fees[0];
-        platformFee = _fees[1];
+        pathToLink = _pathToLink;
 
         transferOwnership(_addresses[0]);
-        treasury = _addresses[1];
-        vaultApe = _addresses[2];
-        platform = _addresses[3];
+        vaultApe = IMaximizerVaultApe(_addresses[1]);
+
+        treasury = vaultApe.defaultTreasury();
+        keeperFee = vaultApe.defaultKeeperFee();
+        platform = vaultApe.defaultPlatform();
+        platformFee = vaultApe.defaultPlatformFee();
+        buyBackRate = vaultApe.defaultBuyBackRate();
+        withdrawFee = vaultApe.defaultWithdrawFee();
+        withdrawFeePeriod = vaultApe.defaultWithdrawFeePeriod();
+        withdrawRewardsFee = vaultApe.defaulWithdrawRewardsFee();
     }
 
     /**
@@ -147,7 +180,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
      */
     modifier onlyVaultApe() {
         require(
-            vaultApe == msg.sender,
+            address(vaultApe) == msg.sender,
             "StrategyMaximizerMasterApe: caller is not the VaultApe"
         );
         _;
@@ -157,11 +190,18 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     // 2. Collect fees
     // 3. Convert rewards to $BANANA
     // 4. Stake to banana auto-compound vault
+    /// @notice compound of vault
+    /// @param _minPlatformOutput Minimum platform fee output
+    /// @param _minKeeperOutput Minimum keeper fee output
+    /// @param _minBurnOutput Minimum burn fee output
+    /// @param _minBananaOutput Minimum banana output
+    /// @param _takeKeeperFee Take keeper fee for chainlink keeper
     function earn(
         uint256 _minPlatformOutput,
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
-        uint256 _minBananaOutput
+        uint256 _minBananaOutput,
+        bool _takeKeeperFee
     ) external override onlyVaultApe {
         if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(0);
@@ -182,13 +222,15 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         }
 
         // Collect keeper fees
-        if (keeperFee > 0) {
+        if (_takeKeeperFee && keeperFee > 0) {
             _swap(
                 rewardTokenBalance.mul(keeperFee).div(10000),
                 _minKeeperOutput,
-                pathToWbnb,
+                pathToLink,
                 treasury
             );
+            IERC20 link = IERC20(LINK);
+            link.safeTransfer(address(vaultApe), link.balanceOf(address(this)));
         }
 
         // Convert remaining rewards to BANANA
@@ -230,6 +272,8 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         );
     }
 
+    /// @notice deposit in vault
+    /// @param _userAddress user address
     function deposit(address _userAddress)
         external
         override
@@ -266,6 +310,9 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         emit Deposit(_userAddress, _amount);
     }
 
+    /// @notice withdraw tokens from vault
+    /// @param _userAddress user address
+    /// @param _amount amount to withdraw
     function withdraw(address _userAddress, uint256 _amount)
         external
         override
@@ -279,27 +326,24 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             "StrategyMaximizerMasterApe: amount must be greater than zero"
         );
         _amount = user.stake < _amount ? user.stake : _amount;
-        // FIXME: commented code
-        // uint256 preBalance = STAKED_TOKEN.balanceOf(address(this));
 
         if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(_amount);
         } else {
             STAKED_TOKEN_FARM.withdraw(FARM_PID, _amount);
         }
-        // FIXME: commented code
-        // uint256 currentAmount = STAKED_TOKEN.balanceOf(address(this)) -
-        //     preBalance;
 
         uint256 currentAmount = _amount;
 
-        if(withdrawFee > 0) {
-        // Take withdraw fees
-            uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(10000);
+        if (withdrawFee > 0 && block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)) {
+            // Take withdraw fees
+            uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(
+                10000
+            );
             STAKED_TOKEN.safeTransfer(treasury, currentWithdrawFee);
             currentAmount = currentAmount.sub(currentWithdrawFee);
         }
-        // Add claimable Banana to user state and update debt
+
         user.autoBananaShares = user.autoBananaShares.add(
             user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
                 user.rewardDebt
@@ -318,6 +362,9 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         emit Withdraw(_userAddress, currentAmount);
     }
 
+    /// @notice claim rewards
+    /// @param _userAddress user address
+    /// @param _shares shares to withdraw
     function claimRewards(address _userAddress, uint256 _shares)
         external
         override
@@ -361,13 +408,21 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
 
         uint256 withdrawAmount = _bananaBalance().sub(bananaBalanceBefore);
 
+        if (withdrawRewardsFee > 0) {
+            uint256 rewardFee = withdrawAmount.mul(withdrawRewardsFee).div(
+                10000
+            );
+            _safeBANANATransfer(treasury, rewardFee);
+            withdrawAmount = withdrawAmount.sub(rewardFee);
+        }
+
         _safeBANANATransfer(_userAddress, withdrawAmount);
 
         emit ClaimRewards(_userAddress, _shares, withdrawAmount);
     }
 
     /// @notice Using total harvestable rewards as the input, find the outputs for each respective output
-    /// @return platformOutput WBNB output amount which goes to the platform 
+    /// @return platformOutput WBNB output amount which goes to the platform
     /// @return keeperOutput WBNB output amount which goes to the keeper
     /// @return burnOutput BANANA amount which goes to the burn address
     /// @return bananaOutput BANANA amount which goes to compounding
@@ -384,15 +439,12 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
     {
         // Find the expected WBNB value of the current harvestable rewards
         uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
-        if(wbnbOutput == 0) {
-            // If there are no rewards then return 0
-            return (0,0,0,0);
-        }
+        uint256 linkOutput = _getExpectedOutput(pathToLink);
         // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
         // Calculate the WBNB values
         platformOutput = wbnbOutput.mul(platformFee).div(10000);
-        keeperOutput = wbnbOutput.mul(keeperFee).div(10000);
+        keeperOutput = linkOutput.mul(keeperFee).div(10000);
         // Calculate the BANANA values
         burnOutput = bananaOutputWithoutFees.mul(buyBackRate).div(10000);
         bananaOutput = bananaOutputWithoutFees.sub(
@@ -424,7 +476,9 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         }
     }
 
-    function balanceOf(address _user)
+    /// @notice Get all balances of a user
+    /// @param _userAddress user address
+    function balanceOf(address _userAddress)
         external
         view
         returns (
@@ -433,7 +487,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
             uint256 autoBananaShares
         )
     {
-        UserInfo memory user = userInfo[_user];
+        UserInfo memory user = userInfo[_userAddress];
 
         uint256 pendingShares = user
             .stake
@@ -468,6 +522,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         return BANANA.balanceOf(address(this));
     }
 
+    /// @notice total staked tokens of vault in farm
     function totalStake() public view override returns (uint256) {
         (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(
             FARM_PID,
@@ -476,6 +531,7 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         return amount;
     }
 
+    /// @notice total rewarded banana shares in banana vault
     function totalAutoBananaShares() public view returns (uint256) {
         (uint256 shares, , , ) = BANANA_VAULT.userInfo(address(this));
         return shares;
@@ -537,50 +593,86 @@ contract StrategyMaximizerMasterApe is IStrategyMaximizerMasterApe, Ownable, Ree
         emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
-    function setTreasury(address _treasury) external onlyOwner {
+        function setPathToLink(address[] memory _path) external onlyOwner {
+        require(
+            _path[0] == address(FARM_REWARD_TOKEN) &&
+                _path[_path.length - 1] == LINK,
+            "StrategyMaximizerMasterApe: Incorrect path to LINK"
+        );
+
+        address[] memory oldPath = pathToLink;
+
+        pathToLink = _path;
+
+        emit SetPathToLink(oldPath, pathToLink);
+    }
+
+    function setTreasury(address _treasury) external override onlyOwner {
         emit SetTreasury(treasury, _treasury);
         treasury = _treasury;
     }
 
-    function setKeeperFee(uint256 _keeperFee) external onlyOwner {
+    function setVaultApe(address _vaultApe) external override onlyOwner {
+        emit SetVaultApe(address(vaultApe), _vaultApe);
+        vaultApe = IMaximizerVaultApe(_vaultApe);
+    }
+
+    function setKeeperFee(uint256 _keeperFee) external override onlyOwner {
         require(
-            _keeperFee <= KEEPER_FEE_UL,
+            _keeperFee <= IMaximizerVaultApe(vaultApe).KEEPER_FEE_UL(),
             "StrategyMaximizerMasterApe: Keeper fee too high"
         );
         emit SetKeeperFee(keeperFee, _keeperFee);
         keeperFee = _keeperFee;
     }
 
-    function setPlatform(address _platform) external onlyOwner {
+    function setPlatform(address _platform) external override onlyOwner {
         emit SetPlatform(platform, _platform);
         platform = _platform;
     }
 
-    function setPlatformFee(uint256 _platformFee) external onlyOwner {
+    function setPlatformFee(uint256 _platformFee) external override onlyOwner {
         require(
-            _platformFee <= PLATFORM_FEE_UL,
+            _platformFee <= IMaximizerVaultApe(vaultApe).PLATFORM_FEE_UL(),
             "StrategyMaximizerMasterApe: Platform fee too high"
         );
         emit SetPlatformFee(platformFee, _platformFee);
         platformFee = _platformFee;
     }
 
-    function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
+    function setBuyBackRate(uint256 _buyBackRate) external override onlyOwner {
         require(
-            _buyBackRate <= BUYBACK_RATE_UL,
+            _buyBackRate <= IMaximizerVaultApe(vaultApe).BUYBACK_RATE_UL(),
             "StrategyMaximizerMasterApe: Buy back rate too high"
         );
         emit SetBuyBackRate(buyBackRate, _buyBackRate);
         buyBackRate = _buyBackRate;
-
     }
 
-    function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
+    function setWithdrawFee(uint256 _withdrawFee) external override onlyOwner {
         require(
-            _withdrawFee <= WITHDRAW_FEE_UL,
+            _withdrawFee <= IMaximizerVaultApe(vaultApe).WITHDRAW_FEE_UL(),
             "StrategyMaximizerMasterApe: Early withdraw fee too high"
         );
         emit SetWithdrawFee(withdrawFee, _withdrawFee);
         withdrawFee = _withdrawFee;
+    }
+
+    function setWithdrawFeePeriod(uint256 _withdrawFeePeriod)
+        external
+        override
+        onlyOwner
+    {
+        emit SetWithdrawFee(withdrawFeePeriod, _withdrawFeePeriod);
+        withdrawFeePeriod = _withdrawFeePeriod;
+    }
+
+    function setWithdrawRewardsFee(uint256 _withdrawRewardsFee)
+        external
+        override
+        onlyOwner
+    {
+        emit SetWithdrawRewardsFee(withdrawRewardsFee, _withdrawRewardsFee);
+        withdrawRewardsFee = _withdrawRewardsFee;
     }
 }

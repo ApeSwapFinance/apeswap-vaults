@@ -30,6 +30,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../libs/IMasterApe.sol";
 
+/// @title Banana Vault
+/// @author ApeSwapFinance
+/// @notice Banana vault without fees. Usage only for ApeSwap maximizer vaults
 contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -61,9 +64,11 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     );
     event Withdraw(address indexed sender, uint256 amount, uint256 shares);
     event Earn(address indexed sender);
-    event SetTreasury(address indexed previousTreasury, address indexed newTreasury);
+    event SetTreasury(
+        address indexed previousTreasury,
+        address indexed newTreasury
+    );
     event SetWithdrawFee(uint256 previousWithdrawFee, uint256 newWithdrawFee);
-
 
     /**
      * @notice Constructor
@@ -92,7 +97,11 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
      * @notice Deposits funds into the Banana Vault
      * @param _amount: number of tokens to deposit (in BANANA)
      */
-    function deposit(uint256 _amount) external nonReentrant onlyRole(DEPOSIT_ROLE) {
+    function deposit(uint256 _amount)
+        external
+        nonReentrant
+        onlyRole(DEPOSIT_ROLE)
+    {
         require(_amount > 0, "BananaVault: Nothing to deposit");
 
         uint256 totalBananaTokens = underlyingTokenBalance();
@@ -134,7 +143,7 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     function earn() external {
         masterApe.enterStaking(0);
 
-        _earn();   
+        _earn();
 
         emit Earn(msg.sender);
     }
@@ -143,7 +152,10 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
      * @notice Sets treasury address
      * @dev Only callable by the contract owner.
      */
-    function setTreasury(address _treasury) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setTreasury(address _treasury)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(_treasury != address(0), "BananaVault: Cannot be zero address");
 
         emit SetTreasury(treasury, _treasury);
@@ -188,9 +200,8 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
             "BananaVault: Withdraw amount exceeds balance"
         );
 
-        uint256 bananaTokensToWithdraw = (underlyingTokenBalance().mul(_shares)).div(
-            totalShares
-        );
+        uint256 bananaTokensToWithdraw = (underlyingTokenBalance().mul(_shares))
+            .div(totalShares);
         user.shares = user.shares.sub(_shares);
         totalShares = totalShares.sub(_shares);
 
@@ -246,7 +257,10 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         uint256 balance = available();
 
         if (balance > 0) {
-            if (bananaToken.allowance(address(this), address(masterApe)) < balance) {
+            if (
+                bananaToken.allowance(address(this), address(masterApe)) <
+                balance
+            ) {
                 bananaToken.safeApprove(address(masterApe), type(uint256).max);
             }
 

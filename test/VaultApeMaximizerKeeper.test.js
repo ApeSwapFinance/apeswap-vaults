@@ -30,7 +30,7 @@ describe('KeeperMaximizerVaultApe', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address);
+    maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, adminAddress, adminAddress);
   });
 
   farms.forEach(farm => {
@@ -113,8 +113,8 @@ describe('KeeperMaximizerVaultApe', function () {
 
       beforeEach(async () => {
         // Add Strategy
-        this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2", maximizerVaultApe.address, "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2"], [0, 0]);
-        
+        this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, farmInfo.earnedToLinkPath, [adminAddress, maximizerVaultApe.address]);
+
         // Define roles and grant roles
         this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
         await bananaVault.grantRole(this.MANAGER_ROLE, maximizerVaultApe.address, { from: adminAddress });
@@ -199,7 +199,8 @@ describe('KeeperMaximizerVaultApe', function () {
         const bananaBalanceAfter = await bananaToken.balanceOf(testerAddress);
 
         //Check if banana rewards in pool also generate rewards
-        expect(Number(bananaBalanceAfter) - Number(bananaBalanceBefore)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));
+        expect(Number(bananaBalanceAfter - bananaBalanceBefore)).to.be.greaterThan(Number(accSharesPerStakedToken * 0.99 * (toDeposit / 1e18))); //0.99 = 1% withdral rewards fee
+
         expect(Number(bananaBalanceAfter)).to.be.greaterThan(Number(bananaBalanceBefore));
 
       });
@@ -241,7 +242,7 @@ describe('KeeperMaximizerVaultApe', function () {
         const shouldBeBalance = wantBalanceBefore.sub(withdrawFee);
         expect(wantBalanceAfter.toString()).equal(shouldBeBalance.toString());
 
-        expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * (toDeposit / 1e18)));
+        expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * 0.99 * (toDeposit / 1e18))); //0.99 = 1% withdral rewards fee
         expect(Number(bananaBalanceAfter1)).to.be.greaterThan(Number(bananaBalanceBefore1));
         expect(Number(bananaBalanceAfter2)).to.be.greaterThan(Number(bananaBalanceBefore2));
 
