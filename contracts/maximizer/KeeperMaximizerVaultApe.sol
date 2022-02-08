@@ -95,24 +95,6 @@ contract KeeperMaximizerVaultApe is
                 (address[], uint256[], uint256[], uint256[], uint256[])
             );
 
-        _earn(
-            _vaults,
-            _minPlatformOutputs,
-            _minKeeperOutputs,
-            _minBurnOutputs,
-            _minBananaOutputs
-        );
-
-        BANANA_VAULT.earn();
-    }
-
-    function _earn(
-        address[] memory _vaults,
-        uint256[] memory _minPlatformOutputs,
-        uint256[] memory _minKeeperOutputs,
-        uint256[] memory _minBurnOutputs,
-        uint256[] memory _minBananaOutputs
-    ) private {
         uint256 timestamp = block.timestamp;
         uint256 length = _vaults.length;
 
@@ -127,6 +109,8 @@ contract KeeperMaximizerVaultApe is
                 true
             );
         }
+
+        BANANA_VAULT.earn();
     }
 
     function setKeeper(address _keeper) public onlyOwner {
