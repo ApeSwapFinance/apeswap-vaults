@@ -96,6 +96,7 @@ contract StrategyMaximizerMasterApe is
     uint256 public buyBackRate;
 
     uint256 public withdrawFee;
+    // TODO: Pull from vault ape
     uint256 public withdrawFeePeriod = 3 days;
 
     uint256 public withdrawRewardsFee;
@@ -127,7 +128,7 @@ contract StrategyMaximizerMasterApe is
     constructor(
         address _masterApe,
         uint256 _farmPid,
-        bool _isCakeStaking,
+        bool _isBananaStaking,
         address _stakedToken,
         address _farmRewardToken,
         address _bananaVault,
@@ -154,7 +155,7 @@ contract StrategyMaximizerMasterApe is
         STAKED_TOKEN_FARM = IMasterApe(_masterApe);
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         FARM_PID = _farmPid;
-        IS_BANANA_STAKING = _isCakeStaking;
+        IS_BANANA_STAKING = _isBananaStaking;
         BANANA_VAULT = IBananaVault(_bananaVault);
 
         router = IUniRouter02(_router);
@@ -164,7 +165,6 @@ contract StrategyMaximizerMasterApe is
 
         transferOwnership(_addresses[0]);
         vaultApe = IMaximizerVaultApe(_addresses[1]);
-
         treasury = vaultApe.defaultTreasury();
         keeperFee = vaultApe.defaultKeeperFee();
         platform = vaultApe.defaultPlatform();
@@ -229,6 +229,7 @@ contract StrategyMaximizerMasterApe is
                 pathToLink,
                 treasury
             );
+            // TODO: Remove link swapping?
             IERC20 link = IERC20(LINK);
             link.safeTransfer(address(vaultApe), link.balanceOf(address(this)));
         }
@@ -392,10 +393,6 @@ contract StrategyMaximizerMasterApe is
             user.rewardDebt = user.stake.mul(accSharesPerStakedToken).div(1e18);
         }
 
-        // require(
-        //     user.autoBananaShares >= _shares,
-        //     "SweetVault: claim amount exceeds balance"
-        // );
         _shares = user.autoBananaShares < _shares
             ? user.autoBananaShares
             : _shares;
@@ -478,6 +475,8 @@ contract StrategyMaximizerMasterApe is
 
     /// @notice Get all balances of a user
     /// @param _userAddress user address
+    /// @return stake Amount of staked tokens
+    /// @return banana Amount of 
     function balanceOf(address _userAddress)
         external
         view
@@ -497,11 +496,7 @@ contract StrategyMaximizerMasterApe is
 
         stake = user.stake;
         autoBananaShares = user.autoBananaShares.add(pendingShares);
-
-        (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(0, address(this));
-        uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(amount);
-        // TEST: This value appears to be coming back as zero
-        banana = autoBananaShares.mul(pricePerFullShare).div(1e18);
+        banana = autoBananaShares.mul(BANANA_VAULT.getPricePerFullShare()).div(1e18);
     }
 
     function _approveTokenIfNeeded(
