@@ -54,7 +54,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
 
     uint256 public totalShares;
     uint256 public lastHarvestedTime;
-    address public treasury;
 
     event Deposit(
         address indexed sender,
@@ -64,10 +63,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     );
     event Withdraw(address indexed sender, uint256 amount, uint256 shares);
     event Earn(address indexed sender);
-    event SetTreasury(
-        address indexed previousTreasury,
-        address indexed newTreasury
-    );
     event SetWithdrawFee(uint256 previousWithdrawFee, uint256 newWithdrawFee);
 
     /**
@@ -146,20 +141,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         _earn();
 
         emit Earn(msg.sender);
-    }
-
-    /**
-     * @notice Sets treasury address
-     * @dev Only callable by the contract owner.
-     */
-    function setTreasury(address _treasury)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        require(_treasury != address(0), "BananaVault: Cannot be zero address");
-
-        emit SetTreasury(treasury, _treasury);
-        treasury = _treasury;
     }
 
     /**
