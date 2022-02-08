@@ -1,5 +1,5 @@
-const { getContractGetterSnapshot } = require('./contractHelper');
-const { formatBNObjectToString } = require('./bnHelper');
+const { getContractGetterSnapshot } = require('../contractHelper');
+const { formatBNObjectToString } = require('../bnHelper');
 
 async function getUserInfoSnapshot(strategyContract, userAddress) {
     let promises = [];
@@ -29,13 +29,20 @@ async function getUserInfoSnapshot(strategyContract, userAddress) {
     return userInfo;
 }
 
-
 async function getStrategyMaximizerSnapshot(strategyContract, accounts) {
     const contractSnapshot = await getContractGetterSnapshot(strategyContract, [
         'accSharesPerStakedToken',
         'totalAutoBananaShares',
         'totalStake',
-        'getExpectedOutputs'
+        'getExpectedOutputs',
+        'treasury',
+        'keeperFee',
+        'platform',
+        'platformFee',
+        'buyBackRate',
+        'withdrawFee',
+        'withdrawFeePeriod',
+        'withdrawRewardsFee',
     ])
 
     let accountPromises = [];

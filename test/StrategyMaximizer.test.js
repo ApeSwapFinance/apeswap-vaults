@@ -7,7 +7,7 @@ const { farms } = require('../configs/farms.js');
 // Helpers
 const { expectRevert, time, ether, BN, constants } = require('@openzeppelin/test-helpers');
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
-const { getStrategyMaximizerSnapshot } = require('./helpers/strategyMaximizerHelper');
+const { getStrategyMaximizerSnapshot } = require('./helpers/maximizer/strategyMaximizerHelper');
 const { getAccountTokenBalances } = require('./helpers/contractHelper');
 const { subBNStr, addBNStr } = require('./helpers/bnHelper');
 const { advanceNumBlocks } = require('./helpers/openzeppelinExtensions');
@@ -36,8 +36,6 @@ describe('StrategyMaximizer', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    // FIXME: cc
-    // maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address);
   });
 
   farms.forEach(farm => {
@@ -147,16 +145,6 @@ describe('StrategyMaximizer', function () {
         // await bananaVault.grantRole(this.MANAGER_ROLE, maximizerVaultApe.address, { from: adminAddress });
         this.DEPOSIT_ROLE = await bananaVault.DEPOSIT_ROLE();
         await bananaVault.grantRole(this.DEPOSIT_ROLE, strategyMaximizer.address, { from: adminAddress });
-
-        //Add vault
-        // await maximizerVaultApe.addVault(this.strategy.address, { from: adminAddress });
-
-        // Approve want token
-        const erc20Contract = new web3.eth.Contract(IERC20_ABI, farmInfo.wantAddress);
-        // FIXME: cc
-        // await erc20Contract.methods.approve(maximizerVaultApe.address, MAX_UINT256).send({ from: testerAddress });
-        // await erc20Contract.methods.approve(maximizerVaultApe.address, MAX_UINT256).send({ from: testerAddress2 });
-
       });
 
       it('should deposit and have shares and withdraw', async () => {
@@ -199,6 +187,68 @@ describe('StrategyMaximizer', function () {
         const strategySnapshot2 = await getStrategyMaximizerSnapshot(strategyMaximizer, [depositorAddress, notDepositorAddress]);
         const accountSnapshot2 = await getAccountTokenBalances(wantToken, [depositorAddress, notDepositorAddress]);
         // console.dir(strategySnapshot2, { depth: null})
+      });
+
+      it('should update values via onlyOwner properly', async () => {
+        const notOwner = testerAddress;
+        const updateAddress = accounts[0];
+        const updateValue = '12345';
+
+        expectRevert(
+          maximizerVaultApe.setDefaultTreasury(updateAddress, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaultTreasury(updateAddress, { from: adminAddress });
+        expect(await maximizerVaultApe.defaultTreasury()).equal(updateAddress, 'default treasury update not accurate')
+
+        expectRevert(
+          maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: adminAddress });
+        expect((await maximizerVaultApe.defaultKeeperFee()).toString()).equal(updateValue, 'default keeper fee update not accurate')
+
+        expectRevert(
+          maximizerVaultApe.setDefaultPlatform(updateAddress, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaultPlatform(updateAddress, { from: adminAddress });
+        expect(await maximizerVaultApe.defaultPlatform()).equal(updateAddress, 'default platform update not accurate')
+
+        expectRevert(
+          maximizerVaultApe.setDefaultPlatformFee(updateValue, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaultPlatformFee(updateValue, { from: adminAddress });
+        expect((await maximizerVaultApe.defaultPlatformFee()).toString()).equal(updateValue, 'default platform fee update not accurate')
+
+        expectRevert(
+          maximizerVaultApe.setDefaultBuyBackRate(updateValue, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaultBuyBackRate(updateValue, { from: adminAddress });
+        expect((await maximizerVaultApe.defaultBuyBackRate()).toString()).equal(updateValue, 'default buy back rate update not accurate')
+
+        expectRevert(
+          maximizerVaultApe.setDefaultWithdrawFee(updateValue, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaultWithdrawFee(updateValue, { from: adminAddress });
+        expect((await maximizerVaultApe.defaultWithdrawFee()).toString()).equal(updateValue, 'default buy withdraw fee update not accurate')
+
+        expectRevert(
+          maximizerVaultApe.setDefaultWithdrawFeePeriod(updateValue, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaultWithdrawFeePeriod(updateValue, { from: adminAddress });
+        expect((await maximizerVaultApe.defaultWithdrawFeePeriod()).toString()).equal(updateValue, 'default buy withdraw fee period update not accurate')
+
+        expectRevert(
+          maximizerVaultApe.setDefaulWithdrawRewardsFee(updateValue, { from: notOwner }),
+          "Ownable: caller is not the owner"
+        )
+        await maximizerVaultApe.setDefaulWithdrawRewardsFee(updateValue, { from: adminAddress });
+        expect((await maximizerVaultApe.defaulWithdrawRewardsFee()).toString()).equal(updateValue, 'default buy withdraw rewards fee update not accurate');
       });
     });
   });

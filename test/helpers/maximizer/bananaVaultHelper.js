@@ -1,5 +1,5 @@
-const { getContractGetterSnapshot } = require('./contractHelper');
-const { formatBNObjectToString } = require('./bnHelper');
+const { getContractGetterSnapshot } = require('../contractHelper');
+const { formatBNObjectToString } = require('../bnHelper');
 
 async function getUserInfoSnapshot(strategyContract, userAddress) {
     let promises = [];
