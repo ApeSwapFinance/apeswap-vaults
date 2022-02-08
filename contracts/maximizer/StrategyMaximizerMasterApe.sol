@@ -163,7 +163,7 @@ contract StrategyMaximizerMasterApe is
         pathToWbnb = _pathToWbnb;
         pathToLink = _pathToLink;
 
-        transferOwnership(_addresses[0]);
+        _transferOwnership(_addresses[0]);
         vaultApe = IMaximizerVaultApe(_addresses[1]);
         treasury = vaultApe.defaultTreasury();
         keeperFee = vaultApe.defaultKeeperFee();
@@ -229,7 +229,6 @@ contract StrategyMaximizerMasterApe is
                 pathToLink,
                 treasury
             );
-            // TODO: Remove link swapping?
             IERC20 link = IERC20(LINK);
             link.safeTransfer(address(vaultApe), link.balanceOf(address(this)));
         }
