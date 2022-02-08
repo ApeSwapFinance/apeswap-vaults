@@ -85,10 +85,7 @@ contract StrategyMaximizerMasterApe is
     address[] public pathToLink; // Path from staked token to LINK
 
     IMaximizerVaultApe public override vaultApe;
-    address public treasury;
     uint256 public keeperFee;
-
-    address public platform;
     uint256 public platformFee;
 
     address public constant BURN_ADDRESS =
@@ -110,10 +107,8 @@ contract StrategyMaximizerMasterApe is
     event SetPathToWbnb(address[] oldPath, address[] newPath);
     event SetPathToLink(address[] oldPath, address[] newPath);
     event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate);
-    event SetTreasury(address oldTreasury, address newTreasury);
     event SetVaultApe(address oldVaultApe, address newVaultApe);
     event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee);
-    event SetPlatform(address oldPlatform, address newPlatform);
     event SetPlatformFee(uint256 oldPlatformFee, uint256 newPlatformFee);
     event SetWithdrawRewardsFee(
         uint256 oldWithdrawRewardsFee,
@@ -165,9 +160,7 @@ contract StrategyMaximizerMasterApe is
         transferOwnership(_addresses[0]);
         vaultApe = IMaximizerVaultApe(_addresses[1]);
 
-        treasury = vaultApe.defaultTreasury();
         keeperFee = vaultApe.defaultKeeperFee();
-        platform = vaultApe.defaultPlatform();
         platformFee = vaultApe.defaultPlatformFee();
         buyBackRate = vaultApe.defaultBuyBackRate();
         withdrawFee = vaultApe.defaultWithdrawFee();
@@ -217,7 +210,7 @@ contract StrategyMaximizerMasterApe is
                 rewardTokenBalance.mul(platformFee).div(10000),
                 _minPlatformOutput,
                 pathToWbnb,
-                platform
+                vaultApe.platformAddress()
             );
         }
 
@@ -227,7 +220,7 @@ contract StrategyMaximizerMasterApe is
                 rewardTokenBalance.mul(keeperFee).div(10000),
                 _minKeeperOutput,
                 pathToLink,
-                treasury
+                vaultApe.treasuryAddress()
             );
             IERC20 link = IERC20(LINK);
             link.safeTransfer(address(vaultApe), link.balanceOf(address(this)));
@@ -335,12 +328,18 @@ contract StrategyMaximizerMasterApe is
 
         uint256 currentAmount = _amount;
 
-        if (withdrawFee > 0 && block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)) {
+        if (
+            withdrawFee > 0 &&
+            block.timestamp < user.lastDepositedTime.add(withdrawFeePeriod)
+        ) {
             // Take withdraw fees
             uint256 currentWithdrawFee = currentAmount.mul(withdrawFee).div(
                 10000
             );
-            STAKED_TOKEN.safeTransfer(treasury, currentWithdrawFee);
+            STAKED_TOKEN.safeTransfer(
+                vaultApe.treasuryAddress(),
+                currentWithdrawFee
+            );
             currentAmount = currentAmount.sub(currentWithdrawFee);
         }
 
@@ -412,7 +411,7 @@ contract StrategyMaximizerMasterApe is
             uint256 rewardFee = withdrawAmount.mul(withdrawRewardsFee).div(
                 10000
             );
-            _safeBANANATransfer(treasury, rewardFee);
+            _safeBANANATransfer(vaultApe.treasuryAddress(), rewardFee);
             withdrawAmount = withdrawAmount.sub(rewardFee);
         }
 
@@ -478,6 +477,9 @@ contract StrategyMaximizerMasterApe is
 
     /// @notice Get all balances of a user
     /// @param _userAddress user address
+    /// @return stake
+    /// @return banana
+    /// @return autoBananaShares
     function balanceOf(address _userAddress)
         external
         view
@@ -523,6 +525,7 @@ contract StrategyMaximizerMasterApe is
     }
 
     /// @notice total staked tokens of vault in farm
+    /// @return total staked tokens of vault in farm
     function totalStake() public view override returns (uint256) {
         (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(
             FARM_PID,
@@ -532,6 +535,7 @@ contract StrategyMaximizerMasterApe is
     }
 
     /// @notice total rewarded banana shares in banana vault
+    /// @return total rewarded banana shares in banana vault
     function totalAutoBananaShares() public view returns (uint256) {
         (uint256 shares, , , ) = BANANA_VAULT.userInfo(address(this));
         return shares;
@@ -593,7 +597,7 @@ contract StrategyMaximizerMasterApe is
         emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
-        function setPathToLink(address[] memory _path) external onlyOwner {
+    function setPathToLink(address[] memory _path) external onlyOwner {
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
                 _path[_path.length - 1] == LINK,
@@ -605,11 +609,6 @@ contract StrategyMaximizerMasterApe is
         pathToLink = _path;
 
         emit SetPathToLink(oldPath, pathToLink);
-    }
-
-    function setTreasury(address _treasury) external override onlyOwner {
-        emit SetTreasury(treasury, _treasury);
-        treasury = _treasury;
     }
 
     function setVaultApe(address _vaultApe) external override onlyOwner {
@@ -624,11 +623,6 @@ contract StrategyMaximizerMasterApe is
         );
         emit SetKeeperFee(keeperFee, _keeperFee);
         keeperFee = _keeperFee;
-    }
-
-    function setPlatform(address _platform) external override onlyOwner {
-        emit SetPlatform(platform, _platform);
-        platform = _platform;
     }
 
     function setPlatformFee(uint256 _platformFee) external override onlyOwner {

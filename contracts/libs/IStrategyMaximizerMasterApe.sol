@@ -6,7 +6,7 @@ import "../libs/IMaximizerVaultApe.sol";
 // For interacting with our own strategy
 interface IStrategyMaximizerMasterApe {
     function STAKED_TOKEN_ADDRESS() external returns (address);
-    
+
     function vaultApe() external returns (IMaximizerVaultApe);
 
     function accSharesPerStakedToken() external view returns (uint256);
@@ -50,13 +50,9 @@ interface IStrategyMaximizerMasterApe {
 
     function claimRewards(address _userAddress, uint256 _shares) external;
 
-    function setTreasury(address _treasury) external;
-
     function setVaultApe(address _vaultApe) external;
 
     function setKeeperFee(uint256 _keeperFee) external;
-
-    function setPlatform(address _platform) external;
 
     function setPlatformFee(uint256 _platformFee) external;
 
