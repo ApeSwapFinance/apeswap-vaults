@@ -395,8 +395,9 @@ describe('KeeperMaximizerVaultApe', function () {
       if (farmIndex == 0) {
         // TODO: Test enable/disable vaults
         // TODO: Test add vaults
+        // TODO: onlyOwner strategy tests
         
-        it('should update values via onlyOwner properly', async () => {
+        it('should update values via onlyOwner properly on maximizerVaultApe', async () => {
           const notOwner = testerAddress;
           const updateAddress = accounts[0];
           const updateValue = '12345';

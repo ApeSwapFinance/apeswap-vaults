@@ -17,7 +17,7 @@ const KeeperMaximizerVaultApe = contract.fromArtifact('KeeperMaximizerVaultApe')
 const StrategyMaximizerMasterApe = contract.fromArtifact("StrategyMaximizerMasterApe");
 const BananaVault = contract.fromArtifact("BananaVault");
 
-
+// FIXME: These tests are broken with the latest update as the tester was intended to be acting as the VaultApe. The constructor now tries to pull default values from the vault ape. 
 describe('StrategyMaximizer', function () {
   this.timeout(9960000);
 
@@ -31,12 +31,6 @@ describe('StrategyMaximizer', function () {
   let usdToken, bananaToken, wantToken;
 
   const blocksToAdvance = 10;
-
-  beforeEach(async () => {
-    // Deploy new vault
-    masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
-    bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-  });
 
   farms.forEach(farm => {
     const farmInfo = farm;
@@ -116,7 +110,12 @@ describe('StrategyMaximizer', function () {
         await wantToken.transfer(notDepositorAddress, (Number(toDeposit) * 2).toString(), { from: depositorAddress });
       });
 
+
       beforeEach(async () => {
+        // Deploy new vault
+        masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
+        bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
+
         // Add Strategy
         strategyMaximizer = await StrategyMaximizerMasterApe.new(
           farmInfo.masterchef,
@@ -128,18 +127,13 @@ describe('StrategyMaximizer', function () {
           testConfig.routerAddress,
           farmInfo.earnedToBananaPath,
           farmInfo.earnedToWnativePath,
+          farmInfo.earnedToLinkPath,
           [
             adminAddress, // owner
-            "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2", // treasury
-            depositorAddress, // keeper
-            "0x5c7C7246bD8a18DF5f6Ee422f9F8CCDF716A6aD2" // platform
+            depositorAddress, // VaultApe (Using an EOA for these tests) 
           ],
-          [
-            0,
-            0
-          ]);
+        );
 
-        // TODO: Setuo 
         // Define roles and grant roles
         this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
         // await bananaVault.grantRole(this.MANAGER_ROLE, maximizerVaultApe.address, { from: adminAddress });
@@ -176,79 +170,14 @@ describe('StrategyMaximizer', function () {
         const accountSnapshot1 = await getAccountTokenBalances(wantToken, [depositorAddress, notDepositorAddress]);
         expect(subBNStr(accountSnapshot0[depositorAddress], accountSnapshot1[depositorAddress])).to.be.equal(depositAmount, 'account difference invalid')
         expect(subBNStr(strategySnapshot1.contractSnapshot.totalStake, strategySnapshot0.contractSnapshot.totalStake)).to.be.equal(depositAmount, 'total stake difference invalid')
-        // console.dir(strategySnapshot1, { depth: null})
-
 
         await advanceNumBlocks(100);
-        // TODO: test with different values
+        // NOTE: Only testing with 0 values. Adjust values to test various fee values
         await strategyMaximizer.earn(0, 0, 0, 0, { from: depositorAddress });
 
         // Snapshot2
         const strategySnapshot2 = await getStrategyMaximizerSnapshot(strategyMaximizer, [depositorAddress, notDepositorAddress]);
         const accountSnapshot2 = await getAccountTokenBalances(wantToken, [depositorAddress, notDepositorAddress]);
-        // console.dir(strategySnapshot2, { depth: null})
-      });
-
-      it('should update values via onlyOwner properly', async () => {
-        const notOwner = testerAddress;
-        const updateAddress = accounts[0];
-        const updateValue = '12345';
-
-        expectRevert(
-          maximizerVaultApe.setDefaultTreasury(updateAddress, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaultTreasury(updateAddress, { from: adminAddress });
-        expect(await maximizerVaultApe.defaultTreasury()).equal(updateAddress, 'default treasury update not accurate')
-
-        expectRevert(
-          maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: adminAddress });
-        expect((await maximizerVaultApe.defaultKeeperFee()).toString()).equal(updateValue, 'default keeper fee update not accurate')
-
-        expectRevert(
-          maximizerVaultApe.setDefaultPlatform(updateAddress, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaultPlatform(updateAddress, { from: adminAddress });
-        expect(await maximizerVaultApe.defaultPlatform()).equal(updateAddress, 'default platform update not accurate')
-
-        expectRevert(
-          maximizerVaultApe.setDefaultPlatformFee(updateValue, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaultPlatformFee(updateValue, { from: adminAddress });
-        expect((await maximizerVaultApe.defaultPlatformFee()).toString()).equal(updateValue, 'default platform fee update not accurate')
-
-        expectRevert(
-          maximizerVaultApe.setDefaultBuyBackRate(updateValue, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaultBuyBackRate(updateValue, { from: adminAddress });
-        expect((await maximizerVaultApe.defaultBuyBackRate()).toString()).equal(updateValue, 'default buy back rate update not accurate')
-
-        expectRevert(
-          maximizerVaultApe.setDefaultWithdrawFee(updateValue, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaultWithdrawFee(updateValue, { from: adminAddress });
-        expect((await maximizerVaultApe.defaultWithdrawFee()).toString()).equal(updateValue, 'default buy withdraw fee update not accurate')
-
-        expectRevert(
-          maximizerVaultApe.setDefaultWithdrawFeePeriod(updateValue, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaultWithdrawFeePeriod(updateValue, { from: adminAddress });
-        expect((await maximizerVaultApe.defaultWithdrawFeePeriod()).toString()).equal(updateValue, 'default buy withdraw fee period update not accurate')
-
-        expectRevert(
-          maximizerVaultApe.setDefaulWithdrawRewardsFee(updateValue, { from: notOwner }),
-          "Ownable: caller is not the owner"
-        )
-        await maximizerVaultApe.setDefaulWithdrawRewardsFee(updateValue, { from: adminAddress });
-        expect((await maximizerVaultApe.defaulWithdrawRewardsFee()).toString()).equal(updateValue, 'default buy withdraw rewards fee update not accurate');
       });
     });
   });
