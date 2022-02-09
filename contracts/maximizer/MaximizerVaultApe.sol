@@ -547,15 +547,9 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     }
 
     // ===== Strategy value setters =====
-    function setKeeperFeeAllStrategies(uint256 _keeperFee, bool _feeInLink)
-        external
-        onlyOwner
-    {
+    function setKeeperFeeAllStrategies(uint256 _keeperFee) external onlyOwner {
         for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setKeeperFee(
-                _keeperFee,
-                _feeInLink
-            );
+            IStrategyMaximizerMasterApe(vaults[_pid]).setKeeperFee(_keeperFee);
         }
     }
 
