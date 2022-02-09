@@ -61,7 +61,6 @@ contract StrategyMaximizerMasterApe is
 
     // Addresses
     address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
-    address public constant LINK = 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD;
     IERC20 public constant BANANA =
         IERC20(0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95);
 
@@ -82,8 +81,6 @@ contract StrategyMaximizerMasterApe is
     IUniRouter02 public immutable router;
     address[] public pathToBanana; // Path from staked token to BANANA
     address[] public pathToWbnb; // Path from staked token to WBNB
-    address[] public pathToLink; // Path from staked token to LINK
-    bool public keeperFeeInLink = false;
 
     IMaximizerVaultApe public override vaultApe;
     uint256 public keeperFee;
@@ -106,7 +103,6 @@ contract StrategyMaximizerMasterApe is
     // Setting updates
     event SetPathToBanana(address[] oldPath, address[] newPath);
     event SetPathToWbnb(address[] oldPath, address[] newPath);
-    event SetPathToLink(address[] oldPath, address[] newPath);
     event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate);
     event SetVaultApe(address oldVaultApe, address newVaultApe);
     event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee);
@@ -130,7 +126,6 @@ contract StrategyMaximizerMasterApe is
         address _router,
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
-        address[] memory _pathToLink,
         address[] memory _addresses //[_owner, _vaultApe]
     ) {
         require(
@@ -145,12 +140,6 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Incorrect path to WBNB"
         );
 
-        require(
-            _pathToLink[0] == address(_farmRewardToken) &&
-                _pathToLink[_pathToLink.length - 1] == LINK,
-            "StrategyMaximizerMasterApe: Incorrect path to LINK"
-        );
-
         STAKED_TOKEN = IERC20(_stakedToken);
         STAKED_TOKEN_ADDRESS = _stakedToken;
         STAKED_TOKEN_FARM = IMasterApe(_masterApe);
@@ -162,7 +151,6 @@ contract StrategyMaximizerMasterApe is
         router = IUniRouter02(_router);
         pathToBanana = _pathToBanana;
         pathToWbnb = _pathToWbnb;
-        pathToLink = _pathToLink;
 
         transferOwnership(_addresses[0]);
         vaultApe = IMaximizerVaultApe(_addresses[1]);
@@ -226,11 +214,9 @@ contract StrategyMaximizerMasterApe is
             _swap(
                 rewardTokenBalance.mul(keeperFee).div(10000),
                 _minKeeperOutput,
-                keeperFeeInLink ? pathToLink : pathToWbnb,
-                keeperFeeInLink ? address(vaultApe) : vaultApe.treasuryAddress()
+                pathToWbnb,
+                vaultApe.treasuryAddress()
             );
-            IERC20 link = IERC20(LINK);
-            link.safeTransfer(address(vaultApe), link.balanceOf(address(this)));
         }
 
         // Convert remaining rewards to BANANA
@@ -445,12 +431,11 @@ contract StrategyMaximizerMasterApe is
     {
         // Find the expected WBNB value of the current harvestable rewards
         uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
-        uint256 linkOutput = _getExpectedOutput(pathToLink);
         // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
         // Calculate the WBNB values
         platformOutput = wbnbOutput.mul(platformFee).div(10000);
-        keeperOutput = linkOutput.mul(keeperFee).div(10000);
+        keeperOutput = wbnbOutput.mul(keeperFee).div(10000);
         // Calculate the BANANA values
         burnOutput = bananaOutputWithoutFees.mul(buyBackRate).div(10000);
         bananaOutput = bananaOutputWithoutFees.sub(
@@ -604,37 +589,18 @@ contract StrategyMaximizerMasterApe is
         emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
-    function setPathToLink(address[] memory _path) external onlyOwner {
-        require(
-            _path[0] == address(FARM_REWARD_TOKEN) &&
-                _path[_path.length - 1] == LINK,
-            "StrategyMaximizerMasterApe: Incorrect path to LINK"
-        );
-
-        address[] memory oldPath = pathToLink;
-
-        pathToLink = _path;
-
-        emit SetPathToLink(oldPath, pathToLink);
-    }
-
     function setVaultApe(address _vaultApe) external override onlyOwner {
         emit SetVaultApe(address(vaultApe), _vaultApe);
         vaultApe = IMaximizerVaultApe(_vaultApe);
     }
 
-    function setKeeperFee(uint256 _keeperFee, bool _feeInLink)
-        external
-        override
-        onlyOwner
-    {
+    function setKeeperFee(uint256 _keeperFee) external override onlyOwner {
         require(
             _keeperFee <= IMaximizerVaultApe(vaultApe).KEEPER_FEE_UL(),
             "StrategyMaximizerMasterApe: Keeper fee too high"
         );
         emit SetKeeperFee(keeperFee, _keeperFee);
         keeperFee = _keeperFee;
-        keeperFeeInLink = _feeInLink;
     }
 
     function setPlatformFee(uint256 _platformFee) external override onlyOwner {

@@ -1,7 +1,6 @@
 const apeRouter = "0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7";
 const pcsRouter = "0x10ED43C718714eb63d5aA57B78B54704E256024E";
 const busdAddress = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
-const linkAddress = "0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD";
 const bananaAddress = "0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95";
 const cakeAddress = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
 const wrappedNative = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
@@ -18,7 +17,6 @@ const farms = [
         router: apeRouter,
         tokensToLPAmount: "100000000000000000000",
         earnedToWnativePath: [bananaAddress, wrappedNative],
-        earnedToLinkPath: [bananaAddress, wrappedNative, linkAddress],
         earnedToBananaPath: [bananaAddress],
     },
     {
@@ -30,7 +28,6 @@ const farms = [
         router: apeRouter,
         tokensToLPAmount: "100000000000000000000",
         earnedToWnativePath: [bananaAddress, wrappedNative],
-        earnedToLinkPath: [bananaAddress, wrappedNative, linkAddress],
         earnedToBananaPath: [bananaAddress],
     },
     {
@@ -42,7 +39,6 @@ const farms = [
         router: apeRouter,
         tokensToLPAmount: "100000000000000000000",
         earnedToWnativePath: [bananaAddress, wrappedNative],
-        earnedToLinkPath: [bananaAddress, wrappedNative, linkAddress],
         earnedToBananaPath: [bananaAddress],
     },
     {
@@ -54,7 +50,6 @@ const farms = [
         router: pcsRouter,
         tokensToLPAmount: "100000000000000000000",
         earnedToWnativePath: [cakeAddress, wrappedNative],
-        earnedToLinkPath: [cakeAddress, wrappedNative, linkAddress],
         earnedToBananaPath: [cakeAddress, bananaAddress],
     },
     {
@@ -66,7 +61,6 @@ const farms = [
         router: pcsRouter,
         tokensToLPAmount: "100000000000000000000",
         earnedToWnativePath: [cakeAddress, wrappedNative],
-        earnedToLinkPath: [cakeAddress, wrappedNative, linkAddress],
         earnedToBananaPath: [cakeAddress, bananaAddress],
     },
     // {
