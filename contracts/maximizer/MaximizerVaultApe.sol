@@ -52,6 +52,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         uint256[] minBananaOutputs;
     }
 
+    Settings public settings;
+
     address[] public vaults;
     mapping(address => VaultInfo) public vaultInfos;
     IBananaVault public BANANA_VAULT;
@@ -63,24 +65,11 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     uint256 public slippageFactor;
     uint16 public maxVaults;
 
-    address public override treasuryAddress;
-    address public override platformAddress;
-
-    // ===== Strategy default values =====
-    uint256 public override defaultKeeperFee = 50; // 0.5%
+    // Fee upper limits
     uint256 public constant override KEEPER_FEE_UL = 100; // 1%
-
-    uint256 public override defaultPlatformFee = 0;
     uint256 public constant override PLATFORM_FEE_UL = 500; // 5%
-
-    uint256 public override defaultBuyBackRate = 0;
     uint256 public constant override BUYBACK_RATE_UL = 300; // 3%
-
-    uint256 public override defaultWithdrawFee = 25; // 0.25%
     uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
-    uint256 public override defaultWithdrawFeePeriod = 3 days;
-
-    uint256 public override defaulWithdrawRewardsFee = 100; //1%
 
     event Compound(address indexed vault, uint256 timestamp);
     event ChangedTreasuryAddress(address _old, address _new);
@@ -104,19 +93,17 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     constructor(
         address _owner,
         address _bananaVault,
-        address _treasuryAddress,
-        address _platformAddress
+        Settings memory _settings
     ) Ownable() {
         transferOwnership(_owner);
         BANANA_VAULT = IBananaVault(_bananaVault);
-
-        treasuryAddress = _treasuryAddress;
-        platformAddress = _platformAddress;
 
         maxDelay = 1 seconds; //1 days;
         minKeeperFee = 10000000000000000;
         slippageFactor = 9500;
         maxVaults = 2;
+
+        settings = _settings;
     }
 
     // TODO: Allow whitelist contracts?
@@ -124,6 +111,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         // only allowing externally owned addresses.
         require(msg.sender == tx.origin, "VaultApeMaximizer: must use EOA");
         _;
+    }
+
+    function getSettings() public view override returns (Settings memory) {
+        return settings;
     }
 
     /// @notice Chainlink keeper - Check what vaults need compounding
@@ -536,133 +527,72 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         emit ChangedMaxVaults(_maxVaults);
     }
 
+    // ===== setters setting values =====
     function setTreasuryAddress(address _treasury) external onlyOwner {
-        emit ChangedTreasuryAddress(treasuryAddress, _treasury);
-        treasuryAddress = _treasury;
+        emit ChangedTreasuryAddress(settings.treasury, _treasury);
+        settings.treasury = _treasury;
     }
 
     function setPlatformAddress(address _platform) external onlyOwner {
-        emit ChangedPlatformAddress(platformAddress, _platform);
-        platformAddress = _platform;
+        emit ChangedPlatformAddress(settings.platform, _platform);
+        settings.platform = _platform;
     }
 
-    // ===== Strategy value setters =====
-    function setKeeperFeeAllStrategies(uint256 _keeperFee) external onlyOwner {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setKeeperFee(_keeperFee);
-        }
+    function setKeeperFee(uint256 _keeperFee) external onlyOwner {
+        require(
+            _keeperFee < KEEPER_FEE_UL,
+            "MaximizerVaultApe: Keeper fee too high"
+        );
+        emit ChangedDefaultKeeperFee(settings.keeperFee, _keeperFee);
+        settings.keeperFee = _keeperFee;
     }
 
-    function setPlatformFeeAllStrategies(uint256 _platformFee)
-        external
-        onlyOwner
-    {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setPlatformFee(
-                _platformFee
-            );
-        }
+    function setPlatformFee(uint256 _platformFee) external onlyOwner {
+        require(
+            _platformFee < PLATFORM_FEE_UL,
+            "MaximizerVaultApe: platform fee too high"
+        );
+        emit ChangedDefaultPlatformFee(settings.platformFee, _platformFee);
+        settings.platformFee = _platformFee;
     }
 
-    function setBuyBackRateAllStrategies(uint256 _buyBackRate)
-        external
-        onlyOwner
-    {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setBuyBackRate(
-                _buyBackRate
-            );
-        }
+    function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
+        require(
+            _buyBackRate < BUYBACK_RATE_UL,
+            "MaximizerVaultApe: buyback rate too high"
+        );
+        emit ChangedDefaultBuyBackRate(settings.buyBackRate, _buyBackRate);
+        settings.buyBackRate = _buyBackRate;
     }
 
-    function setWithdrawFeeAllStrategies(uint256 _withdrawFee)
-        external
-        onlyOwner
-    {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setWithdrawFee(
-                _withdrawFee
-            );
-        }
+    function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
+        require(
+            _withdrawFee < WITHDRAW_FEE_UL,
+            "MaximizerVaultApe: withdraw fee too high"
+        );
+        emit ChangedDefaultWithdrawFee(settings.withdrawFee, _withdrawFee);
+        settings.withdrawFee = _withdrawFee;
     }
 
-    function setWithdrawFeePeriodAllStrategies(uint256 _withdrawFeePeriod)
-        external
-        onlyOwner
-    {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setWithdrawFeePeriod(
-                _withdrawFeePeriod
-            );
-        }
-    }
-
-    function setVaultApeAllStrategies(address _vaultApe) external onlyOwner {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setVaultApe(_vaultApe);
-        }
-    }
-
-    function setWithdrawRewardsFeeAllStrategies(uint256 _withdrawRewardsFee)
-        external
-        onlyOwner
-    {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setWithdrawRewardsFee(
-                _withdrawRewardsFee
-            );
-        }
-    }
-
-    // ===== setters default values =====
-    function setDefaultKeeperFee(uint256 _defaultKeeperFee) external onlyOwner {
-        emit ChangedDefaultKeeperFee(defaultKeeperFee, _defaultKeeperFee);
-        defaultKeeperFee = _defaultKeeperFee;
-    }
-
-    function setDefaultPlatformFee(uint256 _defaultPlatformFee)
-        external
-        onlyOwner
-    {
-        emit ChangedDefaultPlatformFee(defaultPlatformFee, _defaultPlatformFee);
-        defaultPlatformFee = _defaultPlatformFee;
-    }
-
-    function setDefaultBuyBackRate(uint256 _defaultBuyBackRate)
-        external
-        onlyOwner
-    {
-        emit ChangedDefaultBuyBackRate(defaultBuyBackRate, _defaultBuyBackRate);
-        defaultBuyBackRate = _defaultBuyBackRate;
-    }
-
-    function setDefaultWithdrawFee(uint256 _defaultWithdrawFee)
-        external
-        onlyOwner
-    {
-        emit ChangedDefaultWithdrawFee(defaultWithdrawFee, _defaultWithdrawFee);
-        defaultWithdrawFee = _defaultWithdrawFee;
-    }
-
-    function setDefaultWithdrawFeePeriod(uint256 _defaultWithdrawFeePeriod)
+    function setWithdrawFeePeriod(uint256 _withdrawFeePeriod)
         external
         onlyOwner
     {
         emit ChangedDefaultWithdrawFeePeriod(
-            defaultWithdrawFeePeriod,
-            _defaultWithdrawFeePeriod
+            settings.withdrawFeePeriod,
+            _withdrawFeePeriod
         );
-        defaultWithdrawFeePeriod = _defaultWithdrawFeePeriod;
+        settings.withdrawFeePeriod = _withdrawFeePeriod;
     }
 
-    function setDefaulWithdrawRewardsFee(uint256 _defaulWithdrawRewardsFee)
+    function setDefaulWithdrawRewardsFee(uint256 _withdrawRewardsFee)
         external
         onlyOwner
     {
         emit ChangedDefaulWithdrawRewardsFee(
-            defaulWithdrawRewardsFee,
-            _defaulWithdrawRewardsFee
+            settings.withdrawRewardsFee,
+            _withdrawRewardsFee
         );
-        defaulWithdrawRewardsFee = _defaulWithdrawRewardsFee;
+        settings.withdrawRewardsFee = _withdrawRewardsFee;
     }
 }

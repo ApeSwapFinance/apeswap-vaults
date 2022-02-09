@@ -49,18 +49,4 @@ interface IStrategyMaximizerMasterApe {
     function withdraw(address _userAddress, uint256 _wantAmt) external;
 
     function claimRewards(address _userAddress, uint256 _shares) external;
-
-    function setVaultApe(address _vaultApe) external;
-
-    function setKeeperFee(uint256 _keeperFee) external;
-
-    function setPlatformFee(uint256 _platformFee) external;
-
-    function setBuyBackRate(uint256 _buyBackRate) external;
-
-    function setWithdrawFee(uint256 _withdrawFee) external;
-
-    function setWithdrawFeePeriod(uint256 _withdrawFeePeriod) external;
-
-    function setWithdrawRewardsFee(uint256 _withdrawRewardsFee) external;
 }

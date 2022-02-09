@@ -40,16 +40,8 @@ contract KeeperMaximizerVaultApe is
         address _keeper,
         address _owner,
         address _bananaVault,
-        address _defaultTreasury,
-        address _defaultPlatform
-    )
-        MaximizerVaultApe(
-            _owner,
-            _bananaVault,
-            _defaultTreasury,
-            _defaultPlatform
-        )
-    {
+        Settings memory _settings
+    ) MaximizerVaultApe(_owner, _bananaVault, _settings) {
         keeper = _keeper;
     }
 
