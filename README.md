@@ -76,3 +76,7 @@ VaultApe:                   https://bscscan.com/address/0xa4c084d141A4E54F3C7970
 StrategyMasterChefSingle:   https://bscscan.com/address/0x27619a7919bf31c15fca24dd10ccdb3f290b3581#code
 StrategyMasterApeSingle:    https://bscscan.com/address/0x51b13b0068d27fd49284b3ceac7c55d372602ad9#readContract
 StrategyMasterChef:         https://bscscan.com/address/0x5199e3ac3a64e8413f1fa3485b58a4741f23eb99#code
+
+
+## Maximizer Vaults
+The [Maximizer contracts](./contracts/maximizer/) are vaults which each reward tokens from external farms and auto compound BANANA rewards into the BANANA pool. These vaults were built to help alleviate the continuous sell pressure that vaults typically put on BANANA.
