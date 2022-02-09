@@ -63,13 +63,13 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     uint256 public slippageFactor;
     uint16 public maxVaults;
 
-    // ===== Strategy default values =====
-    address public override defaultTreasury;
+    address public override treasuryAddress;
+    address public override platformAddress;
 
+    // ===== Strategy default values =====
     uint256 public override defaultKeeperFee = 50; // 0.5%
     uint256 public constant override KEEPER_FEE_UL = 100; // 1%
 
-    address public override defaultPlatform;
     uint256 public override defaultPlatformFee = 0;
     uint256 public constant override PLATFORM_FEE_UL = 500; // 5%
 
@@ -80,21 +80,38 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
     uint256 public override defaultWithdrawFeePeriod = 3 days;
 
-    uint256 public override defaulWithdrawRewardsFee = 100; //1%
+    uint256 public override defaultWithdrawRewardsFee = 100; //1%
 
     event Compound(address indexed vault, uint256 timestamp);
+    event ChangedTreasuryAddress(address _old, address _new);
+    event ChangedPlatformAddress(address _old, address _new);
+
+    event ChangedDefaultKeeperFee(uint256 _old, uint256 _new);
+    event ChangedDefaultPlatformFee(uint256 _old, uint256 _new);
+    event ChangedDefaultBuyBackRate(uint256 _old, uint256 _new);
+    event ChangedDefaultWithdrawFee(uint256 _old, uint256 _new);
+    event ChangedDefaultWithdrawFeePeriod(uint256 _old, uint256 _new);
+    event ChangedDefaulWithdrawRewardsFee(uint256 _old, uint256 _new);
+    event VaultAdded(address _vaultAddress);
+    event VaultEnabled(address _vaultAddress);
+    event VaultDisabled(address _vaultAddress);
+    event ChangedModerator(address _address);
+    event ChangedMaxDelay(uint256 _new);
+    event ChangedMinKeeperFee(uint256 _new);
+    event ChangedSlippageFactor(uint256 _new);
+    event ChangedMaxVaults(uint256 _new);
 
     constructor(
         address _owner,
         address _bananaVault,
-        address _defaultTreasury,
-        address _defaultPlatform
+        address _treasuryAddress,
+        address _platformAddress
     ) Ownable() {
         transferOwnership(_owner);
         BANANA_VAULT = IBananaVault(_bananaVault);
 
-        defaultTreasury = _defaultTreasury;
-        defaultPlatform = _defaultPlatform;
+        treasuryAddress = _treasuryAddress;
+        platformAddress = _platformAddress;
 
         maxDelay = 1 seconds; //1 days;
         minKeeperFee = 10000000000000000;
@@ -110,6 +127,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     }
 
     /// @notice Chainlink keeper - Check what vaults need compounding
+    /// @return upkeepNeeded compounded necessary
+    /// @return performData data needed to do compound/performUpkeep
     function checkVaultCompound()
         public
         view
@@ -149,7 +168,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             ) = _getExpectedOutputs(vault);
 
             if (
-                block.timestamp >= vaultInfo.lastCompound + maxDelay || // TODO: there are two delays in state. Combine into one
+                block.timestamp >= vaultInfo.lastCompound + maxDelay ||
                 keeperOutput >= minKeeperFee
             ) {
                 tempCompoundInfo.vaults[actualLength] = vault;
@@ -302,15 +321,6 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             uint256 bananaOutput
         )
     {
-        // try IStrategyMaximizerMasterApe(_vault).getExpectedOutputs() returns (
-        //     uint256,
-        //     uint256,
-        //     uint256,
-        //     uint256
-        // ) {
-        //     return (platformOutput, keeperOutput, burnOutput, bananaOutput);
-        // } catch (bytes memory) {}
-
         (
             platformOutput,
             keeperOutput,
@@ -320,6 +330,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     }
 
     /// @notice Get amount of vaults
+    /// @return amount of vaults
     function vaultsLength() external view override returns (uint256) {
         return vaults.length;
     }
@@ -327,6 +338,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     /// @notice Get user info of a specific vault
     /// @param _pid pid of vault
     /// @param _user user address
+    /// @return stake
+    /// @return autoBananaShares
+    /// @return rewardDebt
+    /// @return lastDepositedTime
     function userInfo(uint256 _pid, address _user)
         external
         view
@@ -348,6 +363,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     /// @notice Get staked want tokens of a specific vault
     /// @param _pid pid of vault
     /// @param _user user address
+    /// @return amount of staked tokens in farm
     function stakedWantTokens(uint256 _pid, address _user)
         external
         view
@@ -363,6 +379,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
 
     /// @notice Get shares per staked token of a specific vault
     /// @param _pid pid of vault
+    /// @return accumulated shares per staked token
     function accSharesPerStakedToken(uint256 _pid)
         external
         view
@@ -454,7 +471,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         );
         // Verify that this strategy is assigned to this vault
         require(
-            address(IStrategyMaximizerMasterApe(_vault).vaultApe()) == address(this), 
+            address(IStrategyMaximizerMasterApe(_vault).vaultApe()) ==
+                address(this),
             "strategy vault ape not set to this address"
         );
         vaultInfos[_vault] = VaultInfo(block.timestamp, true);
@@ -463,6 +481,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         BANANA_VAULT.grantRole(DEPOSIT_ROLE, _vault);
 
         vaults.push(_vault);
+
+        emit VaultAdded(_vault);
     }
 
     /// @notice Add new vaults
@@ -483,48 +503,59 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
 
     function enableVault(address _vault) external onlyOwner {
         vaultInfos[_vault].enabled = true;
+        emit VaultEnabled(_vault);
     }
 
     function disableVault(address _vault) external onlyOwner {
         vaultInfos[_vault].enabled = false;
+        emit VaultDisabled(_vault);
     }
 
     function setModerator(address _moderator) public onlyOwner {
         moderator = _moderator;
+        emit ChangedModerator(_moderator);
     }
 
     function setMaxDelay(uint256 _maxDelay) public onlyOwner {
         maxDelay = _maxDelay;
+        emit ChangedMaxDelay(_maxDelay);
     }
 
     function setMinKeeperFee(uint256 _minKeeperFee) public onlyOwner {
         minKeeperFee = _minKeeperFee;
+        emit ChangedMinKeeperFee(_minKeeperFee);
     }
 
     function setSlippageFactor(uint256 _slippageFactor) public onlyOwner {
         slippageFactor = _slippageFactor;
+        emit ChangedSlippageFactor(_slippageFactor);
     }
 
     function setMaxVaults(uint16 _maxVaults) public onlyOwner {
         maxVaults = _maxVaults;
+        emit ChangedMaxVaults(_maxVaults);
+    }
+
+    function setTreasuryAddress(address _treasury) external onlyOwner {
+        emit ChangedTreasuryAddress(treasuryAddress, _treasury);
+        treasuryAddress = _treasury;
+    }
+
+    function setPlatformAddress(address _platform) external onlyOwner {
+        emit ChangedPlatformAddress(platformAddress, _platform);
+        platformAddress = _platform;
     }
 
     // ===== Strategy value setters =====
-    function setTreasuryAllStrategies(address _treasury) external onlyOwner {
+    function setKeeperFeeAllStrategies(uint256 _keeperFee, bool _feeInLink)
+        external
+        onlyOwner
+    {
         for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setTreasury(_treasury);
-        }
-    }
-
-    function setKeeperFeeAllStrategies(uint256 _keeperFee) external onlyOwner {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setKeeperFee(_keeperFee);
-        }
-    }
-
-    function setPlatformAllStrategies(address _platform) external onlyOwner {
-        for (uint16 _pid = 0; _pid < vaults.length; ++_pid) {
-            IStrategyMaximizerMasterApe(vaults[_pid]).setPlatform(_platform);
+            IStrategyMaximizerMasterApe(vaults[_pid]).setKeeperFee(
+                _keeperFee,
+                _feeInLink
+            );
         }
     }
 
@@ -590,22 +621,16 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     }
 
     // ===== setters default values =====
-    function setDefaultTreasury(address _defaultTreasury) external onlyOwner {
-        defaultTreasury = _defaultTreasury;
-    }
-
     function setDefaultKeeperFee(uint256 _defaultKeeperFee) external onlyOwner {
+        emit ChangedDefaultKeeperFee(defaultKeeperFee, _defaultKeeperFee);
         defaultKeeperFee = _defaultKeeperFee;
-    }
-
-    function setDefaultPlatform(address _defaultPlatform) external onlyOwner {
-        defaultPlatform = _defaultPlatform;
     }
 
     function setDefaultPlatformFee(uint256 _defaultPlatformFee)
         external
         onlyOwner
     {
+        emit ChangedDefaultPlatformFee(defaultPlatformFee, _defaultPlatformFee);
         defaultPlatformFee = _defaultPlatformFee;
     }
 
@@ -613,6 +638,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         external
         onlyOwner
     {
+        emit ChangedDefaultBuyBackRate(defaultBuyBackRate, _defaultBuyBackRate);
         defaultBuyBackRate = _defaultBuyBackRate;
     }
 
@@ -620,6 +646,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         external
         onlyOwner
     {
+        emit ChangedDefaultWithdrawFee(defaultWithdrawFee, _defaultWithdrawFee);
         defaultWithdrawFee = _defaultWithdrawFee;
     }
 
@@ -627,13 +654,21 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         external
         onlyOwner
     {
+        emit ChangedDefaultWithdrawFeePeriod(
+            defaultWithdrawFeePeriod,
+            _defaultWithdrawFeePeriod
+        );
         defaultWithdrawFeePeriod = _defaultWithdrawFeePeriod;
     }
 
-    function setDefaulWithdrawRewardsFee(uint256 _defaulWithdrawRewardsFee)
+    function setDefaulWithdrawRewardsFee(uint256 _defaultWithdrawRewardsFee)
         external
         onlyOwner
     {
-        defaulWithdrawRewardsFee = _defaulWithdrawRewardsFee;
+        emit ChangedDefaulWithdrawRewardsFee(
+            defaultWithdrawRewardsFee,
+            _defaultWithdrawRewardsFee
+        );
+        defaultWithdrawRewardsFee = _defaultWithdrawRewardsFee;
     }
 }

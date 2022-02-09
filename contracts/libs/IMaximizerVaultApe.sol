@@ -4,11 +4,11 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IMaximizerVaultApe {
-    function defaultTreasury() external view returns (address);
+    function treasuryAddress() external view returns (address);
+
+    function platformAddress() external view returns (address);
 
     function defaultKeeperFee() external view returns (uint256);
-
-    function defaultPlatform() external view returns (address);
 
     function defaultPlatformFee() external view returns (uint256);
 
@@ -18,7 +18,7 @@ interface IMaximizerVaultApe {
 
     function defaultWithdrawFeePeriod() external view returns (uint256);
 
-    function defaulWithdrawRewardsFee() external view returns (uint256);
+    function defaultWithdrawRewardsFee() external view returns (uint256);
 
     function KEEPER_FEE_UL() external view returns (uint256);
 
