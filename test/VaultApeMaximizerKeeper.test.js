@@ -130,11 +130,11 @@ describe('KeeperMaximizerVaultApe', function () {
           testConfig.routerAddress,
           farmInfo.earnedToBananaPath,
           farmInfo.earnedToWnativePath,
-          farmInfo.earnedToLinkPath,
           [
             adminAddress,
             maximizerVaultApe.address
-          ]);
+          ]
+        );
 
         // Define roles and grant roles
         this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
@@ -396,18 +396,11 @@ describe('KeeperMaximizerVaultApe', function () {
         // TODO: Test enable/disable vaults
         // TODO: Test add vaults
         // TODO: onlyOwner strategy tests
-        
+
         it('should update values via onlyOwner properly on maximizerVaultApe', async () => {
           const notOwner = testerAddress;
           const updateAddress = accounts[0];
           const updateValue = '12345';
-
-          expectRevert(
-            maximizerVaultApe.setDefaultTreasury(updateAddress, { from: notOwner }),
-            "Ownable: caller is not the owner"
-          )
-          await maximizerVaultApe.setDefaultTreasury(updateAddress, { from: adminAddress });
-          expect(await maximizerVaultApe.defaultTreasury()).equal(updateAddress, 'default treasury update not accurate')
 
           expectRevert(
             maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: notOwner }),
@@ -415,13 +408,6 @@ describe('KeeperMaximizerVaultApe', function () {
           )
           await maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: adminAddress });
           expect((await maximizerVaultApe.defaultKeeperFee()).toString()).equal(updateValue, 'default keeper fee update not accurate')
-
-          expectRevert(
-            maximizerVaultApe.setDefaultPlatform(updateAddress, { from: notOwner }),
-            "Ownable: caller is not the owner"
-          )
-          await maximizerVaultApe.setDefaultPlatform(updateAddress, { from: adminAddress });
-          expect(await maximizerVaultApe.defaultPlatform()).equal(updateAddress, 'default platform update not accurate')
 
           expectRevert(
             maximizerVaultApe.setDefaultPlatformFee(updateValue, { from: notOwner }),
@@ -452,11 +438,11 @@ describe('KeeperMaximizerVaultApe', function () {
           expect((await maximizerVaultApe.defaultWithdrawFeePeriod()).toString()).equal(updateValue, 'default buy withdraw fee period update not accurate')
 
           expectRevert(
-            maximizerVaultApe.setDefaulWithdrawRewardsFee(updateValue, { from: notOwner }),
+            maximizerVaultApe.setDefaultWithdrawRewardsFee(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setDefaulWithdrawRewardsFee(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.defaulWithdrawRewardsFee()).toString()).equal(updateValue, 'default buy withdraw rewards fee update not accurate');
+          await maximizerVaultApe.setDefaultWithdrawRewardsFee(updateValue, { from: adminAddress });
+          expect((await maximizerVaultApe.defaultWithdrawRewardsFee()).toString()).equal(updateValue, 'default buy withdraw rewards fee update not accurate');
 
           expectRevert(
             maximizerVaultApe.setModerator(updateAddress, { from: notOwner }),
