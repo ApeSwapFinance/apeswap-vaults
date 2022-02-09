@@ -52,7 +52,7 @@ interface IStrategyMaximizerMasterApe {
 
     function setVaultApe(address _vaultApe) external;
 
-    function setKeeperFee(uint256 _keeperFee) external;
+    function setKeeperFee(uint256 _keeperFee, bool _feeInLink) external;
 
     function setPlatformFee(uint256 _platformFee) external;
 

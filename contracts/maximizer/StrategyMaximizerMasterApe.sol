@@ -83,6 +83,7 @@ contract StrategyMaximizerMasterApe is
     address[] public pathToBanana; // Path from staked token to BANANA
     address[] public pathToWbnb; // Path from staked token to WBNB
     address[] public pathToLink; // Path from staked token to LINK
+    bool public keeperFeeInLink = false;
 
     IMaximizerVaultApe public override vaultApe;
     uint256 public keeperFee;
@@ -142,6 +143,12 @@ contract StrategyMaximizerMasterApe is
             _pathToWbnb[0] == address(_farmRewardToken) &&
                 _pathToWbnb[_pathToWbnb.length - 1] == WBNB,
             "StrategyMaximizerMasterApe: Incorrect path to WBNB"
+        );
+
+        require(
+            _pathToLink[0] == address(_farmRewardToken) &&
+                _pathToLink[_pathToLink.length - 1] == LINK,
+            "StrategyMaximizerMasterApe: Incorrect path to LINK"
         );
 
         STAKED_TOKEN = IERC20(_stakedToken);
@@ -219,8 +226,8 @@ contract StrategyMaximizerMasterApe is
             _swap(
                 rewardTokenBalance.mul(keeperFee).div(10000),
                 _minKeeperOutput,
-                pathToLink,
-                vaultApe.treasuryAddress()
+                keeperFeeInLink ? pathToLink : pathToWbnb,
+                keeperFeeInLink ? address(vaultApe) : vaultApe.treasuryAddress()
             );
             IERC20 link = IERC20(LINK);
             link.safeTransfer(address(vaultApe), link.balanceOf(address(this)));
@@ -616,13 +623,18 @@ contract StrategyMaximizerMasterApe is
         vaultApe = IMaximizerVaultApe(_vaultApe);
     }
 
-    function setKeeperFee(uint256 _keeperFee) external override onlyOwner {
+    function setKeeperFee(uint256 _keeperFee, bool _feeInLink)
+        external
+        override
+        onlyOwner
+    {
         require(
             _keeperFee <= IMaximizerVaultApe(vaultApe).KEEPER_FEE_UL(),
             "StrategyMaximizerMasterApe: Keeper fee too high"
         );
         emit SetKeeperFee(keeperFee, _keeperFee);
         keeperFee = _keeperFee;
+        keeperFeeInLink = _feeInLink;
     }
 
     function setPlatformFee(uint256 _platformFee) external override onlyOwner {
