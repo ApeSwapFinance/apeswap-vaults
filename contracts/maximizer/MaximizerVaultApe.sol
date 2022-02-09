@@ -91,7 +91,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     event ChangedDefaultBuyBackRate(uint256 _old, uint256 _new);
     event ChangedDefaultWithdrawFee(uint256 _old, uint256 _new);
     event ChangedDefaultWithdrawFeePeriod(uint256 _old, uint256 _new);
-    event ChangedDefaulWithdrawRewardsFee(uint256 _old, uint256 _new);
+    event ChangedDefaultWithdrawRewardsFee(uint256 _old, uint256 _new);
     event VaultAdded(address _vaultAddress);
     event VaultEnabled(address _vaultAddress);
     event VaultDisabled(address _vaultAddress);
@@ -661,11 +661,11 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         defaultWithdrawFeePeriod = _defaultWithdrawFeePeriod;
     }
 
-    function setDefaulWithdrawRewardsFee(uint256 _defaultWithdrawRewardsFee)
+    function setDefaultWithdrawRewardsFee(uint256 _defaultWithdrawRewardsFee)
         external
         onlyOwner
     {
-        emit ChangedDefaulWithdrawRewardsFee(
+        emit ChangedDefaultWithdrawRewardsFee(
             defaultWithdrawRewardsFee,
             _defaultWithdrawRewardsFee
         );
