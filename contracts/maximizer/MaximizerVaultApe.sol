@@ -82,8 +82,8 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     event ChangedWithdrawFeePeriod(uint256 _old, uint256 _new);
     event ChangedWithdrawRewardsFee(uint256 _old, uint256 _new);
     event VaultAdded(address _vaultAddress);
-    event VaultEnabled(address _vaultAddress);
-    event VaultDisabled(address _vaultAddress);
+    event VaultEnabled(uint256 _vaultPid, address _vaultAddress);
+    event VaultDisabled(uint256 _vaultPid, address _vaultAddress);
     event ChangedModerator(address _address);
     event ChangedMaxDelay(uint256 _new);
     event ChangedMinKeeperFee(uint256 _new);
@@ -275,9 +275,11 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
                 );
         } else {
             if (_revert) {
-                revert("vault is disabled");
+                revert("MaximizerVaultApe: vault is disabled");
             }
         }
+
+        BANANA_VAULT.earn();
     }
 
     function _compoundVault(
@@ -492,14 +494,16 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 
-    function enableVault(address _vault) external onlyOwner {
-        vaultInfos[_vault].enabled = true;
-        emit VaultEnabled(_vault);
+    function enableVault(uint256 _vaultPid) external onlyOwner {
+        address vaultAddress = vaults[_vaultPid];
+        vaultInfos[vaultAddress].enabled = true;
+        emit VaultEnabled(_vaultPid, vaultAddress);
     }
 
-    function disableVault(address _vault) external onlyOwner {
-        vaultInfos[_vault].enabled = false;
-        emit VaultDisabled(_vault);
+    function disableVault(uint256 _vaultPid) external onlyOwner {
+        address vaultAddress = vaults[_vaultPid];
+        vaultInfos[vaultAddress].enabled = false;
+        emit VaultEnabled(_vaultPid, vaultAddress);
     }
 
     function setModerator(address _moderator) public onlyOwner {

@@ -489,6 +489,7 @@ contract StrategyMaximizerMasterApe is
     /// @return stake
     /// @return banana
     /// @return autoBananaShares
+    //TODO: does this need to be accessible from vaultApe?
     function balanceOf(address _userAddress)
         external
         view
@@ -506,13 +507,9 @@ contract StrategyMaximizerMasterApe is
             .div(1e18)
             .sub(user.rewardDebt);
 
-        stake = user.stake;
+        stake = user.stake; 
         autoBananaShares = user.autoBananaShares.add(pendingShares);
-
-        (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(0, address(this));
-        uint256 pricePerFullShare = BANANA.balanceOf(address(this)).add(amount);
-        // TEST: This value appears to be coming back as zero
-        banana = autoBananaShares.mul(pricePerFullShare).div(1e18);
+        banana = autoBananaShares.mul(BANANA_VAULT.getPricePerFullShare()).div(1e18);
     }
 
     function _approveTokenIfNeeded(
@@ -653,6 +650,7 @@ contract StrategyMaximizerMasterApe is
         emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
+    //TODO: Do we need this?
     function setVaultApe(address _vaultApe) external onlyOwner {
         emit SetVaultApe(address(vaultApe), _vaultApe);
         vaultApe = IMaximizerVaultApe(_vaultApe);
