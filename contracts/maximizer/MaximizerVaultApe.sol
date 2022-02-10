@@ -72,15 +72,15 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
 
     event Compound(address indexed vault, uint256 timestamp);
-    event ChangedTreasuryAddress(address _old, address _new);
-    event ChangedPlatformAddress(address _old, address _new);
+    event ChangedTreasury(address _old, address _new);
+    event ChangedPlatform(address _old, address _new);
 
-    event ChangedDefaultKeeperFee(uint256 _old, uint256 _new);
-    event ChangedDefaultPlatformFee(uint256 _old, uint256 _new);
-    event ChangedDefaultBuyBackRate(uint256 _old, uint256 _new);
-    event ChangedDefaultWithdrawFee(uint256 _old, uint256 _new);
-    event ChangedDefaultWithdrawFeePeriod(uint256 _old, uint256 _new);
-    event ChangedDefaulWithdrawRewardsFee(uint256 _old, uint256 _new);
+    event ChangedKeeperFee(uint256 _old, uint256 _new);
+    event ChangedPlatformFee(uint256 _old, uint256 _new);
+    event ChangedBuyBackRate(uint256 _old, uint256 _new);
+    event ChangedWithdrawFee(uint256 _old, uint256 _new);
+    event ChangedWithdrawFeePeriod(uint256 _old, uint256 _new);
+    event ChangedWithdrawRewardsFee(uint256 _old, uint256 _new);
     event VaultAdded(address _vaultAddress);
     event VaultEnabled(address _vaultAddress);
     event VaultDisabled(address _vaultAddress);
@@ -528,13 +528,13 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     }
 
     // ===== setters setting values =====
-    function setTreasuryAddress(address _treasury) external onlyOwner {
-        emit ChangedTreasuryAddress(settings.treasury, _treasury);
+    function setTreasury(address _treasury) external onlyOwner {
+        emit ChangedTreasury(settings.treasury, _treasury);
         settings.treasury = _treasury;
     }
 
-    function setPlatformAddress(address _platform) external onlyOwner {
-        emit ChangedPlatformAddress(settings.platform, _platform);
+    function setPlatform(address _platform) external onlyOwner {
+        emit ChangedPlatform(settings.platform, _platform);
         settings.platform = _platform;
     }
 
@@ -543,7 +543,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             _keeperFee < KEEPER_FEE_UL,
             "MaximizerVaultApe: Keeper fee too high"
         );
-        emit ChangedDefaultKeeperFee(settings.keeperFee, _keeperFee);
+        emit ChangedKeeperFee(settings.keeperFee, _keeperFee);
         settings.keeperFee = _keeperFee;
     }
 
@@ -552,7 +552,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             _platformFee < PLATFORM_FEE_UL,
             "MaximizerVaultApe: platform fee too high"
         );
-        emit ChangedDefaultPlatformFee(settings.platformFee, _platformFee);
+        emit ChangedPlatformFee(settings.platformFee, _platformFee);
         settings.platformFee = _platformFee;
     }
 
@@ -561,7 +561,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             _buyBackRate < BUYBACK_RATE_UL,
             "MaximizerVaultApe: buyback rate too high"
         );
-        emit ChangedDefaultBuyBackRate(settings.buyBackRate, _buyBackRate);
+        emit ChangedBuyBackRate(settings.buyBackRate, _buyBackRate);
         settings.buyBackRate = _buyBackRate;
     }
 
@@ -570,7 +570,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
             _withdrawFee < WITHDRAW_FEE_UL,
             "MaximizerVaultApe: withdraw fee too high"
         );
-        emit ChangedDefaultWithdrawFee(settings.withdrawFee, _withdrawFee);
+        emit ChangedWithdrawFee(settings.withdrawFee, _withdrawFee);
         settings.withdrawFee = _withdrawFee;
     }
 
@@ -578,18 +578,18 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         external
         onlyOwner
     {
-        emit ChangedDefaultWithdrawFeePeriod(
+        emit ChangedWithdrawFeePeriod(
             settings.withdrawFeePeriod,
             _withdrawFeePeriod
         );
         settings.withdrawFeePeriod = _withdrawFeePeriod;
     }
 
-    function setDefaulWithdrawRewardsFee(uint256 _withdrawRewardsFee)
+    function setWithdrawRewardsFee(uint256 _withdrawRewardsFee)
         external
         onlyOwner
     {
-        emit ChangedDefaulWithdrawRewardsFee(
+        emit ChangedWithdrawRewardsFee(
             settings.withdrawRewardsFee,
             _withdrawRewardsFee
         );

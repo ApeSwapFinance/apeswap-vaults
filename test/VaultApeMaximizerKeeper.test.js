@@ -33,6 +33,113 @@ describe('KeeperMaximizerVaultApe', function () {
     maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, [adminAddress, 50, adminAddress, 0, 0, 25, 259200, 100]);
   });
 
+  it('Should be able to change settings maximizerVaultApe', async () => {
+    const farmInfo = farms[0];
+    this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, maximizerVaultApe.address]);
+
+    await maximizerVaultApe.setTreasury(rewardAddress, { from: adminAddress });
+    await maximizerVaultApe.setKeeperFee(1, { from: adminAddress });
+    await maximizerVaultApe.setPlatform(buyBackAddress, { from: adminAddress });
+    await maximizerVaultApe.setPlatformFee(2, { from: adminAddress });
+    await maximizerVaultApe.setBuyBackRate(3, { from: adminAddress });
+    await maximizerVaultApe.setWithdrawFee(4, { from: adminAddress });
+    await maximizerVaultApe.setWithdrawFeePeriod(5, { from: adminAddress });
+    await maximizerVaultApe.setWithdrawRewardsFee(6, { from: adminAddress });
+
+    let vaultApeSettings = await maximizerVaultApe.getSettings();
+    const treasury = vaultApeSettings.treasury;
+    const keeperFee = vaultApeSettings.keeperFee;
+    const platform = vaultApeSettings.platform;
+    const platformFee = vaultApeSettings.platformFee;
+    const buyBackRate = vaultApeSettings.buyBackRate;
+    const withdrawFee = vaultApeSettings.withdrawFee;
+    const withdrawFeePeriod = vaultApeSettings.withdrawFeePeriod;
+    const withdrawRewardsFee = vaultApeSettings.withdrawRewardsFee;
+
+    expect(treasury.toString()).equal(rewardAddress);
+    expect(keeperFee.toString()).equal("1");
+    expect(platform.toString()).equal(buyBackAddress);
+    expect(platformFee.toString()).equal("2");
+    expect(buyBackRate.toString()).equal("3");
+    expect(withdrawFee.toString()).equal("4");
+    expect(withdrawFeePeriod.toString()).equal("5");
+    expect(withdrawRewardsFee.toString()).equal("6");
+  });
+
+  it('Should be able to change settings StrategyMaximizerMasterApe', async () => {
+    const farmInfo = farms[0];
+    this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, maximizerVaultApe.address]);
+
+    await this.strategy.setTreasury(rewardAddress, false, { from: adminAddress });
+    await this.strategy.setKeeperFee(1, false, { from: adminAddress });
+    await this.strategy.setPlatform(buyBackAddress, false, { from: adminAddress });
+    await this.strategy.setPlatformFee(2, false, { from: adminAddress });
+    await this.strategy.setBuyBackRate(3, false, { from: adminAddress });
+    await this.strategy.setWithdrawFee(4, false, { from: adminAddress });
+    await this.strategy.setWithdrawFeePeriod(5, false, { from: adminAddress });
+    await this.strategy.setWithdrawRewardsFee(6, false, { from: adminAddress });
+
+    let vaultApeSettings = await this.strategy.getSettings();
+    const treasury = vaultApeSettings.treasury;
+    const keeperFee = vaultApeSettings.keeperFee;
+    const platform = vaultApeSettings.platform;
+    const platformFee = vaultApeSettings.platformFee;
+    const buyBackRate = vaultApeSettings.buyBackRate;
+    const withdrawFee = vaultApeSettings.withdrawFee;
+    const withdrawFeePeriod = vaultApeSettings.withdrawFeePeriod;
+    const withdrawRewardsFee = vaultApeSettings.withdrawRewardsFee;
+
+    expect(treasury.toString()).equal(rewardAddress);
+    expect(keeperFee.toString()).equal("1");
+    expect(platform.toString()).equal(buyBackAddress);
+    expect(platformFee.toString()).equal("2");
+    expect(buyBackRate.toString()).equal("3");
+    expect(withdrawFee.toString()).equal("4");
+    expect(withdrawFeePeriod.toString()).equal("5");
+    expect(withdrawRewardsFee.toString()).equal("6");
+  });
+
+  it('Should keep default settings in StrategyMaximizerMasterApe', async () => {
+    const farmInfo = farms[0];
+    this.strategy = await StrategyMaximizerMasterApe.new(farmInfo.masterchef, farmInfo.pid, farmInfo.pid == 0, farmInfo.wantAddress, farmInfo.rewardAddress, bananaVault.address, testConfig.routerAddress, farmInfo.earnedToBananaPath, farmInfo.earnedToWnativePath, [adminAddress, maximizerVaultApe.address]);
+
+    await maximizerVaultApe.setTreasury(rewardAddress, { from: adminAddress });
+    await maximizerVaultApe.setKeeperFee(1, { from: adminAddress });
+    await maximizerVaultApe.setPlatform(rewardAddress, { from: adminAddress });
+    await maximizerVaultApe.setPlatformFee(1, { from: adminAddress });
+    await maximizerVaultApe.setBuyBackRate(1, { from: adminAddress });
+    await maximizerVaultApe.setWithdrawFee(1, { from: adminAddress });
+    await maximizerVaultApe.setWithdrawFeePeriod(1, { from: adminAddress });
+    await maximizerVaultApe.setWithdrawRewardsFee(1, { from: adminAddress });
+    await this.strategy.setTreasury(buyBackAddress, true, { from: adminAddress });
+    await this.strategy.setKeeperFee(2, true, { from: adminAddress });
+    await this.strategy.setPlatform(buyBackAddress, true, { from: adminAddress });
+    await this.strategy.setPlatformFee(2, true, { from: adminAddress });
+    await this.strategy.setBuyBackRate(2, true, { from: adminAddress });
+    await this.strategy.setWithdrawFee(2, true, { from: adminAddress });
+    await this.strategy.setWithdrawFeePeriod(2, true, { from: adminAddress });
+    await this.strategy.setWithdrawRewardsFee(2, true, { from: adminAddress });
+
+    let vaultApeSettings = await this.strategy.getSettings();
+    const treasury = vaultApeSettings.treasury;
+    const keeperFee = vaultApeSettings.keeperFee;
+    const platform = vaultApeSettings.platform;
+    const platformFee = vaultApeSettings.platformFee;
+    const buyBackRate = vaultApeSettings.buyBackRate;
+    const withdrawFee = vaultApeSettings.withdrawFee;
+    const withdrawFeePeriod = vaultApeSettings.withdrawFeePeriod;
+    const withdrawRewardsFee = vaultApeSettings.withdrawRewardsFee;
+
+    expect(treasury.toString()).equal(rewardAddress);
+    expect(keeperFee.toString()).equal("1");
+    expect(platform.toString()).equal(rewardAddress);
+    expect(platformFee.toString()).equal("1");
+    expect(buyBackRate.toString()).equal("1");
+    expect(withdrawFee.toString()).equal("1");
+    expect(withdrawFeePeriod.toString()).equal("1");
+    expect(withdrawRewardsFee.toString()).equal("1");
+  });
+
   farms.forEach(farm => {
     const farmInfo = farm;
 
