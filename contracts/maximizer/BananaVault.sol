@@ -136,7 +136,7 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
      * @notice Reinvests BANANA tokens into MasterApe
      */
     function earn() external {
-        masterApe.enterStaking(0);
+        masterApe.leaveStaking(0);
 
         _earn();
 
