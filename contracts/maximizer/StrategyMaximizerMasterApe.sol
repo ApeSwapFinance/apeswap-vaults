@@ -110,19 +110,20 @@ contract StrategyMaximizerMasterApe is
     // Setting updates
     event SetPathToBanana(address[] oldPath, address[] newPath);
     event SetPathToWbnb(address[] oldPath, address[] newPath);
-    event SetTreasury(address oldTreasury, address newTreasury);
-    event SetPlatform(address oldPlatform, address newPlatform);
-    event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate);
-    event SetVaultApe(address oldVaultApe, address newVaultApe);
-    event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee);
-    event SetPlatformFee(uint256 oldPlatformFee, uint256 newPlatformFee);
+    event SetTreasury(address oldTreasury, address newTreasury, bool useDefaultFee);
+    event SetPlatform(address oldPlatform, address newPlatform, bool useDefaultFee);
+    event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate, bool useDefaultFee);
+    event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee, bool useDefaultFee);
+    event SetPlatformFee(uint256 oldPlatformFee, uint256 newPlatformFee, bool useDefaultFee);
     event SetWithdrawRewardsFee(
         uint256 oldWithdrawRewardsFee,
-        uint256 newWithdrawRewardsFee
+        uint256 newWithdrawRewardsFee,
+        bool useDefaultFee
     );
     event SetWithdrawFee(
         uint256 oldEarlyWithdrawFee,
-        uint256 newEarlyWithdrawFee
+        uint256 newEarlyWithdrawFee,
+        bool useDefaultFee
     );
 
     constructor(
@@ -651,7 +652,7 @@ contract StrategyMaximizerMasterApe is
         onlyOwner
     {
         useDefaultSettings.platform = _useDefault;
-        emit SetPlatform(settings.platform, _platform);
+        emit SetPlatform(settings.platform, _platform, _useDefault);
         settings.platform = _platform;
     }
 
@@ -660,7 +661,7 @@ contract StrategyMaximizerMasterApe is
         onlyOwner
     {
         useDefaultSettings.treasury = _useDefault;
-        emit SetTreasury(settings.treasury, _treasury);
+        emit SetTreasury(settings.treasury, _treasury, _useDefault);
         settings.treasury = _treasury;
     }
 
@@ -673,7 +674,7 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Keeper fee too high"
         );
         useDefaultSettings.keeperFee = _useDefault;
-        emit SetKeeperFee(settings.keeperFee, _keeperFee);
+        emit SetKeeperFee(settings.keeperFee, _keeperFee, _useDefault);
         settings.keeperFee = _keeperFee;
     }
 
@@ -686,7 +687,7 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Platform fee too high"
         );
         useDefaultSettings.platformFee = _useDefault;
-        emit SetPlatformFee(settings.platformFee, _platformFee);
+        emit SetPlatformFee(settings.platformFee, _platformFee, _useDefault);
         settings.platformFee = _platformFee;
     }
 
@@ -699,7 +700,7 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Buy back rate too high"
         );
         useDefaultSettings.buyBackRate = _useDefault;
-        emit SetBuyBackRate(settings.buyBackRate, _buyBackRate);
+        emit SetBuyBackRate(settings.buyBackRate, _buyBackRate, _useDefault);
         settings.buyBackRate = _buyBackRate;
     }
 
@@ -712,7 +713,7 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Early withdraw fee too high"
         );
         useDefaultSettings.withdrawFee = _useDefault;
-        emit SetWithdrawFee(settings.withdrawFee, _withdrawFee);
+        emit SetWithdrawFee(settings.withdrawFee, _withdrawFee, _useDefault);
         settings.withdrawFee = _withdrawFee;
     }
 
@@ -721,7 +722,7 @@ contract StrategyMaximizerMasterApe is
         onlyOwner
     {
         useDefaultSettings.withdrawFeePeriod = _useDefault;
-        emit SetWithdrawFee(settings.withdrawFeePeriod, _withdrawFeePeriod);
+        emit SetWithdrawFee(settings.withdrawFeePeriod, _withdrawFeePeriod, _useDefault);
         settings.withdrawFeePeriod = _withdrawFeePeriod;
     }
 
@@ -732,7 +733,8 @@ contract StrategyMaximizerMasterApe is
         useDefaultSettings.withdrawRewardsFee = _useDefault;
         emit SetWithdrawRewardsFee(
             settings.withdrawRewardsFee,
-            _withdrawRewardsFee
+            _withdrawRewardsFee,
+            _useDefault
         );
         settings.withdrawRewardsFee = _withdrawRewardsFee;
     }
