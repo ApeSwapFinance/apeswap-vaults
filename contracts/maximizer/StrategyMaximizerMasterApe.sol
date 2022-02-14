@@ -646,12 +646,6 @@ contract StrategyMaximizerMasterApe is
         emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
-    //TODO: Do we need this?
-    function setVaultApe(address _vaultApe) external onlyOwner {
-        emit SetVaultApe(address(vaultApe), _vaultApe);
-        vaultApe = IMaximizerVaultApe(_vaultApe);
-    }
-
     function setPlatform(address _platform, bool _useDefault)
         external
         onlyOwner
