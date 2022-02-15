@@ -10,7 +10,7 @@ const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 const { getStrategyMaximizerSnapshot } = require('./helpers/maximizer/strategyMaximizerHelper');
 const { getBananaVaultSnapshot } = require('./helpers/maximizer/bananaVaultHelper');
 const { getAccountTokenBalances } = require('./helpers/contractHelper');
-const { subBNStr, addBNStr } = require('./helpers/bnHelper');
+const { subBNStr, addBNStr, formatBNObjectToString } = require('./helpers/bnHelper');
 const { advanceNumBlocks } = require('./helpers/openzeppelinExtensions');
 const { createLessThan, createEmitAndSemanticDiagnosticsBuilderProgram } = require('typescript');
 
@@ -30,7 +30,7 @@ describe('KeeperMaximizerVaultApe', function () {
   const adminAddress = testConfig.adminAddress;
   const treasuryAddress = testConfig.treasuryAddress;
   const platformAddress = testConfig.platformAddress;
-  let maximizerVaultApe, bananaVault, router;
+  let maximizerVaultApe, strategyMaximizerMasterApe, bananaVault, router;
   let usdToken, bananaToken, wantToken;
 
   const blocksToAdvance = 10;
@@ -304,8 +304,9 @@ describe('KeeperMaximizerVaultApe', function () {
       });
 
       it('should withdraw and pay withdraw fee', async () => {
-        const wantAccountSnapshotBefore = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress]);
-        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress]);
+        const { treasury } = await strategyMaximizerMasterApe.getSettings();
+        const wantAccountSnapshotBefore = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress, treasury]);
+        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
         await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress });
         // Snapshot Before
         const strategySnapshotBefore = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
@@ -336,14 +337,14 @@ describe('KeeperMaximizerVaultApe', function () {
         userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(Number(userInfo.stake)).equal(0, 'user stake is not zero after withdraw')
         // That the stake token of that vault increases for the tester by the amount less than the withdraw fee
-        const wantAccountSnapshotAfter = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress]);
-        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress]);
+        const wantAccountSnapshotAfter = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress, treasury]);
+        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
         const withdrawFee = new BN(toDeposit).mul(new BN(2)).mul(new BN("25")).div(new BN("10000")); //0.25% withdraw fees
         const shouldBeBalance = new BN(wantAccountSnapshotBefore[testerAddress]).sub(withdrawFee);
 
         // Assert stake token balances
         expect(
-          new BN(wantAccountSnapshotAfter[adminAddress])
+          new BN(wantAccountSnapshotAfter[treasury])
             .eq(withdrawFee))
           .equal(true, 'withdraw fee to treasury address inaccurate');
         expect(wantAccountSnapshotAfter[testerAddress]).equal(shouldBeBalance.toString(), 'user want balance inaccurate after withdraw');
@@ -355,8 +356,8 @@ describe('KeeperMaximizerVaultApe', function () {
           .equal(true, 'banana tokens did not increase for tester address after earn/withdraw');
         // NOTE: Only testing for value increases
         expect(
-          new BN(bananaAccountSnapshotAfter[adminAddress])
-            .gt(new BN(bananaAccountSnapshotBefore[adminAddress])))
+          new BN(bananaAccountSnapshotAfter[treasury])
+            .gt(new BN(bananaAccountSnapshotBefore[treasury])))
           .equal(true, 'banana tokens did not increase for treasury address after earn/reward withdraw fee');
 
         const strategySnapshotFinal = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
@@ -505,11 +506,12 @@ describe('KeeperMaximizerVaultApe', function () {
       });
 
       it('should harvest properly', async () => {
-        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress]);
+        const { treasury } = await strategyMaximizerMasterApe.getSettings();
+        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
         // Deposit tokens
         await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress });
         // Snapshot Before
-        const strategySnapshotBefore = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
+        const strategySnapshotBefore = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2, treasury]);
         const bananaVaultSnapshotBefore = await getBananaVaultSnapshot(bananaVault, [strategyMaximizerMasterApe.address]);
         const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
 
@@ -521,7 +523,7 @@ describe('KeeperMaximizerVaultApe', function () {
         await advanceNumBlocks(blocksToAdvance);
         await maximizerVaultApe.earn(0);
         const bananaVaultSnapshotInBetween = await getBananaVaultSnapshot(bananaVault, [strategyMaximizerMasterApe.address]);
-        const strategySnapshotInBetween = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
+        const strategySnapshotInBetween = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2, treasury]);
         // NOTE: Only testing for value increases
         // balanceOf evaluates the current banana value, while userInfo stores the most recent state update (will be behind)
         expect(
@@ -544,7 +546,7 @@ describe('KeeperMaximizerVaultApe', function () {
 
         const strategySnapshotAfter = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
         const bananaVaultSnapshotAfter = await getBananaVaultSnapshot(bananaVault, [strategyMaximizerMasterApe.address]);
-        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress]);
+        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
 
         // NOTE: Only testing for value decreases
         expect(
@@ -566,13 +568,13 @@ describe('KeeperMaximizerVaultApe', function () {
           .equal(true, 'banana tokens did not increase for tester address after earn/withdraw');
         // NOTE: Only testing for value increases
         expect(
-          new BN(bananaAccountSnapshotAfter[adminAddress])
-            .gt(new BN(bananaAccountSnapshotBefore[adminAddress])))
+          new BN(bananaAccountSnapshotAfter[treasury])
+            .gt(new BN(bananaAccountSnapshotBefore[treasury])))
           .equal(true, 'banana tokens did not increase for treasury address after earn/reward withdraw fee');
         // NOTE: Only testing for value increases
         expect(
-          new BN(bananaAccountSnapshotAfter[adminAddress])
-            .gt(new BN(bananaAccountSnapshotBefore[adminAddress])))
+          new BN(bananaAccountSnapshotAfter[treasury])
+            .gt(new BN(bananaAccountSnapshotBefore[treasury])))
           .equal(true, 'banana tokens did not increase for treasury address after earn/reward withdraw fee');
       });
 
@@ -584,95 +586,69 @@ describe('KeeperMaximizerVaultApe', function () {
           const updateValue = '12345';
 
           expectRevert(
-            maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: notOwner }),
+            maximizerVaultApe.setKeeperFee(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setDefaultKeeperFee(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.defaultKeeperFee()).toString()).equal(updateValue, 'default keeper fee update not accurate')
 
           expectRevert(
-            maximizerVaultApe.setDefaultPlatformFee(updateValue, { from: notOwner }),
+            maximizerVaultApe.setPlatform(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setDefaultPlatformFee(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.defaultPlatformFee()).toString()).equal(updateValue, 'default platform fee update not accurate')
 
           expectRevert(
-            maximizerVaultApe.setDefaultBuyBackRate(updateValue, { from: notOwner }),
+            maximizerVaultApe.setBuyBackRate(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setDefaultBuyBackRate(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.defaultBuyBackRate()).toString()).equal(updateValue, 'default buy back rate update not accurate')
 
           expectRevert(
-            maximizerVaultApe.setDefaultWithdrawFee(updateValue, { from: notOwner }),
+            maximizerVaultApe.setWithdrawFee(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setDefaultWithdrawFee(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.defaultWithdrawFee()).toString()).equal(updateValue, 'default buy withdraw fee update not accurate')
 
           expectRevert(
-            maximizerVaultApe.setDefaultWithdrawFeePeriod(updateValue, { from: notOwner }),
+            maximizerVaultApe.setWithdrawFeePeriod(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setDefaultWithdrawFeePeriod(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.defaultWithdrawFeePeriod()).toString()).equal(updateValue, 'default buy withdraw fee period update not accurate')
 
           expectRevert(
-            maximizerVaultApe.setDefaultWithdrawRewardsFee(updateValue, { from: notOwner }),
+            maximizerVaultApe.setWithdrawRewardsFee(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setDefaultWithdrawRewardsFee(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.defaultWithdrawRewardsFee()).toString()).equal(updateValue, 'default buy withdraw rewards fee update not accurate');
 
           expectRevert(
             maximizerVaultApe.setModerator(updateAddress, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setModerator(updateAddress, { from: adminAddress });
-          expect(await maximizerVaultApe.moderator()).equal(updateAddress, 'moderator update not accurate');
 
           expectRevert(
             maximizerVaultApe.setMaxDelay(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setMaxDelay(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.maxDelay()).toString()).equal(updateValue, 'max delay update not accurate');
 
           expectRevert(
             maximizerVaultApe.setMinKeeperFee(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setMinKeeperFee(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.minKeeperFee()).toString()).equal(updateValue, 'min keeper fee update not accurate');
 
           expectRevert(
             maximizerVaultApe.setSlippageFactor(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setSlippageFactor(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.slippageFactor()).toString()).equal(updateValue, 'slippage factor update not accurate');
 
           expectRevert(
             maximizerVaultApe.setMaxVaults(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.setMaxVaults(updateValue, { from: adminAddress });
-          expect((await maximizerVaultApe.maxVaults()).toString()).equal(updateValue, 'max vaults update not accurate');
 
           expectRevert(
             maximizerVaultApe.disableVault(strategyMaximizerMasterApe.address, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.disableVault(strategyMaximizerMasterApe.address, { from: adminAddress });
-          expect((await maximizerVaultApe.vaultInfos(strategyMaximizerMasterApe.address)).enabled).equal(false, 'vault disable did not work');
 
           expectRevert(
             maximizerVaultApe.enableVault(strategyMaximizerMasterApe.address, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
-          await maximizerVaultApe.enableVault(strategyMaximizerMasterApe.address, { from: adminAddress });
-          expect((await maximizerVaultApe.vaultInfos(strategyMaximizerMasterApe.address)).enabled).equal(true, 'vault enable did not work');
         });
       }
       it('should be able to disable and enable vault', async () => {
@@ -696,7 +672,7 @@ describe('KeeperMaximizerVaultApe', function () {
       });
 
       it('should have correct values for view functions', async () => {
-        let balanceOf = await this.strategy.balanceOf(testerAddress);
+        let balanceOf = await strategyMaximizerMasterApe.balanceOf(testerAddress);
         expect(balanceOf.stake.toString()).equal("0");
         expect(balanceOf.banana.toString()).equal("0");
         expect(balanceOf.autoBananaShares.toString()).equal("0");
@@ -708,7 +684,7 @@ describe('KeeperMaximizerVaultApe', function () {
         let checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
-        balanceOf = await this.strategy.balanceOf(testerAddress);
+        balanceOf = await strategyMaximizerMasterApe.balanceOf(testerAddress);
         const banana1 = balanceOf.banana;
         const autoBananaShares1 = balanceOf.autoBananaShares;
         expect(balanceOf.stake.toString()).equal(toDeposit);
@@ -725,7 +701,7 @@ describe('KeeperMaximizerVaultApe', function () {
         checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
-        balanceOf = await this.strategy.balanceOf(testerAddress);
+        balanceOf = await strategyMaximizerMasterApe.balanceOf(testerAddress);
         expect(balanceOf.stake.toString()).equal(toDeposit);
         expect(Number(balanceOf.banana)).to.be.greaterThan(Number(banana1));
         expect(Number(balanceOf.autoBananaShares)).to.be.greaterThan(Number(autoBananaShares1));
@@ -733,10 +709,10 @@ describe('KeeperMaximizerVaultApe', function () {
         getPricePerFullShare = await bananaVault.getPricePerFullShare();
         expect(Number(getPricePerFullShare)).to.be.greaterThan(1e18);
 
-        const totalStake = await this.strategy.totalStake();
+        const totalStake = await strategyMaximizerMasterApe.totalStake();
         expect(totalStake.toString()).equal(toDeposit);
 
-        const totalAutoBananaShares = await this.strategy.totalAutoBananaShares();
+        const totalAutoBananaShares = await strategyMaximizerMasterApe.totalAutoBananaShares();
         const totalShares = await bananaVault.totalShares();
         expect(totalAutoBananaShares.toString()).equal(totalShares.toString());
       });

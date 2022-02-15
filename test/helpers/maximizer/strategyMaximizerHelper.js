@@ -35,12 +35,8 @@ async function getStrategyMaximizerSnapshot(strategyContract, accounts) {
         'totalAutoBananaShares',
         'totalStake',
         'getExpectedOutputs',
-        'keeperFee',
-        'platformFee',
-        'buyBackRate',
-        'withdrawFee',
-        'withdrawFeePeriod',
-        'withdrawRewardsFee',
+        'settings',
+        'useDefaultSettings',
     ])
 
     let accountPromises = [];
