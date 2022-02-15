@@ -486,10 +486,10 @@ contract StrategyMaximizerMasterApe is
     /// @return stake
     /// @return banana
     /// @return autoBananaShares
-    //TODO: does this need to be accessible from vaultApe?
     function balanceOf(address _userAddress)
         external
         view
+        override
         returns (
             uint256 stake,
             uint256 banana,
@@ -504,9 +504,11 @@ contract StrategyMaximizerMasterApe is
             .div(1e18)
             .sub(user.rewardDebt);
 
-        stake = user.stake; 
+        stake = user.stake;
         autoBananaShares = user.autoBananaShares.add(pendingShares);
-        banana = autoBananaShares.mul(BANANA_VAULT.getPricePerFullShare()).div(1e18);
+        banana = autoBananaShares.mul(BANANA_VAULT.getPricePerFullShare()).div(
+            1e18
+        );
     }
 
     function _approveTokenIfNeeded(

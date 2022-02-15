@@ -23,6 +23,15 @@ interface IStrategyMaximizerMasterApe {
             uint256 bananaOutput
         );
 
+    function balanceOf(address)
+        external
+        view
+        returns (
+            uint256 stake,
+            uint256 banana,
+            uint256 autoBananaShares
+        );
+
     function userInfo(address)
         external
         view

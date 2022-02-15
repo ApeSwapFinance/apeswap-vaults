@@ -70,6 +70,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
     uint256 public constant override PLATFORM_FEE_UL = 500; // 5%
     uint256 public constant override BUYBACK_RATE_UL = 300; // 3%
     uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
+    uint256 public constant override WITHDRAW_REWARDS_FEE_UL = 300; // 3%
 
     event Compound(address indexed vault, uint256 timestamp);
     event ChangedTreasury(address _old, address _new);
@@ -98,7 +99,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         transferOwnership(_owner);
         BANANA_VAULT = IBananaVault(_bananaVault);
 
-        maxDelay = 1 seconds; //1 days;
+        maxDelay = 1 seconds; //1 days; //TODO: Set back to 1 days. tests are failing with 1 days though...
         minKeeperFee = 10000000000000000;
         slippageFactor = 9500;
         maxVaults = 2;
@@ -328,6 +329,21 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         return vaults.length;
     }
 
+    function balanceOf(uint256 _pid, address _user)
+        external
+        view
+        returns (
+            uint256 stake,
+            uint256 banana,
+            uint256 autoBananaShares
+        )
+    {
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        );
+        (stake, banana, autoBananaShares) = strat.balanceOf(_user);
+    }
+
     /// @notice Get user info of a specific vault
     /// @param _pid pid of vault
     /// @param _user user address
@@ -400,7 +416,6 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
             vaultAddress
         );
-        // TODO: Disable deposits if disabled
         IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         strat.deposit(msg.sender);
@@ -544,7 +559,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
 
     function setKeeperFee(uint256 _keeperFee) external onlyOwner {
         require(
-            _keeperFee < KEEPER_FEE_UL,
+            _keeperFee <= KEEPER_FEE_UL,
             "MaximizerVaultApe: Keeper fee too high"
         );
         emit ChangedKeeperFee(settings.keeperFee, _keeperFee);
@@ -553,7 +568,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
 
     function setPlatformFee(uint256 _platformFee) external onlyOwner {
         require(
-            _platformFee < PLATFORM_FEE_UL,
+            _platformFee <= PLATFORM_FEE_UL,
             "MaximizerVaultApe: platform fee too high"
         );
         emit ChangedPlatformFee(settings.platformFee, _platformFee);
@@ -562,7 +577,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
 
     function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
         require(
-            _buyBackRate < BUYBACK_RATE_UL,
+            _buyBackRate <= BUYBACK_RATE_UL,
             "MaximizerVaultApe: buyback rate too high"
         );
         emit ChangedBuyBackRate(settings.buyBackRate, _buyBackRate);
@@ -571,7 +586,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
 
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
         require(
-            _withdrawFee < WITHDRAW_FEE_UL,
+            _withdrawFee <= WITHDRAW_FEE_UL,
             "MaximizerVaultApe: withdraw fee too high"
         );
         emit ChangedWithdrawFee(settings.withdrawFee, _withdrawFee);
@@ -593,6 +608,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         external
         onlyOwner
     {
+        require(
+            _withdrawRewardsFee <= WITHDRAW_REWARDS_FEE_UL,
+            "MaximizerVaultApe: withdraw rewards fee too high"
+        );
         emit ChangedWithdrawRewardsFee(
             settings.withdrawRewardsFee,
             _withdrawRewardsFee

@@ -12,6 +12,8 @@ interface IMaximizerVaultApe {
 
     function WITHDRAW_FEE_UL() external view returns (uint256);
 
+    function WITHDRAW_REWARDS_FEE_UL() external view returns (uint256);
+
     struct Settings {
         address treasury;
         uint256 keeperFee;

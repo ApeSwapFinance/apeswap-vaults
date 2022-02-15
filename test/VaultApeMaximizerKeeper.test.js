@@ -12,7 +12,7 @@ const { getBananaVaultSnapshot } = require('./helpers/maximizer/bananaVaultHelpe
 const { getAccountTokenBalances } = require('./helpers/contractHelper');
 const { subBNStr, addBNStr } = require('./helpers/bnHelper');
 const { advanceNumBlocks } = require('./helpers/openzeppelinExtensions');
-const { createLessThan } = require('typescript');
+const { createLessThan, createEmitAndSemanticDiagnosticsBuilderProgram } = require('typescript');
 
 // Load compiled artifacts
 const KeeperMaximizerVaultApe = contract.fromArtifact('KeeperMaximizerVaultApe');
@@ -28,7 +28,9 @@ describe('KeeperMaximizerVaultApe', function () {
   const rewardAddress = testConfig.rewardAddress;
   const buyBackAddress = testConfig.buyBackAddress;
   const adminAddress = testConfig.adminAddress;
-  let maximizerVaultApe, strategyMaximizerMasterApe, bananaVault, router;
+  const treasuryAddress = testConfig.treasuryAddress;
+  const platformAddress = testConfig.platformAddress;
+  let maximizerVaultApe, bananaVault, router;
   let usdToken, bananaToken, wantToken;
 
   const blocksToAdvance = 10;
@@ -37,7 +39,7 @@ describe('KeeperMaximizerVaultApe', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, [adminAddress, 50, adminAddress, 0, 0, 25, 259200, 100]);
+    maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, [treasuryAddress, 50, platformAddress, 0, 0, 25, 259200, 100]);
   });
 
   it('Should be able to change settings maximizerVaultApe', async () => {
@@ -110,7 +112,6 @@ describe('KeeperMaximizerVaultApe', function () {
     let path0 = await strategy.pathToBanana(0);
     let path1 = await strategy.pathToBanana(1);
     let path2 = await strategy.pathToBanana(2);
-    console.log(path.toString());
     expect([path0, path1, path2].toString()).equals(path.toString());
 
     path = [farmInfo.rewardAddress, testConfig.bananaAddress, testConfig.wrappedNative];
@@ -374,9 +375,7 @@ describe('KeeperMaximizerVaultApe', function () {
         await advanceNumBlocks(blocksToAdvance);
 
 
-        const checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
-        expect(checkUpkeep.upkeepNeeded).to.be.true;
-        await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
+        await maximizerVaultApe.earnAll({ from: adminAddress });
 
         const bananaVaultSnapshotAfter = await getBananaVaultSnapshot(bananaVault, [strategyMaximizerMasterApe.address]);
 
@@ -405,11 +404,18 @@ describe('KeeperMaximizerVaultApe', function () {
         await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
         //second time performUpkeep to check if bananas in pool also compound and generate more rewards
-        await advanceNumBlocks(blocksToAdvance);
+        const getPricePerFullShare1 = await bananaVault.getPricePerFullShare();
+
+        currentBlock = await time.latestBlock();
+        await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
         checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
         expect(checkUpkeep.upkeepNeeded).to.be.true;
         await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
+        const getPricePerFullShare2 = await bananaVault.getPricePerFullShare();
+        expect(Number(getPricePerFullShare2)).to.be.greaterThan(Number(getPricePerFullShare1));
+
+        const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         const accSharesPerStakedToken = await maximizerVaultApe.accSharesPerStakedToken(0);
 
         await maximizerVaultApe.harvestAll(0, { from: testerAddress });
@@ -421,6 +427,39 @@ describe('KeeperMaximizerVaultApe', function () {
 
         expect(Number(bananaBalanceAfter)).to.be.greaterThan(Number(bananaBalanceBefore));
 
+      });
+
+      it('Should take all fees if activated', async () => {
+        const wrappedNative = contract.fromArtifact('ERC20', testConfig.wrappedNative);
+
+        await maximizerVaultApe.setKeeperFee("50", { from: adminAddress });
+        await maximizerVaultApe.setPlatformFee("100", { from: adminAddress });
+        await maximizerVaultApe.setBuyBackRate("100", { from: adminAddress });
+
+        const platformFeeBefore = await wrappedNative.balanceOf(platformAddress);
+        const keeperFeeBefore = await wrappedNative.balanceOf(treasuryAddress);
+        const buyBackFeeBefore = await bananaToken.balanceOf("0x000000000000000000000000000000000000dEaD");
+
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
+
+        const currentBlock = await time.latestBlock()
+        await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
+
+        const checkUpkeep = await maximizerVaultApe.checkUpkeep("0x");
+        expect(checkUpkeep.upkeepNeeded).to.be.true;
+        await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
+
+        const platformFeeAfter = await wrappedNative.balanceOf(platformAddress);
+        const keeperFeeAfter = await wrappedNative.balanceOf(treasuryAddress);
+        const buyBackFeeAfter = await bananaToken.balanceOf("0x000000000000000000000000000000000000dEaD");
+
+        const accSharesPerStakedToken = await maximizerVaultApe.accSharesPerStakedToken(0);
+        expect(Number(accSharesPerStakedToken)).to.be.greaterThan(0)
+
+        //Note: there is no check on calculating exact fee. just if received any fee.
+        expect(Number(platformFeeAfter)).to.be.greaterThan(Number(platformFeeBefore))
+        expect(Number(keeperFeeAfter)).to.be.greaterThan(Number(keeperFeeBefore))
+        expect(Number(buyBackFeeAfter)).to.be.greaterThan(Number(buyBackFeeBefore))
       });
 
       it('multiple wallets should do everything', async () => {
@@ -700,9 +739,6 @@ describe('KeeperMaximizerVaultApe', function () {
         const totalAutoBananaShares = await this.strategy.totalAutoBananaShares();
         const totalShares = await bananaVault.totalShares();
         expect(totalAutoBananaShares.toString()).equal(totalShares.toString());
-      });
-
-      it('should have correct values for view function totalStake()', async () => {
       });
     });
   });

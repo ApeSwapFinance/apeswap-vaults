@@ -15112,20 +15112,6 @@
     "uuid" "3.2.1"
     "ws" "^7.5.0"
 
-"solc-0.6@npm:solc@^0.6.8":
-  "integrity" "sha512-7URBAisWVjO7dwWNpEkQ5dpRSpSF4Wm0aD5EB82D5BQKh+q7jhOxhgkG4K5gax/geM0kPZUAxnaLcgl2ZXBgMQ=="
-  "resolved" "https://registry.npmjs.org/solc/-/solc-0.6.8.tgz"
-  "version" "0.6.8"
-  dependencies:
-    "command-exists" "^1.2.8"
-    "commander" "3.0.2"
-    "fs-extra" "^0.30.0"
-    "js-sha3" "0.8.0"
-    "memorystream" "^0.3.1"
-    "require-from-string" "^2.0.0"
-    "semver" "^5.5.0"
-    "tmp" "0.0.33"
-
 "solc-0.8@npm:solc@^0.8.6":
   "integrity" "sha512-miiDaWdaUnD7A6Cktb/2ug9f+ajcOCDYRr7vgbPEsMoutSlBtp5rca57oMg8iHSuM7jilwdxePujWI/+rbNftQ=="
   "resolved" "https://registry.npmjs.org/solc/-/solc-0.8.6.tgz"

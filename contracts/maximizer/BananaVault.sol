@@ -63,7 +63,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     );
     event Withdraw(address indexed sender, uint256 amount, uint256 shares);
     event Earn(address indexed sender);
-    event SetWithdrawFee(uint256 previousWithdrawFee, uint256 newWithdrawFee);
 
     /**
      * @notice Constructor
