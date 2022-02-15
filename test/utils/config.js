@@ -9,6 +9,8 @@ const testConfig = {
   testAccount2: '0xF977814e90dA44bFA03b6295A0616a897441aceC', // https://bscscan.com/address/0xF977814e90dA44bFA03b6295A0616a897441aceC
   testAccount3: '0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6', // https://bscscan.com/address/0x31bA28b4f0f88Ff92ba670109688BaECF64aFdB6
   adminAddress: "0xD183F2BBF8b28d9fec8367cb06FE72B88778C86B", // https://bscscan.com/address/0xD183F2BBF8b28d9fec8367cb06FE72B88778C86B
+  treasuryAddress: "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+  platformAddress: "0x09B6e5510e41eE2e85c6d1fEA2605b3bF75F5137",
   //PCS Router: 0x10ED43C718714eb63d5aA57B78B54704E256024E
   //ApeSwap Router: 0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7
   routerAddress: "0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7",
