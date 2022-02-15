@@ -673,11 +673,12 @@ describe('KeeperMaximizerVaultApe', function () {
 
       it('should have correct values for view functions', async () => {
         let balanceOf = await strategyMaximizerMasterApe.balanceOf(testerAddress);
+        const currentDeposit = ether('1').toString();
         expect(balanceOf.stake.toString()).equal("0");
         expect(balanceOf.banana.toString()).equal("0");
         expect(balanceOf.autoBananaShares.toString()).equal("0");
 
-        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress });
+        await maximizerVaultApe.deposit(0, currentDeposit, { from: testerAddress });
         let currentBlock = await time.latestBlock();
         await time.advanceBlockTo(currentBlock.toNumber() + blocksToAdvance);
 
@@ -687,7 +688,7 @@ describe('KeeperMaximizerVaultApe', function () {
         balanceOf = await strategyMaximizerMasterApe.balanceOf(testerAddress);
         const banana1 = balanceOf.banana;
         const autoBananaShares1 = balanceOf.autoBananaShares;
-        expect(balanceOf.stake.toString()).equal(toDeposit);
+        expect(balanceOf.stake.toString()).equal(currentDeposit);
         expect(Number(banana1)).to.be.greaterThan(0);
         expect(Number(autoBananaShares1)).to.be.greaterThan(0);
         expect(Number(autoBananaShares1)).equals(Number(banana1));
@@ -702,7 +703,7 @@ describe('KeeperMaximizerVaultApe', function () {
         await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
         balanceOf = await strategyMaximizerMasterApe.balanceOf(testerAddress);
-        expect(balanceOf.stake.toString()).equal(toDeposit);
+        expect(balanceOf.stake.toString()).equal(currentDeposit);
         expect(Number(balanceOf.banana)).to.be.greaterThan(Number(banana1));
         expect(Number(balanceOf.autoBananaShares)).to.be.greaterThan(Number(autoBananaShares1));
 
@@ -710,7 +711,7 @@ describe('KeeperMaximizerVaultApe', function () {
         expect(Number(getPricePerFullShare)).to.be.greaterThan(1e18);
 
         const totalStake = await strategyMaximizerMasterApe.totalStake();
-        expect(totalStake.toString()).equal(toDeposit);
+        expect(totalStake.toString()).equal(currentDeposit);
 
         const totalAutoBananaShares = await strategyMaximizerMasterApe.totalAutoBananaShares();
         const totalShares = await bananaVault.totalShares();
