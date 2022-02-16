@@ -35,7 +35,7 @@ async function getStrategyMaximizerSnapshot(strategyContract, accounts) {
         'totalAutoBananaShares',
         'totalStake',
         'getExpectedOutputs',
-        'settings',
+        'getSettings',
         'useDefaultSettings',
     ])
 
