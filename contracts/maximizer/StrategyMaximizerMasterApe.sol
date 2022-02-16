@@ -70,7 +70,7 @@ contract StrategyMaximizerMasterApe is
         bool withdrawRewardsFee;
     }
 
-    IMaximizerVaultApe.Settings public settings;
+    IMaximizerVaultApe.Settings public strategySettings;
 
     UseDefaultSettings public useDefaultSettings =
         UseDefaultSettings(true, true, true, true, true, true, true, true);
@@ -110,11 +110,31 @@ contract StrategyMaximizerMasterApe is
     // Setting updates
     event SetPathToBanana(address[] oldPath, address[] newPath);
     event SetPathToWbnb(address[] oldPath, address[] newPath);
-    event SetTreasury(address oldTreasury, address newTreasury, bool useDefaultFee);
-    event SetPlatform(address oldPlatform, address newPlatform, bool useDefaultFee);
-    event SetBuyBackRate(uint256 oldBuyBackRate, uint256 newBuyBackRate, bool useDefaultFee);
-    event SetKeeperFee(uint256 oldKeeperFee, uint256 newKeeperFee, bool useDefaultFee);
-    event SetPlatformFee(uint256 oldPlatformFee, uint256 newPlatformFee, bool useDefaultFee);
+    event SetTreasury(
+        address oldTreasury,
+        address newTreasury,
+        bool useDefaultFee
+    );
+    event SetPlatform(
+        address oldPlatform,
+        address newPlatform,
+        bool useDefaultFee
+    );
+    event SetBuyBackRate(
+        uint256 oldBuyBackRate,
+        uint256 newBuyBackRate,
+        bool useDefaultFee
+    );
+    event SetKeeperFee(
+        uint256 oldKeeperFee,
+        uint256 newKeeperFee,
+        bool useDefaultFee
+    );
+    event SetPlatformFee(
+        uint256 oldPlatformFee,
+        uint256 newPlatformFee,
+        bool useDefaultFee
+    );
     event SetWithdrawRewardsFee(
         uint256 oldWithdrawRewardsFee,
         uint256 newWithdrawRewardsFee,
@@ -165,7 +185,7 @@ contract StrategyMaximizerMasterApe is
         _transferOwnership(_addresses[0]);
         vaultApe = IMaximizerVaultApe(_addresses[1]);
 
-        settings = vaultApe.getSettings();
+        strategySettings = vaultApe.getSettings();
     }
 
     /**
@@ -196,6 +216,8 @@ contract StrategyMaximizerMasterApe is
         uint256 _minBananaOutput,
         bool _takeKeeperFee
     ) external override onlyVaultApe {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+
         if (IS_BANANA_STAKING) {
             STAKED_TOKEN_FARM.leaveStaking(0);
         } else {
@@ -205,33 +227,31 @@ contract StrategyMaximizerMasterApe is
         uint256 rewardTokenBalance = _rewardTokenBalance();
 
         // Collect platform fees
-        if (getSettings().platformFee > 0) {
+        if (settings.platformFee > 0) {
             _swap(
-                rewardTokenBalance.mul(getSettings().platformFee).div(10000),
+                rewardTokenBalance.mul(settings.platformFee).div(10000),
                 _minPlatformOutput,
                 pathToWbnb,
-                getSettings().platform
+                settings.platform
             );
         }
 
         // Collect keeper fees
-        if (_takeKeeperFee && getSettings().keeperFee > 0) {
+        if (_takeKeeperFee && settings.keeperFee > 0) {
             _swap(
-                rewardTokenBalance.mul(getSettings().keeperFee).div(10000),
+                rewardTokenBalance.mul(settings.keeperFee).div(10000),
                 _minKeeperOutput,
                 pathToWbnb,
-                getSettings().treasury
+                settings.treasury
             );
         }
 
         // Convert remaining rewards to BANANA
         if (address(FARM_REWARD_TOKEN) != address(BANANA)) {
             // Collect Burn fees
-            if (getSettings().buyBackRate > 0) {
+            if (settings.buyBackRate > 0) {
                 _swap(
-                    rewardTokenBalance.mul(getSettings().buyBackRate).div(
-                        10000
-                    ),
+                    rewardTokenBalance.mul(settings.buyBackRate).div(10000),
                     _minBurnOutput,
                     pathToBanana,
                     BURN_ADDRESS
@@ -244,10 +264,10 @@ contract StrategyMaximizerMasterApe is
                 pathToBanana,
                 address(this)
             );
-        } else if (getSettings().buyBackRate > 0) {
+        } else if (settings.buyBackRate > 0) {
             BANANA.transfer(
                 BURN_ADDRESS,
-                rewardTokenBalance.mul(getSettings().buyBackRate).div(10000)
+                rewardTokenBalance.mul(settings.buyBackRate).div(10000)
             );
         }
 
@@ -312,6 +332,8 @@ contract StrategyMaximizerMasterApe is
         nonReentrant
         onlyVaultApe
     {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+
         UserInfo storage user = userInfo[_userAddress];
 
         require(
@@ -329,18 +351,15 @@ contract StrategyMaximizerMasterApe is
         uint256 currentAmount = _amount;
 
         if (
-            getSettings().withdrawFee > 0 &&
+            settings.withdrawFee > 0 &&
             block.timestamp <
-            user.lastDepositedTime.add(getSettings().withdrawFeePeriod)
+            user.lastDepositedTime.add(settings.withdrawFeePeriod)
         ) {
             // Take withdraw fees
             uint256 currentWithdrawFee = currentAmount
-                .mul(getSettings().withdrawFee)
+                .mul(settings.withdrawFee)
                 .div(10000);
-            STAKED_TOKEN.safeTransfer(
-                getSettings().treasury,
-                currentWithdrawFee
-            );
+            STAKED_TOKEN.safeTransfer(settings.treasury, currentWithdrawFee);
             currentAmount = currentAmount.sub(currentWithdrawFee);
         }
 
@@ -379,6 +398,8 @@ contract StrategyMaximizerMasterApe is
         uint256 _shares,
         bool _update
     ) private {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+
         UserInfo storage user = userInfo[_userAddress];
 
         if (_update) {
@@ -404,11 +425,11 @@ contract StrategyMaximizerMasterApe is
 
         uint256 withdrawAmount = _bananaBalance().sub(bananaBalanceBefore);
 
-        if (getSettings().withdrawRewardsFee > 0) {
+        if (settings.withdrawRewardsFee > 0) {
             uint256 rewardFee = withdrawAmount
-                .mul(getSettings().withdrawRewardsFee)
+                .mul(settings.withdrawRewardsFee)
                 .div(10000);
-            _safeBANANATransfer(getSettings().treasury, rewardFee);
+            _safeBANANATransfer(settings.treasury, rewardFee);
             withdrawAmount = withdrawAmount.sub(rewardFee);
         }
 
@@ -433,30 +454,26 @@ contract StrategyMaximizerMasterApe is
             uint256 bananaOutput
         )
     {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+
         // Find the expected WBNB value of the current harvestable rewards
         uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
         // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
         // Calculate the WBNB values
-        platformOutput = wbnbOutput.mul(getSettings().platformFee).div(10000);
-        keeperOutput = wbnbOutput.mul(getSettings().keeperFee).div(10000);
+        platformOutput = wbnbOutput.mul(settings.platformFee).div(10000);
+        keeperOutput = wbnbOutput.mul(settings.keeperFee).div(10000);
         // Calculate the BANANA values
-        burnOutput = bananaOutputWithoutFees.mul(getSettings().buyBackRate).div(
-                10000
-            );
+        burnOutput = bananaOutputWithoutFees.mul(settings.buyBackRate).div(
+            10000
+        );
         bananaOutput = bananaOutputWithoutFees.sub(
             bananaOutputWithoutFees
-                .mul(getSettings().platformFee)
+                .mul(settings.platformFee)
                 .div(10000)
+                .add(bananaOutputWithoutFees.mul(settings.keeperFee).div(10000))
                 .add(
-                    bananaOutputWithoutFees.mul(getSettings().keeperFee).div(
-                        10000
-                    )
-                )
-                .add(
-                    bananaOutputWithoutFees.mul(getSettings().buyBackRate).div(
-                        10000
-                    )
+                    bananaOutputWithoutFees.mul(settings.buyBackRate).div(10000)
                 )
         );
     }
@@ -574,6 +591,8 @@ contract StrategyMaximizerMasterApe is
         );
     }
 
+    /// @notice getter function for settings
+    /// @return settings
     function getSettings()
         public
         view
@@ -584,28 +603,28 @@ contract StrategyMaximizerMasterApe is
 
         address treasury = useDefaultSettings.treasury
             ? defaultSettings.treasury
-            : settings.treasury;
+            : strategySettings.treasury;
         uint256 keeperFee = useDefaultSettings.keeperFee
             ? defaultSettings.keeperFee
-            : settings.keeperFee;
+            : strategySettings.keeperFee;
         address platform = useDefaultSettings.platform
             ? defaultSettings.platform
-            : settings.platform;
+            : strategySettings.platform;
         uint256 platformFee = useDefaultSettings.platformFee
             ? defaultSettings.platformFee
-            : settings.platformFee;
+            : strategySettings.platformFee;
         uint256 buyBackRate = useDefaultSettings.buyBackRate
             ? defaultSettings.buyBackRate
-            : settings.buyBackRate;
+            : strategySettings.buyBackRate;
         uint256 withdrawFee = useDefaultSettings.withdrawFee
             ? defaultSettings.withdrawFee
-            : settings.withdrawFee;
+            : strategySettings.withdrawFee;
         uint256 withdrawFeePeriod = useDefaultSettings.withdrawFeePeriod
             ? defaultSettings.withdrawFeePeriod
-            : settings.withdrawFeePeriod;
+            : strategySettings.withdrawFeePeriod;
         uint256 withdrawRewardsFee = useDefaultSettings.withdrawRewardsFee
             ? defaultSettings.withdrawRewardsFee
-            : settings.withdrawRewardsFee;
+            : strategySettings.withdrawRewardsFee;
 
         IMaximizerVaultApe.Settings memory actualSettings = IMaximizerVaultApe
             .Settings(
@@ -621,6 +640,9 @@ contract StrategyMaximizerMasterApe is
         return actualSettings;
     }
 
+    /// @notice set path from reward token to banana
+    /// @param _path path to banana
+    /// @dev only owner
     function setPathToBanana(address[] memory _path) external onlyOwner {
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
@@ -635,6 +657,9 @@ contract StrategyMaximizerMasterApe is
         emit SetPathToBanana(oldPath, pathToBanana);
     }
 
+    /// @notice set path from reward token to wbnb
+    /// @param _path path to wbnb
+    /// @dev only owner
     function setPathToWbnb(address[] memory _path) external onlyOwner {
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
@@ -649,24 +674,36 @@ contract StrategyMaximizerMasterApe is
         emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
+    /// @notice set platform address
+    /// @param _platform platform address
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setPlatform(address _platform, bool _useDefault)
         external
         onlyOwner
     {
         useDefaultSettings.platform = _useDefault;
-        emit SetPlatform(settings.platform, _platform, _useDefault);
-        settings.platform = _platform;
+        emit SetPlatform(strategySettings.platform, _platform, _useDefault);
+        strategySettings.platform = _platform;
     }
 
+    /// @notice set treasury address
+    /// @param _treasury treasury address
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setTreasury(address _treasury, bool _useDefault)
         external
         onlyOwner
     {
         useDefaultSettings.treasury = _useDefault;
-        emit SetTreasury(settings.treasury, _treasury, _useDefault);
-        settings.treasury = _treasury;
+        emit SetTreasury(strategySettings.treasury, _treasury, _useDefault);
+        strategySettings.treasury = _treasury;
     }
 
+    /// @notice set keeper fee
+    /// @param _keeperFee keeper fee
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setKeeperFee(uint256 _keeperFee, bool _useDefault)
         external
         onlyOwner
@@ -676,10 +713,14 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Keeper fee too high"
         );
         useDefaultSettings.keeperFee = _useDefault;
-        emit SetKeeperFee(settings.keeperFee, _keeperFee, _useDefault);
-        settings.keeperFee = _keeperFee;
+        emit SetKeeperFee(strategySettings.keeperFee, _keeperFee, _useDefault);
+        strategySettings.keeperFee = _keeperFee;
     }
 
+    /// @notice set platform fee
+    /// @param _platformFee platform fee
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setPlatformFee(uint256 _platformFee, bool _useDefault)
         external
         onlyOwner
@@ -689,10 +730,14 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Platform fee too high"
         );
         useDefaultSettings.platformFee = _useDefault;
-        emit SetPlatformFee(settings.platformFee, _platformFee, _useDefault);
-        settings.platformFee = _platformFee;
+        emit SetPlatformFee(strategySettings.platformFee, _platformFee, _useDefault);
+        strategySettings.platformFee = _platformFee;
     }
 
+    /// @notice set buyback rate fee
+    /// @param _buyBackRate buyback rate fee
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setBuyBackRate(uint256 _buyBackRate, bool _useDefault)
         external
         onlyOwner
@@ -702,10 +747,14 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Buy back rate too high"
         );
         useDefaultSettings.buyBackRate = _useDefault;
-        emit SetBuyBackRate(settings.buyBackRate, _buyBackRate, _useDefault);
-        settings.buyBackRate = _buyBackRate;
+        emit SetBuyBackRate(strategySettings.buyBackRate, _buyBackRate, _useDefault);
+        strategySettings.buyBackRate = _buyBackRate;
     }
 
+    /// @notice set withdraw fee
+    /// @param _withdrawFee withdraw fee
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setWithdrawFee(uint256 _withdrawFee, bool _useDefault)
         external
         onlyOwner
@@ -715,29 +764,41 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Early withdraw fee too high"
         );
         useDefaultSettings.withdrawFee = _useDefault;
-        emit SetWithdrawFee(settings.withdrawFee, _withdrawFee, _useDefault);
-        settings.withdrawFee = _withdrawFee;
+        emit SetWithdrawFee(strategySettings.withdrawFee, _withdrawFee, _useDefault);
+        strategySettings.withdrawFee = _withdrawFee;
     }
 
+    /// @notice set withdraw fee period
+    /// @param _withdrawFeePeriod withdraw fee period
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setWithdrawFeePeriod(uint256 _withdrawFeePeriod, bool _useDefault)
         external
         onlyOwner
     {
         useDefaultSettings.withdrawFeePeriod = _useDefault;
-        emit SetWithdrawFee(settings.withdrawFeePeriod, _withdrawFeePeriod, _useDefault);
-        settings.withdrawFeePeriod = _withdrawFeePeriod;
+        emit SetWithdrawFee(
+            strategySettings.withdrawFeePeriod,
+            _withdrawFeePeriod,
+            _useDefault
+        );
+        strategySettings.withdrawFeePeriod = _withdrawFeePeriod;
     }
 
+    /// @notice set withdraw rewards fee
+    /// @param _withdrawRewardsFee withdraw rewards fee
+    /// @param _useDefault usage of VaultApeMaximizer default
+    /// @dev only owner
     function setWithdrawRewardsFee(
         uint256 _withdrawRewardsFee,
         bool _useDefault
     ) external onlyOwner {
         useDefaultSettings.withdrawRewardsFee = _useDefault;
         emit SetWithdrawRewardsFee(
-            settings.withdrawRewardsFee,
+            strategySettings.withdrawRewardsFee,
             _withdrawRewardsFee,
             _useDefault
         );
-        settings.withdrawRewardsFee = _withdrawRewardsFee;
+        strategySettings.withdrawRewardsFee = _withdrawRewardsFee;
     }
 }
