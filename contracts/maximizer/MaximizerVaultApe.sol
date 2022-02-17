@@ -27,6 +27,7 @@ pragma solidity ^0.8.6;
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@apeswap.finance/contracts/contracts/utils/Sweeper.sol";
 
 import "../libs/IMaximizerVaultApe.sol";
 import "../libs/IStrategyMaximizerMasterApe.sol";
@@ -35,7 +36,7 @@ import "../libs/IBananaVault.sol";
 /// @title Maximizer VaultApe
 /// @author ApeSwapFinance
 /// @notice Interaction contract for all maximizer vault strategies
-contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
+contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Sweeper {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -95,7 +96,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable {
         address _owner,
         address _bananaVault,
         Settings memory _settings
-    ) Ownable() {
+    ) Ownable() Sweeper(new address[](0), true) {
         transferOwnership(_owner);
         BANANA_VAULT = IBananaVault(_bananaVault);
 
