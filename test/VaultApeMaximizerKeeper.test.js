@@ -190,7 +190,6 @@ describe('KeeperMaximizerVaultApe', function () {
     const farmInfo = farm;
 
     let toDeposit = "1000000000000000000";
-    let staticDeposit = "1000000000000000000";
     let tokensToLPAmount = farm.tokensToLPAmount ? farm.tokensToLPAmount : "1000000000000000000";
 
     describe(farm.name, function () {
@@ -225,7 +224,7 @@ describe('KeeperMaximizerVaultApe', function () {
             }
             await router.addLiquidityETH(token1, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress, value: 1e18 });
             const LPTokens = await pair.balanceOf(testerAddress);
-            toDeposit = (Math.floor(Number(LPTokens) * 0.1)).toString();
+            toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             await pair.transfer(testerAddress2, (Number(toDeposit)).toString(), { from: testerAddress });
           } else if (token1 == testConfig.wrappedNative) {
             if (token0 != testConfig.usdAddress) {
@@ -234,7 +233,7 @@ describe('KeeperMaximizerVaultApe', function () {
             }
             await router.addLiquidityETH(token0, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress, value: 1e18 });
             const LPTokens = await pair.balanceOf(testerAddress);
-            toDeposit = (Math.floor(Number(LPTokens) * 0.1)).toString();
+            toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             await pair.transfer(testerAddress2, (Number(toDeposit)).toString(), { from: testerAddress });
           } else {
 
@@ -250,7 +249,7 @@ describe('KeeperMaximizerVaultApe', function () {
             await router.addLiquidity(token0, token1, tokensToLPAmount, tokensToLPAmount, 0, 0, testerAddress, await time.latestBlock() + 600, { from: testerAddress });
             const LPTokens = await pair.balanceOf(testerAddress);
             console.log(LPTokens.toString());
-            toDeposit = (Math.floor(Number(LPTokens) * 0.1)).toString();
+            toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             console.log(toDeposit.toString());
           }
         } else {
