@@ -1,11 +1,5 @@
-# Truffle Typescript Boilerplate
-Build Solidity smart contracts with truffle, openzeppelin and typescript support.
-
-## Install 
-Click "Use as Template" to create a repo on GitHub based on this repo. Otherwise:  
-`git clone git@github.com:DeFiFoFum/truffle-typescript-template.git`   
-  
-`yarn install`
+# ApeSwap Vaults
+Automated fund management contracts which work on top of the ApeSwap farm.
 
 ## Setup
 Create a `.env` file based off of `.env.example` to deploy contracts to bsc mainnet/testnet and to verify deployed contracts.  
@@ -80,3 +74,6 @@ StrategyMasterChef:         https://bscscan.com/address/0x5199e3ac3a64e8413f1fa3
 
 ## Maximizer Vaults
 The [Maximizer contracts](./contracts/maximizer/) are vaults which each reward tokens from external farms and auto compound BANANA rewards into the BANANA pool. These vaults were built to help alleviate the continuous sell pressure that vaults typically put on BANANA.
+
+### Architecture
+<img src="./images/maximizer-vault-architecture.png">
