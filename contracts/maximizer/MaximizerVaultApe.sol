@@ -108,13 +108,6 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         settings = _settings;
     }
 
-    // TODO: Allow whitelist contracts?
-    modifier onlyEOA() {
-        // only allowing externally owned addresses.
-        require(msg.sender == tx.origin, "VaultApeMaximizer: must use EOA");
-        _;
-    }
-
     function getSettings() public view override returns (Settings memory) {
         return settings;
     }
@@ -408,7 +401,6 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         external
         override
         nonReentrant
-        onlyEOA
     {
         address vaultAddress = vaults[_pid];
         VaultInfo memory vaultInfo = vaultInfos[vaultAddress];
