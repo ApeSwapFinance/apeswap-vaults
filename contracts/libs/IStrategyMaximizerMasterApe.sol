@@ -52,7 +52,7 @@ interface IStrategyMaximizerMasterApe {
     ) external;
 
     // Transfer want tokens autoFarm -> strategy
-    function deposit(address _userAddress) external;
+    function deposit(address _userAddress, uint256 _amount) external;
 
     // Transfer want tokens strategy -> vaultChef
     function withdraw(address _userAddress, uint256 _wantAmt) external;

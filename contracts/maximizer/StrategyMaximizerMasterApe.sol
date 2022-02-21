@@ -287,13 +287,12 @@ contract StrategyMaximizerMasterApe is
 
     /// @notice deposit in vault
     /// @param _userAddress user address
-    function deposit(address _userAddress)
+    function deposit(address _userAddress, uint256 _amount)
         external
         override
         nonReentrant
         onlyVaultApe
     {
-        uint256 _amount = STAKED_TOKEN.balanceOf(address(this));
         require(
             _amount > 0,
             "StrategyMaximizerMasterApe: amount must be greater than zero"
@@ -513,6 +512,8 @@ contract StrategyMaximizerMasterApe is
             uint256 autoBananaShares
         )
     {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+
         UserInfo memory user = userInfo[_userAddress];
 
         uint256 pendingShares = user
@@ -526,6 +527,12 @@ contract StrategyMaximizerMasterApe is
         banana = autoBananaShares.mul(BANANA_VAULT.getPricePerFullShare()).div(
             1e18
         );
+        if (settings.withdrawRewardsFee > 0) {
+            uint256 rewardFee = banana.mul(settings.withdrawRewardsFee).div(
+                10000
+            );
+            banana = banana.sub(rewardFee);
+        }
     }
 
     function _approveTokenIfNeeded(
@@ -730,7 +737,11 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Platform fee too high"
         );
         useDefaultSettings.platformFee = _useDefault;
-        emit SetPlatformFee(strategySettings.platformFee, _platformFee, _useDefault);
+        emit SetPlatformFee(
+            strategySettings.platformFee,
+            _platformFee,
+            _useDefault
+        );
         strategySettings.platformFee = _platformFee;
     }
 
@@ -747,7 +758,11 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Buy back rate too high"
         );
         useDefaultSettings.buyBackRate = _useDefault;
-        emit SetBuyBackRate(strategySettings.buyBackRate, _buyBackRate, _useDefault);
+        emit SetBuyBackRate(
+            strategySettings.buyBackRate,
+            _buyBackRate,
+            _useDefault
+        );
         strategySettings.buyBackRate = _buyBackRate;
     }
 
@@ -764,7 +779,11 @@ contract StrategyMaximizerMasterApe is
             "StrategyMaximizerMasterApe: Early withdraw fee too high"
         );
         useDefaultSettings.withdrawFee = _useDefault;
-        emit SetWithdrawFee(strategySettings.withdrawFee, _withdrawFee, _useDefault);
+        emit SetWithdrawFee(
+            strategySettings.withdrawFee,
+            _withdrawFee,
+            _useDefault
+        );
         strategySettings.withdrawFee = _withdrawFee;
     }
 

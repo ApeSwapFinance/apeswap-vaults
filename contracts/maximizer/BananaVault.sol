@@ -53,7 +53,6 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     mapping(address => UserInfo) public userInfo;
 
     uint256 public totalShares;
-    uint256 public lastHarvestedTime;
 
     event Deposit(
         address indexed sender,

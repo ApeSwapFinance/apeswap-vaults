@@ -41,17 +41,10 @@ contract KeeperMaximizerVaultApe is
         address _keeper,
         address _owner,
         address _bananaVault,
+        uint256 _maxDelay,
         Settings memory _settings
-    ) MaximizerVaultApe(_owner, _bananaVault, _settings) {
+    ) MaximizerVaultApe(_owner, _bananaVault, _maxDelay, _settings) {
         keeper = _keeper;
-    }
-
-    modifier onlyKeeper() {
-        require(
-            msg.sender == keeper,
-            "MaximizerVaultApe: onlyKeeper: Not keeper"
-        );
-        _;
     }
 
     /// @notice Chainlink keeper checkUpkeep
@@ -72,11 +65,7 @@ contract KeeperMaximizerVaultApe is
 
     /// @notice Chainlink keeper performUpkeep
     /// @param performData response from checkUpkeep
-    function performUpkeep(bytes calldata performData)
-        external
-        override
-        onlyKeeper
-    {
+    function performUpkeep(bytes calldata performData) external override {
         (
             address[] memory _vaults,
             uint256[] memory _minPlatformOutputs,

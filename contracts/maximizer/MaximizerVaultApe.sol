@@ -95,12 +95,13 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     constructor(
         address _owner,
         address _bananaVault,
+        uint256 _maxDelay,
         Settings memory _settings
     ) Ownable() Sweeper(new address[](0), true) {
         transferOwnership(_owner);
         BANANA_VAULT = IBananaVault(_bananaVault);
 
-        maxDelay = 1 seconds; //1 days; //TODO: Set back to 1 days. tests are failing with 1 days though...
+        maxDelay = _maxDelay;
         minKeeperFee = 10000000000000000;
         slippageFactor = 9500;
         maxVaults = 2;
@@ -410,8 +411,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
             vaultAddress
         );
         IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
+        uint256 beforeWantToken = wantToken.balanceOf(address(strat));
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
-        strat.deposit(msg.sender);
+        uint256 afterWantToken = wantToken.balanceOf(address(strat));
+        strat.deposit(msg.sender, afterWantToken - beforeWantToken);
     }
 
     /// @notice User withdraw for specific vault

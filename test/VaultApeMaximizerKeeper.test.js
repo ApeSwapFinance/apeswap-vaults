@@ -39,7 +39,12 @@ describe('KeeperMaximizerVaultApe', function () {
     // Deploy new vault
     masterApe = contract.fromArtifact('IMasterApe', testConfig.masterApe);
     bananaVault = await BananaVault.new(testConfig.bananaAddress, testConfig.masterApe, adminAddress);
-    maximizerVaultApe = await KeeperMaximizerVaultApe.new(adminAddress, adminAddress, bananaVault.address, [treasuryAddress, 50, platformAddress, 0, 0, 25, 259200, 100]);
+    maximizerVaultApe = await KeeperMaximizerVaultApe.new(
+      adminAddress,
+      adminAddress,
+      bananaVault.address,
+      1,
+      [treasuryAddress, 50, platformAddress, 0, 0, 25, 259200, 100]);
   });
 
   it('Should be able to change settings maximizerVaultApe', async () => {
