@@ -76,9 +76,8 @@ contract StrategyMaximizerMasterApe is
         UseDefaultSettings(true, true, true, true, true, true, true, true);
 
     // Addresses
-    address public constant WBNB = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
-    IERC20 public constant BANANA =
-        IERC20(0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95);
+    address public immutable WBNB;
+    IERC20 public immutable BANANA;
     address public constant BURN_ADDRESS =
         0x000000000000000000000000000000000000dEaD;
 
@@ -158,15 +157,19 @@ contract StrategyMaximizerMasterApe is
         address[] memory _pathToWbnb,
         address[] memory _addresses //[_owner, _vaultApe]
     ) {
+        IBananaVault bananaVault = IBananaVault(_bananaVault);
+        address bananaTokenAddress = bananaVault.bananaToken();
+        IUniRouter02 uniRouter = IUniRouter02(_router);
+        address wbnbAddress = uniRouter.WETH();
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
-                _pathToBanana[_pathToBanana.length - 1] == address(BANANA),
+                _pathToBanana[_pathToBanana.length - 1] == bananaTokenAddress,
             "StrategyMaximizerMasterApe: Incorrect path to BANANA"
         );
 
         require(
             _pathToWbnb[0] == address(_farmRewardToken) &&
-                _pathToWbnb[_pathToWbnb.length - 1] == WBNB,
+                _pathToWbnb[_pathToWbnb.length - 1] == wbnbAddress,
             "StrategyMaximizerMasterApe: Incorrect path to WBNB"
         );
 
@@ -176,9 +179,11 @@ contract StrategyMaximizerMasterApe is
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         FARM_PID = _farmPid;
         IS_BANANA_STAKING = _isBananaStaking;
-        BANANA_VAULT = IBananaVault(_bananaVault);
+        BANANA_VAULT = bananaVault;
+        BANANA = IERC20(bananaTokenAddress);
+        WBNB = wbnbAddress;
 
-        router = IUniRouter02(_router);
+        router = uniRouter;
         pathToBanana = _pathToBanana;
         pathToWbnb = _pathToWbnb;
 
