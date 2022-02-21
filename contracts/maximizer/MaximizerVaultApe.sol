@@ -414,6 +414,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         uint256 beforeWantToken = wantToken.balanceOf(address(strat));
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         uint256 afterWantToken = wantToken.balanceOf(address(strat));
+        // account for reflect fees
         strat.deposit(msg.sender, afterWantToken - beforeWantToken);
     }
 

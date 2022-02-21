@@ -29,7 +29,6 @@ async function getUserInfoSnapshot(strategyContract, userAddress) {
 async function getBananaVaultSnapshot(bananaVaultContract, accounts) {
     const contractSnapshot = await getContractGetterSnapshot(bananaVaultContract, [
         'bananaToken',
-        'lastHarvestedTime',
         'totalShares',
         'calculateTotalPendingBananaRewards',
         'getPricePerFullShare',

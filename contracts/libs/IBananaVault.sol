@@ -36,6 +36,8 @@ interface IBananaVault is IAccessControlEnumerable {
     function underlyingTokenBalance() external view returns (uint256);
 
     function masterApe() external view returns (address);
+    
+    function bananaToken() external view returns (address);
 
     function totalShares() external view returns (uint256);
 

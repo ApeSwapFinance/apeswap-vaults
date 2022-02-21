@@ -9,10 +9,14 @@ module.exports = async function (deployer, network, accounts) {
   await deployer.deploy(BananaVault,
     bananaTokenAddress,
     masterApeAddress,
-    adminAddress,
+    accounts[0],
+    // adminAddress, // FIXME: transferOnwership to admin at end
     treasury,
     withdrawFee,
   );
+
+  this.MANAGER_ROLE = await bananaVault.MANAGER_ROLE();
+  await bananaVault.grantRole(this.MANAGER_ROLE, maximizerVaultApe.address, { from: adminAddress });
 
   console.dir({
     BananaVault: BananaVault.address,
