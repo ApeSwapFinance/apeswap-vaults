@@ -34,6 +34,8 @@ describe('KeeperMaximizerVaultApe', function () {
   let usdToken, bananaToken, wantToken;
 
   const blocksToAdvance = 10;
+  const withdrawRewardFee = 100; // 1%
+  const PERCENTAGE_DECIMALS = 1e4;
 
   beforeEach(async () => {
     // Deploy new vault
@@ -44,7 +46,7 @@ describe('KeeperMaximizerVaultApe', function () {
       adminAddress,
       bananaVault.address,
       1,
-      [treasuryAddress, 50, platformAddress, 0, 0, 25, 259200, 100]);
+      [treasuryAddress, 50, platformAddress, 0, 0, 25, 259200, withdrawRewardFee]); // % are divided by 1e4
   });
 
   it('Should be able to change settings maximizerVaultApe', async () => {
@@ -695,7 +697,8 @@ describe('KeeperMaximizerVaultApe', function () {
         expect(balanceOf.stake.toString()).equal(currentDeposit);
         expect(Number(banana1)).to.be.greaterThan(0);
         expect(Number(autoBananaShares1)).to.be.greaterThan(0);
-        expect(Number(autoBananaShares1)).equals(Number(banana1));
+        const bananaAfterFee = (Number(autoBananaShares1)*(PERCENTAGE_DECIMALS-withdrawRewardFee)) / PERCENTAGE_DECIMALS;
+        expect(bananaAfterFee).equals(Number(banana1));
 
         let getPricePerFullShare = await bananaVault.getPricePerFullShare();
         expect(Number(getPricePerFullShare)).equals(1e18);
