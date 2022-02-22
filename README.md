@@ -72,8 +72,24 @@ StrategyMasterApeSingle:    https://bscscan.com/address/0x51b13b0068d27fd49284b3
 StrategyMasterChef:         https://bscscan.com/address/0x5199e3ac3a64e8413f1fa3485b58a4741f23eb99#code
 
 
-## Maximizer Vaults
+# Maximizer Vaults
 The [Maximizer contracts](./contracts/maximizer/) are vaults which each reward tokens from external farms and auto compound BANANA rewards into the BANANA pool. These vaults were built to help alleviate the continuous sell pressure that vaults typically put on BANANA.
 
+## Operation
+
+### Chainlink Keepers
+The [KeeperMaximizerVaultApe.sol](./contracts/maximizer/KeeperMaximizerVaultApe.sol) contract is an extension of the `MaximizerVaultApe` contract to allow the vaults to be registered on the **Chainlink Keeper Network**.
+
+#### Setup
+1. Deploy `KeeperMaximizerVaultApe.sol`.
+2. Register the address of `KeeperMaximizerVaultApe` [here](https://keepers.chain.link/new). 
+   1. Choose the proper network by changing the network of your wallet
+   2. You will need to have some [LINK](https://coinmarketcap.com/currencies/chainlink/) in your wallet to fund the initial registration
+3. Once the upkeep address is registered you can add LINK funds and monitor the history through Chainlink's UI (ex: [testnet-keeper](https://keepers.chain.link/chapel/246))
+
+#### Resources
+- Register Keeper [docs](https://docs.chain.link/docs/chainlink-keepers/register-upkeep/).
+- Check the keeper [network overview](https://docs.chain.link/docs/chainlink-keepers/overview/#configuration) for the Keeper Registry contract and individual network configuration settings.  
+- Get testnet LINK [here](https://faucets.chain.link/chapel).  
 ### Architecture
 <img src="./images/maximizer-vault-architecture.png">
