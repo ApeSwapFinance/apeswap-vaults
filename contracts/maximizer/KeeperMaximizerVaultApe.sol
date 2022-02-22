@@ -67,30 +67,27 @@ contract KeeperMaximizerVaultApe is
     /// @param performData response from checkUpkeep
     function performUpkeep(bytes calldata performData) external override {
         (
-            address[] memory _vaults,
-            uint256[] memory _minPlatformOutputs,
-            uint256[] memory _minKeeperOutputs,
-            uint256[] memory _minBurnOutputs,
-            uint256[] memory _minBananaOutputs
+            address _vault,
+            uint256 _minPlatformOutput,
+            uint256 _minKeeperOutput,
+            uint256 _minBurnOutput,
+            uint256 _minBananaOutput
         ) = abi.decode(
                 performData,
-                (address[], uint256[], uint256[], uint256[], uint256[])
+                (address, uint256, uint256, uint256, uint256)
             );
 
         uint256 timestamp = block.timestamp;
-        uint256 length = _vaults.length;
 
-        for (uint256 index = 0; index < length; ++index) {
-            _compoundVault(
-                _vaults[index],
-                _minPlatformOutputs[index],
-                _minKeeperOutputs[index],
-                _minBurnOutputs[index],
-                _minBananaOutputs[index],
-                timestamp,
-                true
-            );
-        }
+        _compoundVault(
+            _vault,
+            _minPlatformOutput,
+            _minKeeperOutput,
+            _minBurnOutput,
+            _minBananaOutput,
+            timestamp,
+            true
+        );
 
         BANANA_VAULT.earn();
     }

@@ -36,7 +36,12 @@ import "../libs/IBananaVault.sol";
 /// @title Maximizer VaultApe
 /// @author ApeSwapFinance
 /// @notice Interaction contract for all maximizer vault strategies
-contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Sweeper {
+contract MaximizerVaultApe is
+    ReentrancyGuard,
+    IMaximizerVaultApe,
+    Ownable,
+    Sweeper
+{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -46,11 +51,11 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     }
 
     struct CompoundInfo {
-        address[] vaults;
-        uint256[] minPlatformOutputs;
-        uint256[] minKeeperOutputs;
-        uint256[] minBurnOutputs;
-        uint256[] minBananaOutputs;
+        address vaults;
+        uint256 minPlatformOutputs;
+        uint256 minKeeperOutputs;
+        uint256 minBurnOutputs;
+        uint256 minBananaOutputs;
     }
 
     Settings public settings;
@@ -122,22 +127,16 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         returns (bool upkeepNeeded, bytes memory performData)
     {
         uint256 totalLength = vaults.length;
-        uint256 actualLength = 0;
+        bool compoundVault = false;
 
-        CompoundInfo memory tempCompoundInfo = CompoundInfo(
-            new address[](totalLength),
-            new uint256[](totalLength),
-            new uint256[](totalLength),
-            new uint256[](totalLength),
-            new uint256[](totalLength)
-        );
+        address vault;
+        uint256 minPlatformOutputs;
+        uint256 minKeeperOutputs;
+        uint256 minBurnOutputs;
+        uint256 minBananaOutputs;
 
         for (uint16 index = 0; index < totalLength; ++index) {
-            if (maxVaults == actualLength) {
-                continue;
-            }
-
-            address vault = vaults[index];
+            vault = vaults[index];
             VaultInfo memory vaultInfo = vaultInfos[vault];
 
             if (
@@ -158,44 +157,25 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
                 block.timestamp >= vaultInfo.lastCompound + maxDelay ||
                 keeperOutput >= minKeeperFee
             ) {
-                tempCompoundInfo.vaults[actualLength] = vault;
-                tempCompoundInfo.minPlatformOutputs[
-                    actualLength
-                ] = platformOutput.mul(slippageFactor).div(10000);
-                tempCompoundInfo.minKeeperOutputs[actualLength] = keeperOutput
-                    .mul(slippageFactor)
-                    .div(10000);
-                tempCompoundInfo.minBurnOutputs[actualLength] = burnOutput
-                    .mul(slippageFactor)
-                    .div(10000);
-                tempCompoundInfo.minBananaOutputs[actualLength] = bananaOutput
-                    .mul(slippageFactor)
-                    .div(10000);
-
-                actualLength = actualLength + 1;
+                minPlatformOutputs = platformOutput.mul(slippageFactor).div(
+                    10000
+                );
+                minKeeperOutputs = keeperOutput.mul(slippageFactor).div(10000);
+                minBurnOutputs = burnOutput.mul(slippageFactor).div(10000);
+                minBananaOutputs = bananaOutput.mul(slippageFactor).div(10000);
+                compoundVault = true;
+                break;
             }
         }
 
-        if (actualLength > 0) {
+        if (compoundVault) {
             CompoundInfo memory compoundInfo = CompoundInfo(
-                new address[](actualLength),
-                new uint256[](actualLength),
-                new uint256[](actualLength),
-                new uint256[](actualLength),
-                new uint256[](actualLength)
+                vault,
+                minPlatformOutputs,
+                minKeeperOutputs,
+                minBurnOutputs,
+                minBananaOutputs
             );
-
-            for (uint16 index = 0; index < actualLength; ++index) {
-                compoundInfo.vaults[index] = tempCompoundInfo.vaults[index];
-                compoundInfo.minPlatformOutputs[index] = tempCompoundInfo
-                    .minPlatformOutputs[index];
-                compoundInfo.minKeeperOutputs[index] = tempCompoundInfo
-                    .minKeeperOutputs[index];
-                compoundInfo.minBurnOutputs[index] = tempCompoundInfo
-                    .minBurnOutputs[index];
-                compoundInfo.minBananaOutputs[index] = tempCompoundInfo
-                    .minBananaOutputs[index];
-            }
 
             return (
                 true,
