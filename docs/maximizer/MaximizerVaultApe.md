@@ -1,20 +1,20 @@
 ## `MaximizerVaultApe`
 
-int256[] minPlatformOutputs;
+6[] minPlatformOutputs;
         uint256[] minKeeperOutputs;
         uint256[] minBurnOutputs;
-        uint256[] minBanan
-
-
-
-### `onlyEOA()`
+        uint256[] minBananaOutp
 
 
 
 
+### `constructor(address _owner, address _bananaVault, uint256 _maxDelay, struct IMaximizerVaultApe.Settings _settings)` (public)
 
 
-### `constructor(address _owner, address _bananaVault, address _defaultTreasury, address _defaultPlatform)` (public)
+
+
+
+### `getSettings() → struct IMaximizerVaultApe.Settings` (public)
 
 
 
@@ -22,33 +22,34 @@ int256[] minPlatformOutputs;
 
 ### `checkVaultCompound() → bool upkeepNeeded, bytes performData` (public)
 
-h),
+empCompoundInfo = CompoundInfo(
+            new address[](totalLength),
             new uint256[](totalLength),
-            new uin
+            new uint256[](totalLength),
+            new uint256[](totalL
 
 
 
 ### `earnAll()` (external)
 
-x < _pids.length; index++) {
-            _earn
+length; index++) {
+            _earn(_pids[inde
 
 
 
 ### `earnSome(uint256[] _pids)` (external)
 
-external {
-        _earn(_pid, true);
+_earn(_pid, true);
     }
 
-    function _earn(uint256 _pid, bool _revert) priva
+    function _earn(uint256 _pid, bool _revert) private {
 
 
 
 ### `earn(uint256 _pid)` (external)
 
-address vaultAddress = vaults[_pid];
-        VaultInfo memory vaultInfo = vaultInfo
+aultAddress = vaults[_pid];
+        VaultInfo memory vaultInfo = vaultInfos[vaultAddress
 
 
 
@@ -60,43 +61,57 @@ address vaultAddress = vaults[_pid];
 
 ### `vaultsLength() → uint256` (external)
 
-uint256 autoBananaShares,
+= IStrategyMaximizerMasterApe(
+            vaults[_pid]
+        )
+
+
+
+### `balanceOf(uint256 _pid, address _user) → uint256 stake, uint256 banana, uint256 autoBananaShares` (external)
+
+
 
 
 
 ### `userInfo(uint256 _pid, address _user) → uint256 stake, uint256 autoBananaShares, uint256 rewardDebt, uint256 lastDepositedTime` (external)
 
-erApe strat = IStrategyMaximizerMasterApe(
+nt256 rewardDebt,
+            uint256 lastDepositedTime
+        )
+    {
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
             vaults[_pid]
         );
-        (stake, autoBananaShares
+        (stake, autoBananaShares, rewardDebt, l
 
 
 
 ### `stakedWantTokens(uint256 _pid, address _user) → uint256` (external)
 
-nfo(_user);
+(uint256 stake, , , ) = strat.userInfo(_user);
         return stake;
     }
 
 Get shares per staked token of a specific vault
-@para
+
 
 
 
 ### `accSharesPerStakedToken(uint256 _pid) → uint256` (external)
 
-vault
+User deposit for specific vault
 
 
 
 
 ### `deposit(uint256 _pid, uint256 _wantAmt)` (external)
 
-aultApe: vault is disabled");
+);
 
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
-            vaultAddres
+            vaultAddress
+        );
+        IERC20
 
 
 
@@ -109,14 +124,12 @@ User withdraw all for specific vault
 
 ### `withdrawAll(uint256 _pid)` (external)
 
-
+aram _wantAmt amount of reward tokens to claim
+    function harvest(uint256 _pid,
 
 
 
 ### `harvest(uint256 _pid, uint256 _wantAmt)` (external)
-
-;
-    }
 
 User harvest all rewards for specific vault
 
@@ -125,27 +138,24 @@ User harvest all rewards for specific vault
 
 ### `harvestAll(uint256 _pid)` (external)
 
-ss
 
 
-Only callable by the contrac
+Only callable by the contract owner
 
 ### `addVault(address _vault)` (public)
 
-s32 DEPOSIT_ROLE = BANANA_VAULT.DEPOSIT_ROLE();
-        BANANA_VAULT.grantRole(DEPOSIT_ROLE, _vault);
-
-        vaults.push(_va
+address(IStrategyMaximizerMasterApe(_vault).vaultApe()) ==
+                address(this),
+            "strategy vault ape n
 
 
 
 ### `addVaults(address[] _vaults)` (public)
 
-{
-        IERC20(_token).safeTransfer(msg.sender, _amount);
+IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 
-    function enableVault(address _vault) exter
+    function enableVault(uint256 _vaultPid) external onlyOwn
 
 
 
@@ -155,13 +165,13 @@ s32 DEPOSIT_ROLE = BANANA_VAULT.DEPOSIT_ROLE();
 
 
 
-### `enableVault(address _vault)` (external)
+### `enableVault(uint256 _vaultPid)` (external)
 
 
 
 
 
-### `disableVault(address _vault)` (external)
+### `disableVault(uint256 _vaultPid)` (external)
 
 
 
@@ -197,103 +207,49 @@ s32 DEPOSIT_ROLE = BANANA_VAULT.DEPOSIT_ROLE();
 
 
 
-### `setTreasuryAllStrategies(address _treasury)` (external)
+### `setTreasury(address _treasury)` (external)
 
 
 
 
 
-### `setKeeperFeeAllStrategies(uint256 _keeperFee)` (external)
+### `setPlatform(address _platform)` (external)
 
 
 
 
 
-### `setPlatformAllStrategies(address _platform)` (external)
+### `setKeeperFee(uint256 _keeperFee)` (external)
 
 
 
 
 
-### `setPlatformFeeAllStrategies(uint256 _platformFee)` (external)
+### `setPlatformFee(uint256 _platformFee)` (external)
 
 
 
 
 
-### `setBuyBackRateAllStrategies(uint256 _buyBackRate)` (external)
+### `setBuyBackRate(uint256 _buyBackRate)` (external)
 
 
 
 
 
-### `setWithdrawFeeAllStrategies(uint256 _withdrawFee)` (external)
+### `setWithdrawFee(uint256 _withdrawFee)` (external)
 
 
 
 
 
-### `setWithdrawFeePeriodAllStrategies(uint256 _withdrawFeePeriod)` (external)
+### `setWithdrawFeePeriod(uint256 _withdrawFeePeriod)` (external)
 
 
 
 
 
-### `setVaultApeAllStrategies(address _vaultApe)` (external)
-
-
-
-
-
-### `setWithdrawRewardsFeeAllStrategies(uint256 _withdrawRewardsFee)` (external)
-
-
-
-
-
-### `setDefaultTreasury(address _defaultTreasury)` (external)
-
-
-
-
-
-### `setDefaultKeeperFee(uint256 _defaultKeeperFee)` (external)
-
-
-
-
-
-### `setDefaultPlatform(address _defaultPlatform)` (external)
-
-
-
-
-
-### `setDefaultPlatformFee(uint256 _defaultPlatformFee)` (external)
-
-
-
-
-
-### `setDefaultBuyBackRate(uint256 _defaultBuyBackRate)` (external)
-
-
-
-
-
-### `setDefaultWithdrawFee(uint256 _defaultWithdrawFee)` (external)
-
-
-
-
-
-### `setDefaultWithdrawFeePeriod(uint256 _defaultWithdrawFeePeriod)` (external)
-
-
-
-
-
-### `setDefaulWithdrawRewardsFee(uint256 _defaulWithdrawRewardsFee)` (external)
+### `setWithdrawRewardsFee(uint256 _withdrawRewardsFee)` (external)
 
 
 
@@ -303,6 +259,131 @@ s32 DEPOSIT_ROLE = BANANA_VAULT.DEPOSIT_ROLE();
 ### `Compound(address vault, uint256 timestamp)`
 
 
+
+
+
+### `ChangedTreasury(address _old, address _new)`
+
+
+
+
+
+### `ChangedPlatform(address _old, address _new)`
+
+
+
+
+
+### `ChangedKeeperFee(uint256 _old, uint256 _new)`
+
+
+
+
+
+### `ChangedPlatformFee(uint256 _old, uint256 _new)`
+
+
+
+
+
+### `ChangedBuyBackRate(uint256 _old, uint256 _new)`
+
+
+
+
+
+### `ChangedWithdrawFee(uint256 _old, uint256 _new)`
+
+
+
+
+
+### `ChangedWithdrawFeePeriod(uint256 _old, uint256 _new)`
+
+
+
+
+
+### `ChangedWithdrawRewardsFee(uint256 _old, uint256 _new)`
+
+
+
+
+
+### `VaultAdded(address _vaultAddress)`
+
+
+
+
+
+### `VaultEnabled(uint256 _vaultPid, address _vaultAddress)`
+
+
+
+
+
+### `VaultDisabled(uint256 _vaultPid, address _vaultAddress)`
+
+
+
+
+
+### `ChangedModerator(address _address)`
+
+
+
+
+
+### `ChangedMaxDelay(uint256 _new)`
+
+
+
+
+
+### `ChangedMinKeeperFee(uint256 _new)`
+
+
+
+
+
+### `ChangedSlippageFactor(uint256 _new)`
+
+
+
+
+
+### `ChangedMaxVaults(uint256 _new)`
+
+
+
+
+
+
+### `VaultInfo`
+
+
+uint256 lastCompound
+
+
+bool enabled
+
+
+### `CompoundInfo`
+
+
+address[] vaults
+
+
+uint256[] minPlatformOutputs
+
+
+uint256[] minKeeperOutputs
+
+
+uint256[] minBurnOutputs
+
+
+uint256[] minBananaOutputs
 
 
 

@@ -1,21 +1,15 @@
 ## `KeeperMaximizerVaultApe`
 
-MaximizerVaultApe(
-            _owner,
-            _bananaVault,
-            _defaultTreasury,
-            _def
+wner, _bananaVault, _maxDelay, _settings) {
+        keeper = _keeper;
+    }
 
-
-
-### `onlyKeeper()`
+Chainlink keeper checkUpkeep
 
 
 
 
-
-
-### `constructor(address _keeper, address _owner, address _bananaVault, address _defaultTreasury, address _defaultPlatform)` (public)
+### `constructor(address _keeper, address _owner, address _bananaVault, uint256 _maxDelay, struct IMaximizerVaultApe.Settings _settings)` (public)
 
 
 
@@ -23,20 +17,22 @@ MaximizerVaultApe(
 
 ### `checkUpkeep(bytes) → bool upkeepNeeded, bytes performData` (external)
 
-eper performUpkeep
+ep
 
 
 
 
 ### `performUpkeep(bytes performData)` (external)
 
-uint256[] memory _minBananaOutputs
-        ) = abi.decode(
+i.decode(
                 performData,
+                (address[], uint256[], uint256[], uint25
 
 
 
 ### `setKeeper(address _keeper)` (public)
+
+
 
 
 
