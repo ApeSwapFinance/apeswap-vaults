@@ -95,7 +95,9 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         nonReentrant
         onlyRole(DEPOSIT_ROLE)
     {
-        require(_amount > 0, "BananaVault: Nothing to deposit");
+        if(_amount == 0){
+            return;
+        }
 
         uint256 totalBananaTokens = underlyingTokenBalance();
         bananaToken.safeTransferFrom(msg.sender, address(this), _amount);

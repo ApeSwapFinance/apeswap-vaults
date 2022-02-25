@@ -243,8 +243,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         }
         address vaultAddress = vaults[_pid];
         VaultInfo memory vaultInfo = vaultInfos[vaultAddress];
-        // Check if vault is enabled
-        if (vaultInfo.enabled) {
+        
+        uint256 totalStake = IStrategyMaximizerMasterApe(vaultAddress).totalStake();
+        // Check if vault is enabled and has stake
+        if (vaultInfo.enabled && totalStake > 0) {
             // Earn if vault is enabled
             (
                 uint256 platformOutput,
