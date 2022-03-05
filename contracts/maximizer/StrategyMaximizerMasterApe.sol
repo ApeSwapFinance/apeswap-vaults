@@ -101,6 +101,8 @@ contract StrategyMaximizerMasterApe is
 
     IMaximizerVaultApe public override vaultApe;
 
+    uint256 public unallocatedShares;
+
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event EarlyWithdraw(address indexed user, uint256 amount, uint256 fee);
@@ -285,9 +287,12 @@ contract StrategyMaximizerMasterApe is
 
         uint256 currentShares = totalAutoBananaShares();
 
+        uint256 increaseAccSharesPerStakedToken = currentShares.add(unallocatedShares).sub(previousShares).mul(1e18).div(totalStake());
         accSharesPerStakedToken = accSharesPerStakedToken.add(
-            currentShares.sub(previousShares).mul(1e18).div(totalStake())
+            increaseAccSharesPerStakedToken
         );
+
+        unallocatedShares = currentShares + unallocatedShares - previousShares - (increaseAccSharesPerStakedToken * totalStake() / 1e18);
     }
 
     /// @notice deposit in vault
