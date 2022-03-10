@@ -1,3 +1,5 @@
+<img src="logo.svg" alt="ApeSwap" height="160px">
+
 # ApeSwap Vaults
 [![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-yellow)](https://apeswap.gitbook.io/apeswap-finance/welcome/master)
 [![tests](https://github.com/ApeSwapFinance/apeswap-vaults/actions/workflows/CI.yml/badge.svg?branch=feat%2Fmaximizer)](https://github.com/ApeSwapFinance/apeswap-vaults/actions/workflows/CI.yml)
