@@ -78,7 +78,7 @@ StrategyMasterChef:         https://bscscan.com/address/0x5199e3ac3a64e8413f1fa3
 
 
 # Maximizer Vaults
-The [Maximizer contracts](./contracts/maximizer/) are vaults which earns reward tokens from ApeSwap or external farms. The reward tokens are then swapped into BANANA (if needed), added to the ApeSwap BANANA pool where the BANANA earnings are continuously compounded. These vaults were built to help alleviate the continuous sell pressure that normal vaults typically put on BANANA.
+The [Maximizer contracts](./contracts/maximizer/) are vaults which earn reward tokens from ApeSwap or external farms. The reward tokens are then swapped into BANANA (if needed), added to the ApeSwap BananaVault where the BANANA earnings are continuously compounded in the main ApeSwap BANANA pool. These vaults were built to help alleviate the continuous sell pressure that normal vaults typically put on BANANA.
 
 ## Operation
 
