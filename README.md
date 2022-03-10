@@ -1,4 +1,7 @@
 # ApeSwap Vaults
+[![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-yellow)](https://apeswap.gitbook.io/apeswap-finance/welcome/master)
+[![tests](https://github.com/ApeSwapFinance/apeswap-vaults/actions/workflows/CI.yml/badge.svg?branch=feat%2Fmaximizer)](https://github.com/ApeSwapFinance/apeswap-vaults/actions/workflows/CI.yml)
+[![License](https://img.shields.io/badge/License-GPLv3-green.svg)](https://www.gnu.org/licenses/gpl-3.0)  
 Automated fund management contracts which work on top of the ApeSwap farm.
 
 ## Setup
