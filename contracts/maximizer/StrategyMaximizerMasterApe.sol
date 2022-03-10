@@ -292,6 +292,10 @@ contract StrategyMaximizerMasterApe is
             increaseAccSharesPerStakedToken
         );
 
+        // Not all shares are allocated because it's divided by totalStake() and can have rounding issue.
+        // Example: 12345/100 shares = 123.45 which is 123 as uint
+        // This calculates the unallocated shares which can then will be allocated later.
+        // From example: 45 missing shares still to be allocated
         unallocatedShares = currentShares + unallocatedShares - previousShares - (increaseAccSharesPerStakedToken * totalStake() / 1e18);
     }
 

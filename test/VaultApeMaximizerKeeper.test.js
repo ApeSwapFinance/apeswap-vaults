@@ -697,7 +697,9 @@ describe('KeeperMaximizerVaultApe', function () {
         expect(balanceOf.stake.toString()).equal(currentDeposit);
         expect(Number(banana1)).to.be.greaterThan(0);
         expect(Number(autoBananaShares1)).to.be.greaterThan(0);
-        const bananaAfterFee = (Number(autoBananaShares1)*(PERCENTAGE_DECIMALS-withdrawRewardFee)) / PERCENTAGE_DECIMALS;
+        const bananaAfterFee1 = (Number(autoBananaShares1) * (PERCENTAGE_DECIMALS - withdrawRewardFee)) / PERCENTAGE_DECIMALS;
+        const bananaAfterFee = Math.ceil((Number(autoBananaShares1) * (PERCENTAGE_DECIMALS - withdrawRewardFee)) / PERCENTAGE_DECIMALS);
+        console.log(bananaAfterFee1.toString(), bananaAfterFee.toString(), banana1.toString());
         expect(bananaAfterFee).equals(Number(banana1));
 
         let getPricePerFullShare = await bananaVault.getPricePerFullShare();

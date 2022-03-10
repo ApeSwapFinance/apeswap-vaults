@@ -27,7 +27,6 @@ pragma solidity ^0.8.6;
 import "./MaximizerVaultApe.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 
-// TODO: Add getting the expected outputs with a twap
 /// @title Keeper Maximizer VaultApe
 /// @author ApeSwapFinance
 /// @notice Chainlink keeper compatible MaximizerVaultApe
