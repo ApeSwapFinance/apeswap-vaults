@@ -2,7 +2,7 @@
   "name": "truffle-template",
   "version": "1.0.0",
   "description": "This repository acts as boilerplate code for new truffle projects.",
-  "author": "DeFiFoFum",
+  "license": "GPL-3.0-only",
   "main": "index.js",
   "scripts": {
     "ganache": "npx ganache-cli",
@@ -31,7 +31,6 @@
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
-  "license": "MIT",
   "devDependencies": {
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
