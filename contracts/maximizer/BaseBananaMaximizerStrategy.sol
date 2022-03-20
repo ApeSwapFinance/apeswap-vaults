@@ -27,8 +27,6 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-// FIXME: remove
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../libs/IVaultApe.sol";
@@ -45,8 +43,6 @@ abstract contract BaseBananaMaximizerStrategy is
     Ownable,
     ReentrancyGuard
 {
-    // FIXME: remove
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     struct UserInfo {
@@ -142,8 +138,6 @@ abstract contract BaseBananaMaximizerStrategy is
     );
 
     function totalStake() public virtual view returns (uint256);
-    // FIXME:
-    // function balanceOf(address _userAddress) external virtual view returns (uint256 stake, uint256 banana, uint256 autoBananaShares);
     function _getExpectedOutput(address[] memory _path) internal virtual view returns (uint256);
     // Modifiers: nonReentrant, onlyVaultApe
     function withdraw(address _userAddress, uint256 _amount) external virtual;
@@ -168,13 +162,13 @@ abstract contract BaseBananaMaximizerStrategy is
         require(
             _pathToBanana[0] == address(_farmRewardToken) &&
                 _pathToBanana[_pathToBanana.length - 1] == bananaTokenAddress,
-            "StrategyMaximizerMasterApe: Incorrect path to BANANA"
+            "BaseBananaMaximizerStrategy: Incorrect path to BANANA"
         );
 
         require(
             _pathToWbnb[0] == address(_farmRewardToken) &&
                 _pathToWbnb[_pathToWbnb.length - 1] == wbnbAddress,
-            "StrategyMaximizerMasterApe: Incorrect path to WBNB"
+            "BaseBananaMaximizerStrategy: Incorrect path to WBNB"
         );
 
         STAKED_TOKEN = IERC20(_stakedToken);
@@ -200,7 +194,7 @@ abstract contract BaseBananaMaximizerStrategy is
     modifier onlyVaultApe() {
         require(
             address(vaultApe) == msg.sender,
-            "StrategyMaximizerMasterApe: caller is not the VaultApe"
+            "BaseBananaMaximizerStrategy: caller is not the VaultApe"
         );
         _;
     }
@@ -221,7 +215,7 @@ abstract contract BaseBananaMaximizerStrategy is
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
         bool _takeKeeperFee
-    ) internal returns ( uint256 shareIncrease) {
+    ) internal {
         IMaximizerVaultApe.Settings memory settings = getSettings();
 
         uint256 rewardTokenBalance = _rewardTokenBalance();
@@ -229,7 +223,7 @@ abstract contract BaseBananaMaximizerStrategy is
         // Collect platform fees
         if (settings.platformFee > 0) {
             _swap(
-                rewardTokenBalance.mul(settings.platformFee).div(10000),
+                (rewardTokenBalance * settings.platformFee) / 10000,
                 _minPlatformOutput,
                 pathToWbnb,
                 settings.platform
@@ -239,7 +233,7 @@ abstract contract BaseBananaMaximizerStrategy is
         // Collect keeper fees
         if (_takeKeeperFee && settings.keeperFee > 0) {
             _swap(
-                rewardTokenBalance.mul(settings.keeperFee).div(10000),
+                (rewardTokenBalance * settings.keeperFee) / 10000,
                 _minKeeperOutput,
                 pathToWbnb,
                 settings.treasury
@@ -251,7 +245,7 @@ abstract contract BaseBananaMaximizerStrategy is
             // Collect Burn fees
             if (settings.buyBackRate > 0) {
                 _swap(
-                    rewardTokenBalance.mul(settings.buyBackRate).div(10000),
+                    (rewardTokenBalance * settings.buyBackRate) / 10000,
                     _minBurnOutput,
                     pathToBanana,
                     BURN_ADDRESS
@@ -267,7 +261,7 @@ abstract contract BaseBananaMaximizerStrategy is
         } else if (settings.buyBackRate > 0) {
             BANANA.transfer(
                 BURN_ADDRESS,
-                rewardTokenBalance.mul(settings.buyBackRate).div(10000)
+                (rewardTokenBalance * settings.buyBackRate) / 10000
             );
         }
 
@@ -311,33 +305,26 @@ abstract contract BaseBananaMaximizerStrategy is
 
         if (_update) {
             // Add claimable Banana to user state and update debt
-            user.autoBananaShares = user.autoBananaShares.add(
-                user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
-                    user.rewardDebt
-                )
-            );
-
-            user.rewardDebt = user.stake.mul(accSharesPerStakedToken).div(1e18);
+            user.autoBananaShares += ((user.stake * accSharesPerStakedToken) / 1e18) - user.rewardDebt;
+            user.rewardDebt = (user.stake * accSharesPerStakedToken) / 1e18;
         }
 
         _shares = user.autoBananaShares < _shares
             ? user.autoBananaShares
             : _shares;
 
-        user.autoBananaShares = user.autoBananaShares.sub(_shares);
+        user.autoBananaShares -= _shares;
 
         uint256 bananaBalanceBefore = _bananaBalance();
 
         BANANA_VAULT.withdraw(_shares);
 
-        uint256 withdrawAmount = _bananaBalance().sub(bananaBalanceBefore);
+        uint256 withdrawAmount = _bananaBalance() - bananaBalanceBefore;
 
         if (settings.withdrawRewardsFee > 0) {
-            uint256 rewardFee = withdrawAmount
-                .mul(settings.withdrawRewardsFee)
-                .div(10000);
+            uint256 rewardFee = (withdrawAmount * settings.withdrawRewardsFee) / 10000;
             _safeBANANATransfer(settings.treasury, rewardFee);
-            withdrawAmount = withdrawAmount.sub(rewardFee);
+            withdrawAmount -= rewardFee;
         }
 
         _safeBANANATransfer(_userAddress, withdrawAmount);
@@ -367,21 +354,15 @@ abstract contract BaseBananaMaximizerStrategy is
         // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
         // Calculate the WBNB values
-        platformOutput = wbnbOutput.mul(settings.platformFee).div(10000);
-        keeperOutput = wbnbOutput.mul(settings.keeperFee).div(10000);
+        platformOutput = (wbnbOutput * settings.platformFee) / 10000;
+        keeperOutput = (wbnbOutput * settings.keeperFee) / 10000;
         // Calculate the BANANA values
-        burnOutput = bananaOutputWithoutFees.mul(settings.buyBackRate).div(
-            10000
-        );
-        bananaOutput = bananaOutputWithoutFees.sub(
-            bananaOutputWithoutFees
-                .mul(settings.platformFee)
-                .div(10000)
-                .add(bananaOutputWithoutFees.mul(settings.keeperFee).div(10000))
-                .add(
-                    bananaOutputWithoutFees.mul(settings.buyBackRate).div(10000)
-                )
-        );
+        burnOutput = (bananaOutputWithoutFees * settings.buyBackRate) / 10000;
+        uint256 bananaFees = 
+            ((bananaOutputWithoutFees * settings.platformFee) / 10000) 
+            + ((bananaOutputWithoutFees * settings.keeperFee) / 10000) 
+            + burnOutput;
+        bananaOutput = bananaOutputWithoutFees - bananaFees;
     }
 
     /// @notice Get all balances of a user
@@ -402,22 +383,14 @@ abstract contract BaseBananaMaximizerStrategy is
 
         UserInfo memory user = userInfo[_userAddress];
 
-        uint256 pendingShares = user
-            .stake
-            .mul(accSharesPerStakedToken)
-            .div(1e18)
-            .sub(user.rewardDebt);
+        uint256 pendingShares = ((user.stake * accSharesPerStakedToken) / 1e18) - user.rewardDebt;
 
         stake = user.stake;
-        autoBananaShares = user.autoBananaShares.add(pendingShares);
-        banana = autoBananaShares.mul(BANANA_VAULT.getPricePerFullShare()).div(
-            1e18
-        );
+        autoBananaShares = (user.autoBananaShares + pendingShares);
+        banana = (autoBananaShares * BANANA_VAULT.getPricePerFullShare()) / 1e18;
         if (settings.withdrawRewardsFee > 0) {
-            uint256 rewardFee = banana.mul(settings.withdrawRewardsFee).div(
-                10000
-            );
-            banana = banana.sub(rewardFee);
+            uint256 rewardFee = (banana * settings.withdrawRewardsFee) / 10000;
+            banana -= rewardFee;
         }
     }
 
@@ -530,14 +503,10 @@ abstract contract BaseBananaMaximizerStrategy is
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
                 _path[_path.length - 1] == address(BANANA),
-            "StrategyMaximizerMasterApe: Incorrect path to BANANA"
+            "BaseBananaMaximizerStrategy: Incorrect path to BANANA"
         );
-
-        address[] memory oldPath = pathToBanana;
-
+        emit SetPathToBanana(pathToBanana, _path);
         pathToBanana = _path;
-
-        emit SetPathToBanana(oldPath, pathToBanana);
     }
 
     /// @notice set path from reward token to wbnb
@@ -547,14 +516,10 @@ abstract contract BaseBananaMaximizerStrategy is
         require(
             _path[0] == address(FARM_REWARD_TOKEN) &&
                 _path[_path.length - 1] == WBNB,
-            "StrategyMaximizerMasterApe: Incorrect path to WBNB"
+            "BaseBananaMaximizerStrategy: Incorrect path to WBNB"
         );
-
-        address[] memory oldPath = pathToWbnb;
-
+        emit SetPathToWbnb(pathToWbnb, _path);
         pathToWbnb = _path;
-
-        emit SetPathToWbnb(oldPath, pathToWbnb);
     }
 
     /// @notice set platform address
@@ -593,7 +558,7 @@ abstract contract BaseBananaMaximizerStrategy is
     {
         require(
             _keeperFee <= IMaximizerVaultApe(vaultApe).KEEPER_FEE_UL(),
-            "StrategyMaximizerMasterApe: Keeper fee too high"
+            "BaseBananaMaximizerStrategy: Keeper fee too high"
         );
         useDefaultSettings.keeperFee = _useDefault;
         emit SetKeeperFee(strategySettings.keeperFee, _keeperFee, _useDefault);
@@ -610,7 +575,7 @@ abstract contract BaseBananaMaximizerStrategy is
     {
         require(
             _platformFee <= IMaximizerVaultApe(vaultApe).PLATFORM_FEE_UL(),
-            "StrategyMaximizerMasterApe: Platform fee too high"
+            "BaseBananaMaximizerStrategy: Platform fee too high"
         );
         useDefaultSettings.platformFee = _useDefault;
         emit SetPlatformFee(
@@ -631,7 +596,7 @@ abstract contract BaseBananaMaximizerStrategy is
     {
         require(
             _buyBackRate <= IMaximizerVaultApe(vaultApe).BUYBACK_RATE_UL(),
-            "StrategyMaximizerMasterApe: Buy back rate too high"
+            "BaseBananaMaximizerStrategy: Buy back rate too high"
         );
         useDefaultSettings.buyBackRate = _useDefault;
         emit SetBuyBackRate(
@@ -652,7 +617,7 @@ abstract contract BaseBananaMaximizerStrategy is
     {
         require(
             _withdrawFee <= IMaximizerVaultApe(vaultApe).WITHDRAW_FEE_UL(),
-            "StrategyMaximizerMasterApe: Early withdraw fee too high"
+            "BaseBananaMaximizerStrategy: Early withdraw fee too high"
         );
         useDefaultSettings.withdrawFee = _useDefault;
         emit SetWithdrawFee(
