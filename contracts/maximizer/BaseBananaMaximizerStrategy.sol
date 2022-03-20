@@ -27,6 +27,7 @@ pragma solidity 0.8.6;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+// FIXME: remove
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -44,6 +45,7 @@ abstract contract BaseBananaMaximizerStrategy is
     Ownable,
     ReentrancyGuard
 {
+    // FIXME: remove
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -98,9 +100,6 @@ abstract contract BaseBananaMaximizerStrategy is
 
     IMaximizerVaultApe public immutable vaultApe;
 
-    event Deposit(address indexed user, uint256 amount);
-    event Withdraw(address indexed user, uint256 amount);
-    event EarlyWithdraw(address indexed user, uint256 amount, uint256 fee);
     event ClaimRewards(address indexed user, uint256 shares, uint256 amount);
 
     // Setting updates
@@ -142,7 +141,8 @@ abstract contract BaseBananaMaximizerStrategy is
         bool useDefaultFee
     );
 
-    function totalStake() external virtual view returns (uint256);
+    function totalStake() public virtual view returns (uint256);
+    // FIXME:
     // function balanceOf(address _userAddress) external virtual view returns (uint256 stake, uint256 banana, uint256 autoBananaShares);
     function _getExpectedOutput(address[] memory _path) internal virtual view returns (uint256);
     // Modifiers: nonReentrant, onlyVaultApe
@@ -221,7 +221,7 @@ abstract contract BaseBananaMaximizerStrategy is
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
         bool _takeKeeperFee
-    ) internal {
+    ) internal returns ( uint256 shareIncrease) {
         IMaximizerVaultApe.Settings memory settings = getSettings();
 
         uint256 rewardTokenBalance = _rewardTokenBalance();
@@ -277,17 +277,16 @@ abstract contract BaseBananaMaximizerStrategy is
         BANANA_VAULT.deposit(bananaBalance);
 
         uint256 currentShares = totalAutoBananaShares();
+        uint256 shareIncrease = currentShares - previousShares;
 
-        uint256 increaseAccSharesPerStakedToken = currentShares.add(unallocatedShares).sub(previousShares).mul(1e18).div(totalStake());
-        accSharesPerStakedToken = accSharesPerStakedToken.add(
-            increaseAccSharesPerStakedToken
-        );
+        uint256 increaseAccSharesPerStakedToken = ((shareIncrease + unallocatedShares) * 1e18) / totalStake();
+        accSharesPerStakedToken += increaseAccSharesPerStakedToken;
 
         // Not all shares are allocated because it's divided by totalStake() and can have rounding issue.
         // Example: 12345/100 shares = 123.45 which is 123 as uint
         // This calculates the unallocated shares which can then will be allocated later.
         // From example: 45 missing shares still to be allocated
-        unallocatedShares = currentShares + unallocatedShares - previousShares - (increaseAccSharesPerStakedToken * totalStake() / 1e18);
+        unallocatedShares = (shareIncrease + unallocatedShares) - ((increaseAccSharesPerStakedToken * totalStake()) / 1e18);
     }
 
     /// @notice claim rewards

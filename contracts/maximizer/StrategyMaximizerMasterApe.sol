@@ -45,18 +45,14 @@ contract StrategyMaximizerMasterApe is
 {
     using SafeERC20 for IERC20;
 
-    uint256 public override accSharesPerStakedToken; // Accumulated BANANA_VAULT shares per staked token, times 1e18.
-
     // Farm info
     IMasterApe public immutable STAKED_TOKEN_FARM;
-    address public override STAKED_TOKEN_ADDRESS;
     uint256 public immutable FARM_PID;
     bool public immutable IS_BANANA_STAKING;
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event EarlyWithdraw(address indexed user, uint256 amount, uint256 fee);
-    event ClaimRewards(address indexed user, uint256 shares, uint256 amount);
 
     // Setting updates
     constructor(
@@ -136,13 +132,9 @@ contract StrategyMaximizerMasterApe is
             STAKED_TOKEN_FARM.deposit(FARM_PID, _amount);
         }
 
-        user.autoBananaShares = user.autoBananaShares.add(
-            user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
-                user.rewardDebt
-            )
-        );
-        user.stake = user.stake.add(_amount);
-        user.rewardDebt = user.stake.mul(accSharesPerStakedToken).div(1e18);
+        user.autoBananaShares = user.autoBananaShares + (((user.stake * accSharesPerStakedToken) /  1e18) - user.rewardDebt);
+        user.stake += _amount;
+        user.rewardDebt = (user.stake * accSharesPerStakedToken) /  1e18;
         user.lastDepositedTime = block.timestamp;
         emit Deposit(_userAddress, _amount);
     }
@@ -177,23 +169,17 @@ contract StrategyMaximizerMasterApe is
         if (
             settings.withdrawFee > 0 &&
             block.timestamp <
-            user.lastDepositedTime.add(settings.withdrawFeePeriod)
+            (user.lastDepositedTime + settings.withdrawFeePeriod)
         ) {
             // Take withdraw fees
-            uint256 currentWithdrawFee = currentAmount
-                .mul(settings.withdrawFee)
-                .div(10000);
+            uint256 currentWithdrawFee = (currentAmount * settings.withdrawFee) / 10000;
             STAKED_TOKEN.safeTransfer(settings.treasury, currentWithdrawFee);
-            currentAmount = currentAmount.sub(currentWithdrawFee);
+            currentAmount -= currentWithdrawFee;
         }
 
-        user.autoBananaShares = user.autoBananaShares.add(
-            user.stake.mul(accSharesPerStakedToken).div(1e18).sub(
-                user.rewardDebt
-            )
-        );
-        user.stake = user.stake.sub(_amount);
-        user.rewardDebt = user.stake.mul(accSharesPerStakedToken).div(1e18);
+        user.autoBananaShares += ((user.stake * accSharesPerStakedToken) /  1e18) - user.rewardDebt;
+        user.stake -= _amount;
+        user.rewardDebt = (user.stake * accSharesPerStakedToken) / 1e18;
 
         // Withdraw banana rewards if user leaves
         if (user.stake == 0 && user.autoBananaShares > 0) {
@@ -209,19 +195,18 @@ contract StrategyMaximizerMasterApe is
     /// @param _path Array of token addresses which compose the path from index 0 to n
     /// @return Reward output amount based on path
     function _getExpectedOutput(address[] memory _path)
-        private
+        internal
         view
+        override
         returns (uint256)
     {
-        uint256 rewards = _rewardTokenBalance().add(
-            STAKED_TOKEN_FARM.pendingCake(FARM_PID, address(this))
-        );
+        uint256 rewards = _rewardTokenBalance() + (STAKED_TOKEN_FARM.pendingCake(FARM_PID, address(this)));
 
         if (_path.length <= 1 || rewards == 0) {
             return rewards;
         } else {
             uint256[] memory amounts = router.getAmountsOut(rewards, _path);
-            return amounts[amounts.length.sub(1)];
+            return amounts[amounts.length - 1];
         }
     }
 
