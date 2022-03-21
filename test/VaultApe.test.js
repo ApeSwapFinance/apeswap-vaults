@@ -144,6 +144,7 @@ describe('VaultApe', function () {
       });
 
       it('should deposit and have shares', async () => {
+        await new Promise(resolve => setTimeout(resolve, 20000));
         const wantAddress = await this.strategy.wantAddress();
         const wantToken = contract.fromArtifact('ERC20', wantAddress);
         await vaultApe.deposit(0, toDeposit, testerAddress, { from: testerAddress })
