@@ -1,8 +1,7 @@
 ## `BananaVault`
 
-alty
-        uint256 bananaAtLastUserAction; // keeps track of banana deposited at the last user action
-        uint256 lastUserAc
+tUserAction; // keeps track of banana deposited at the last user action
+        uint256 lastUserActionTime; // keeps track of the
 
 
 
@@ -18,10 +17,8 @@ DMIN_ROLE, _admin);
 
 ### `deposit(uint256 _amount)` (external)
 
-(this), _amount);
-        uint256 currentShares = 0;
-        if (totalShares != 0) {
-            currentShares = (_amount.mul(
+uint256 totalBananaTokens = underlyingTokenBalance();
+        bananaToken.safeTransferFrom(msg.sender, address(this), _amoun
 
 
 
@@ -41,27 +38,24 @@ s (uint256)
 
 ### `calculateTotalPendingBananaRewards() → uint256` (external)
 
-e price per share
-/
-    function getPricePerFullShare() external view returns (uint256) {
-        return
-            totalShares =
+function getPricePerFullShare() external view returns (uint256) {
+        return totalShares == 0 ? 1e18 : (underlyingTokenBalance() *
 
 
 
 ### `getPricePerFullShare() → uint256` (external)
 
-t256 _shares) public nonReentrant {
-        UserInfo stor
+Info storage user = userInfo[msg.sender];
+
+        requir
 
 
 
 ### `withdraw(uint256 _shares)` (public)
 
-);
-
-        uint256 bananaTokensToWithdraw = (underlyingTokenBalance().mul(_shares))
-            .div(totalShares);
+draw = (underlyingTokenBalance() * currentShares) / totalShares;
+        user.shares -= currentShares;
+        totalShare
 
 
 
@@ -76,7 +70,6 @@ ingTokenBalance() public view returns (uint256) {
 
 ### `underlyingTokenBalance() → uint256` (public)
 
-rds
 /
     function _earn() internal {
         uint256 balance = available();
