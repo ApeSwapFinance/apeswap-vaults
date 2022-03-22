@@ -367,10 +367,10 @@ describe('KeeperMaximizerVaultApe', function () {
             .gt(new BN(bananaAccountSnapshotBefore[treasury])))
           .equal(true, 'banana tokens did not increase for treasury address after earn/reward withdraw fee');
 
-        const strategySnapshotFinal = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
+        userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
 
         expect(
-          new BN(strategySnapshotFinal.accountSnapshots[testerAddress].userInfo.rewardDebt)
+          new BN(userInfo.rewardDebt)
             .eq(new BN(0)))
           .equal(true, 'user reward debt was not brought to zero after pulling out all funds');
 
@@ -505,6 +505,7 @@ describe('KeeperMaximizerVaultApe', function () {
         const shouldBeBalance = wantBalanceBefore.sub(withdrawFee);
         expect(wantBalanceAfter.toString()).equal(shouldBeBalance.toString());
 
+        // TODO: This test is failing?
         expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * 0.99 * (toDeposit / 1e18))); //0.99 = 1% withdral rewards fee
         expect(Number(bananaBalanceAfter1)).to.be.greaterThan(Number(bananaBalanceBefore1));
         expect(Number(bananaBalanceAfter2)).to.be.greaterThan(Number(bananaBalanceBefore2));

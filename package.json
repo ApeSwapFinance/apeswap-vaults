@@ -38,7 +38,9 @@
     "DeFiFoFum (https://github.com/DeFiFoFum)"
   ],
   "devDependencies": {
+    "@apeswap.finance/contracts": "^0.2.0",
     "@apeswap.finance/test-helpers": "^0.2.0",
+    "@chainlink/contracts": "^0.3.1",
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
     "@openzeppelin/contracts": "^4.3.0",
@@ -52,18 +54,16 @@
     "husky": "^6.0.0",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.8",
-    "solc-0.8": "npm:solc@0.8.13",
+    "solc-0.8": "npm:solc@0.8.6",
     "solhint": "^3.3.4",
     "solidity-coverage": "^0.7.16",
+    "solidity-docgen": "^0.5.13",
     "truffle": "^5.3.1",
     "truffle-contract-size": "^2.0.1",
     "truffle-flattener": "^1.5.0",
     "truffle-plugin-verify": "^0.5.9",
     "typechain": "^4.0.3",
-    "typescript": "^4.2.4",
-    "@apeswap.finance/contracts": "^0.2.0",
-    "@chainlink/contracts": "^0.3.1",
-    "solidity-docgen": "^0.5.13"
+    "typescript": "^4.2.4"
   },
   "dependencies": {}
 }
