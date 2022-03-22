@@ -200,6 +200,68 @@ abstract contract BaseBananaMaximizerStrategy is
         _;
     }
 
+    /// @notice Get all balances of a user
+    /// @param _userAddress user address
+    /// @return stake
+    /// @return banana
+    /// @return autoBananaShares
+    function balanceOf(address _userAddress)
+        external
+        view
+        returns (
+            uint256 stake,
+            uint256 banana,
+            uint256 autoBananaShares
+        )
+    {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+
+        UserInfo memory user = userInfo[_userAddress];
+
+        uint256 pendingShares = ((user.stake * accSharesPerStakedToken) / 1e18) - user.rewardDebt;
+
+        stake = user.stake;
+        autoBananaShares = (user.autoBananaShares + pendingShares);
+        banana = (autoBananaShares * BANANA_VAULT.getPricePerFullShare()) / 1e18;
+        if (settings.withdrawRewardsFee > 0) {
+            uint256 rewardFee = (banana * settings.withdrawRewardsFee) / 10000;
+            banana -= rewardFee;
+        }
+    }
+
+    /// @notice Using total harvestable rewards as the input, find the outputs for each respective output
+    /// @return platformOutput WBNB output amount which goes to the platform
+    /// @return keeperOutput WBNB output amount which goes to the keeper
+    /// @return burnOutput BANANA amount which goes to the burn address
+    /// @return bananaOutput BANANA amount which goes to compounding
+    function getExpectedOutputs()
+        external
+        view
+        returns (
+            uint256 platformOutput,
+            uint256 keeperOutput,
+            uint256 burnOutput,
+            uint256 bananaOutput
+        )
+    {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+
+        // Find the expected WBNB value of the current harvestable rewards
+        uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
+        // Find the expected BANANA value of the current harvestable rewards
+        uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
+        // Calculate the WBNB values
+        platformOutput = (wbnbOutput * settings.platformFee) / 10000;
+        keeperOutput = (wbnbOutput * settings.keeperFee) / 10000;
+        // Calculate the BANANA values
+        burnOutput = (bananaOutputWithoutFees * settings.buyBackRate) / 10000;
+        uint256 bananaFees = 
+            ((bananaOutputWithoutFees * settings.platformFee) / 10000) 
+            + ((bananaOutputWithoutFees * settings.keeperFee) / 10000) 
+            + burnOutput;
+        bananaOutput = bananaOutputWithoutFees - bananaFees;
+    }
+
     /// @notice deposit in vault
     /// @param _userAddress user address
     function deposit(address _userAddress, uint256 _amount)
@@ -223,19 +285,6 @@ abstract contract BaseBananaMaximizerStrategy is
         user.lastDepositedTime = block.timestamp;
 
         emit Deposit(_userAddress, deposited);
-    }
-
-    function _farm() internal returns (uint256) {
-        uint256 stakeTokenBalance = IERC20(STAKE_TOKEN).balanceOf(address(this));
-        if (stakeTokenBalance == 0) return 0;
-        
-        uint256 stakeBefore = totalStake();
-        _vaultDeposit(stakeTokenBalance);
-        // accSharesPerStakedToken is updated here to ensure 
-        _bananaVaultDeposit(true);
-        uint256 stakeAfter = totalStake();
-        
-        return stakeAfter - stakeBefore;
     }
 
     /// @notice withdraw tokens from vault
@@ -286,6 +335,17 @@ abstract contract BaseBananaMaximizerStrategy is
         }
 
         emit Withdraw(_userAddress, currentAmount - withdrawFee, withdrawFee);
+    }
+
+    /// @notice claim rewards
+    /// @param _userAddress user address
+    /// @param _shares shares to withdraw
+    function claimRewards(address _userAddress, uint256 _shares)
+        external
+        nonReentrant
+        onlyVaultApe
+    {
+        _bananaVaultWithdraw(_userAddress, _shares, true);
     }
 
     // 1. Harvest rewards
@@ -358,15 +418,66 @@ abstract contract BaseBananaMaximizerStrategy is
         _bananaVaultDeposit(false);
     }
 
-    /// @notice claim rewards
-    /// @param _userAddress user address
-    /// @param _shares shares to withdraw
-    function claimRewards(address _userAddress, uint256 _shares)
-        external
-        nonReentrant
-        onlyVaultApe
+    /// @notice getter function for settings
+    /// @return settings
+    function getSettings()
+        public
+        view
+        returns (IMaximizerVaultApe.Settings memory)
     {
-        _bananaVaultWithdraw(_userAddress, _shares, true);
+        IMaximizerVaultApe.Settings memory defaultSettings = vaultApe
+            .getSettings();
+
+        address treasury = useDefaultSettings.treasury
+            ? defaultSettings.treasury
+            : strategySettings.treasury;
+        uint256 keeperFee = useDefaultSettings.keeperFee
+            ? defaultSettings.keeperFee
+            : strategySettings.keeperFee;
+        address platform = useDefaultSettings.platform
+            ? defaultSettings.platform
+            : strategySettings.platform;
+        uint256 platformFee = useDefaultSettings.platformFee
+            ? defaultSettings.platformFee
+            : strategySettings.platformFee;
+        uint256 buyBackRate = useDefaultSettings.buyBackRate
+            ? defaultSettings.buyBackRate
+            : strategySettings.buyBackRate;
+        uint256 withdrawFee = useDefaultSettings.withdrawFee
+            ? defaultSettings.withdrawFee
+            : strategySettings.withdrawFee;
+        uint256 withdrawFeePeriod = useDefaultSettings.withdrawFeePeriod
+            ? defaultSettings.withdrawFeePeriod
+            : strategySettings.withdrawFeePeriod;
+        uint256 withdrawRewardsFee = useDefaultSettings.withdrawRewardsFee
+            ? defaultSettings.withdrawRewardsFee
+            : strategySettings.withdrawRewardsFee;
+
+        IMaximizerVaultApe.Settings memory actualSettings = IMaximizerVaultApe
+            .Settings(
+                treasury,
+                keeperFee,
+                platform,
+                platformFee,
+                buyBackRate,
+                withdrawFee,
+                withdrawFeePeriod,
+                withdrawRewardsFee
+            );
+        return actualSettings;
+    }
+
+    function _farm() internal returns (uint256) {
+        uint256 stakeTokenBalance = IERC20(STAKE_TOKEN).balanceOf(address(this));
+        if (stakeTokenBalance == 0) return 0;
+        
+        uint256 stakeBefore = totalStake();
+        _vaultDeposit(stakeTokenBalance);
+        // accSharesPerStakedToken is updated here to ensure 
+        _bananaVaultDeposit(true);
+        uint256 stakeAfter = totalStake();
+        
+        return stakeAfter - stakeBefore;
     }
 
     function _bananaVaultWithdraw(
@@ -453,78 +564,6 @@ abstract contract BaseBananaMaximizerStrategy is
         unallocatedShares = (shareIncrease + unallocatedShares) - ((increaseAccSharesPerStakedToken * totalStake()) / 1e18);
     }
 
-    /// @notice Using total harvestable rewards as the input, find the outputs for each respective output
-    /// @return platformOutput WBNB output amount which goes to the platform
-    /// @return keeperOutput WBNB output amount which goes to the keeper
-    /// @return burnOutput BANANA amount which goes to the burn address
-    /// @return bananaOutput BANANA amount which goes to compounding
-    function getExpectedOutputs()
-        external
-        view
-        returns (
-            uint256 platformOutput,
-            uint256 keeperOutput,
-            uint256 burnOutput,
-            uint256 bananaOutput
-        )
-    {
-        IMaximizerVaultApe.Settings memory settings = getSettings();
-
-        // Find the expected WBNB value of the current harvestable rewards
-        uint256 wbnbOutput = _getExpectedOutput(pathToWbnb);
-        // Find the expected BANANA value of the current harvestable rewards
-        uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
-        // Calculate the WBNB values
-        platformOutput = (wbnbOutput * settings.platformFee) / 10000;
-        keeperOutput = (wbnbOutput * settings.keeperFee) / 10000;
-        // Calculate the BANANA values
-        burnOutput = (bananaOutputWithoutFees * settings.buyBackRate) / 10000;
-        uint256 bananaFees = 
-            ((bananaOutputWithoutFees * settings.platformFee) / 10000) 
-            + ((bananaOutputWithoutFees * settings.keeperFee) / 10000) 
-            + burnOutput;
-        bananaOutput = bananaOutputWithoutFees - bananaFees;
-    }
-
-    /// @notice Get all balances of a user
-    /// @param _userAddress user address
-    /// @return stake
-    /// @return banana
-    /// @return autoBananaShares
-    function balanceOf(address _userAddress)
-        external
-        view
-        returns (
-            uint256 stake,
-            uint256 banana,
-            uint256 autoBananaShares
-        )
-    {
-        IMaximizerVaultApe.Settings memory settings = getSettings();
-
-        UserInfo memory user = userInfo[_userAddress];
-
-        uint256 pendingShares = ((user.stake * accSharesPerStakedToken) / 1e18) - user.rewardDebt;
-
-        stake = user.stake;
-        autoBananaShares = (user.autoBananaShares + pendingShares);
-        banana = (autoBananaShares * BANANA_VAULT.getPricePerFullShare()) / 1e18;
-        if (settings.withdrawRewardsFee > 0) {
-            uint256 rewardFee = (banana * settings.withdrawRewardsFee) / 10000;
-            banana -= rewardFee;
-        }
-    }
-
-    function _approveTokenIfNeeded(
-        IERC20 _token,
-        uint256 _amount,
-        address _spender
-    ) internal {
-        if (_token.allowance(address(this), _spender) < _amount) {
-            _token.safeIncreaseAllowance(_spender, _amount);
-        }
-    }
-
     function _rewardTokenBalance() internal view returns (uint256) {
         return FARM_REWARD_TOKEN.balanceOf(address(this));
     }
@@ -575,54 +614,17 @@ abstract contract BaseBananaMaximizerStrategy is
         );
     }
 
-    /// @notice getter function for settings
-    /// @return settings
-    function getSettings()
-        public
-        view
-        returns (IMaximizerVaultApe.Settings memory)
-    {
-        IMaximizerVaultApe.Settings memory defaultSettings = vaultApe
-            .getSettings();
-
-        address treasury = useDefaultSettings.treasury
-            ? defaultSettings.treasury
-            : strategySettings.treasury;
-        uint256 keeperFee = useDefaultSettings.keeperFee
-            ? defaultSettings.keeperFee
-            : strategySettings.keeperFee;
-        address platform = useDefaultSettings.platform
-            ? defaultSettings.platform
-            : strategySettings.platform;
-        uint256 platformFee = useDefaultSettings.platformFee
-            ? defaultSettings.platformFee
-            : strategySettings.platformFee;
-        uint256 buyBackRate = useDefaultSettings.buyBackRate
-            ? defaultSettings.buyBackRate
-            : strategySettings.buyBackRate;
-        uint256 withdrawFee = useDefaultSettings.withdrawFee
-            ? defaultSettings.withdrawFee
-            : strategySettings.withdrawFee;
-        uint256 withdrawFeePeriod = useDefaultSettings.withdrawFeePeriod
-            ? defaultSettings.withdrawFeePeriod
-            : strategySettings.withdrawFeePeriod;
-        uint256 withdrawRewardsFee = useDefaultSettings.withdrawRewardsFee
-            ? defaultSettings.withdrawRewardsFee
-            : strategySettings.withdrawRewardsFee;
-
-        IMaximizerVaultApe.Settings memory actualSettings = IMaximizerVaultApe
-            .Settings(
-                treasury,
-                keeperFee,
-                platform,
-                platformFee,
-                buyBackRate,
-                withdrawFee,
-                withdrawFeePeriod,
-                withdrawRewardsFee
-            );
-        return actualSettings;
+    function _approveTokenIfNeeded(
+        IERC20 _token,
+        uint256 _amount,
+        address _spender
+    ) internal {
+        if (_token.allowance(address(this), _spender) < _amount) {
+            _token.safeIncreaseAllowance(_spender, _amount);
+        }
     }
+
+    /** onlyOwner functions */
 
     /// @notice set path from reward token to banana
     /// @param _path path to banana

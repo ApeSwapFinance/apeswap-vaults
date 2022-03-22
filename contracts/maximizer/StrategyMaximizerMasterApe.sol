@@ -47,11 +47,9 @@ contract StrategyMaximizerMasterApe is
 
     // Farm info
     IMasterApe public immutable STAKE_TOKEN_FARM;
-    bool public immutable IS_BANANA_STAKING;
     uint256 public immutable FARM_PID;
+    bool public immutable IS_BANANA_STAKING;
 
-
-    // Setting updates
     constructor(
         address _masterApe,
         uint256 _farmPid,
@@ -77,6 +75,18 @@ contract StrategyMaximizerMasterApe is
         IS_BANANA_STAKING = _isBananaStaking;
     }
 
+    /// @notice total staked tokens of vault in farm
+    /// @return total staked tokens of vault in farm
+    function totalStake() public view override returns (uint256) {
+        (uint256 amount, ) = STAKE_TOKEN_FARM.userInfo(
+            FARM_PID,
+            address(this)
+        );
+        return amount;
+    }
+
+     /// @notice Handle deposits for this strategy
+    /// @param _amount Amount to remove deposit
     function _vaultDeposit(uint256 _amount) internal override {
         _approveTokenIfNeeded(
             STAKE_TOKEN,
@@ -90,6 +100,8 @@ contract StrategyMaximizerMasterApe is
         }
     }
     
+    /// @notice Handle withdraw of this strategy
+    /// @param _amount Amount to remove from staking
     function _vaultWithdraw(uint256 _amount) internal override {
         if(IS_BANANA_STAKING) {
             STAKE_TOKEN_FARM.leaveStaking(_amount);
@@ -98,6 +110,7 @@ contract StrategyMaximizerMasterApe is
         }
     }
     
+    /// @notice Handle harvesting of this strategy
     function _vaultHarvest() internal override {
         if(IS_BANANA_STAKING) {
             STAKE_TOKEN_FARM.enterStaking(0);
@@ -123,16 +136,6 @@ contract StrategyMaximizerMasterApe is
             uint256[] memory amounts = router.getAmountsOut(rewards, _path);
             return amounts[amounts.length - 1];
         }
-    }
-
-    /// @notice total staked tokens of vault in farm
-    /// @return total staked tokens of vault in farm
-    function totalStake() public view override returns (uint256) {
-        (uint256 amount, ) = STAKE_TOKEN_FARM.userInfo(
-            FARM_PID,
-            address(this)
-        );
-        return amount;
     }
 
     function _beforeDeposit(address _to) internal override {
