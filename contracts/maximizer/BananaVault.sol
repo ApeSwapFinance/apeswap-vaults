@@ -25,7 +25,6 @@ pragma solidity 0.8.6;
  */
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../libs/IMasterApe.sol";
@@ -35,7 +34,6 @@ import "../libs/IMasterApe.sol";
 /// @notice Banana vault without fees. Usage only for ApeSwap maximizer vaults
 contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
 
     struct UserInfo {
         uint256 shares; // number of shares for a user
@@ -105,22 +103,19 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         bananaToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 currentShares = 0;
         if (totalShares != 0) {
-            currentShares = (_amount.mul(totalShares)).div(totalBananaTokens);
+            currentShares = (_amount * totalShares) / totalBananaTokens;
         } else {
             currentShares = _amount;
         }
         require(currentShares > 0, "BananaVault:: Adding 0 shares");
 
         UserInfo storage user = userInfo[msg.sender];
-        user.shares = user.shares.add(currentShares);
+        user.shares += currentShares;
         user.lastDepositedTime = block.timestamp;
 
-        totalShares = totalShares.add(currentShares);
+        totalShares += currentShares;
 
-        user.bananaAtLastUserAction = user
-            .shares
-            .mul(underlyingTokenBalance())
-            .div(totalShares);
+        user.bananaAtLastUserAction = (user.shares * underlyingTokenBalance()) / totalShares;
         user.lastUserActionTime = block.timestamp;
 
         _earn();
@@ -156,19 +151,14 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         returns (uint256)
     {
         uint256 amount = masterApe.pendingCake(0, address(this));
-        amount = amount.add(available());
-
-        return amount;
+        return amount + available();
     }
 
     /**
      * @notice Calculates the price per share
      */
     function getPricePerFullShare() external view returns (uint256) {
-        return
-            totalShares == 0
-                ? 1e18
-                : underlyingTokenBalance().mul(1e18).div(totalShares);
+        return totalShares == 0 ? 1e18 : (underlyingTokenBalance() * 1e18) / totalShares;
     }
 
     /**
@@ -181,14 +171,13 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         require(_shares > 0, "BananaVault: Must withdraw more than 0");
         uint256 currentShares = user.shares < _shares ? user.shares : _shares;
 
-        uint256 bananaTokensToWithdraw = (underlyingTokenBalance().mul(currentShares))
-            .div(totalShares);
-        user.shares = user.shares.sub(currentShares);
-        totalShares = totalShares.sub(currentShares);
+        uint256 bananaTokensToWithdraw = (underlyingTokenBalance() * currentShares) / totalShares;
+        user.shares -= currentShares;
+        totalShares -= currentShares;
 
         uint256 bal = available();
         if (bal < bananaTokensToWithdraw) {
-            uint256 balWithdraw = bananaTokensToWithdraw.sub(bal);
+            uint256 balWithdraw = bananaTokensToWithdraw - bal;
             masterApe.leaveStaking(balWithdraw);
             // Check if the withdraw deposited enough tokens into this contract
             uint256 balAfter = available();
@@ -198,10 +187,7 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         }
 
         if (user.shares > 0) {
-            user.bananaAtLastUserAction = user
-                .shares
-                .mul(underlyingTokenBalance())
-                .div(totalShares);
+            user.bananaAtLastUserAction = (user.shares * underlyingTokenBalance()) / totalShares;
         } else {
             user.bananaAtLastUserAction = 0;
         }
@@ -226,7 +212,7 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     function underlyingTokenBalance() public view returns (uint256) {
         (uint256 amount, ) = masterApe.userInfo(0, address(this));
 
-        return bananaToken.balanceOf(address(this)).add(amount);
+        return bananaToken.balanceOf(address(this)) + amount;
     }
 
     /**
