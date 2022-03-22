@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.6;
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.13;
 
 /*
   ______                     ______                                 
@@ -464,6 +464,16 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
             vaults[_pid]
         );
         strat.claimRewards(msg.sender, type(uint256).max);
+    }
+
+    function _approveTokenIfNeeded(
+        IERC20 _token,
+        uint256 _amount,
+        address _spender
+    ) internal {
+        if(_token.allowance(address(this), _spender) < _amount) {
+            _token.safeIncreaseAllowance(_spender, type(uint256).max);
+        }
     }
 
     // ===== OWNER only functions =====

@@ -73,8 +73,8 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      //https://forum.openzeppelin.com/t/how-to-deploy-uniswapv2-on-ganache/3885
-      version: "0.8.6",    // Fetch exact version from solc-bin (default: truffle's version)
+      // FIXME: 0.8.13 has been patched in later versions
+      version: "0.8.13",    // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       settings: {          // See the solidity docs for advice about optimization and evmVersion
         optimizer: {

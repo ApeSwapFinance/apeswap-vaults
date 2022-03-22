@@ -52,7 +52,7 @@
     "husky": "^6.0.0",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.8",
-    "solc-0.8": "npm:solc@0.8.6",
+    "solc-0.8": "npm:solc@0.8.13",
     "solhint": "^3.3.4",
     "solidity-coverage": "^0.7.16",
     "truffle": "^5.3.1",
