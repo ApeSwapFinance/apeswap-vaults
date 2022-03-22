@@ -138,9 +138,17 @@ User harvest all rewards for specific vault
 
 ### `harvestAll(uint256 _pid)` (external)
 
+address _spender
+    ) internal {
+        if(_token.allowance(address(this), _spender
 
 
-Only callable by the contract owner
+
+### `_approveTokenIfNeeded(contract IERC20 _token, uint256 _amount, address _spender)` (internal)
+
+
+
+
 
 ### `addVault(address _vault)` (public)
 

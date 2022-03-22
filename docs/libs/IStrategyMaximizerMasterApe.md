@@ -5,7 +5,13 @@
 
 
 
-### `STAKED_TOKEN_ADDRESS() → address` (external)
+### `STAKE_TOKEN_ADDRESS() → address` (external)
+
+
+
+
+
+### `vaultApe() → contract IMaximizerVaultApe` (external)
 
 
 
@@ -29,6 +35,12 @@
 
 
 
+### `balanceOf(address) → uint256 stake, uint256 banana, uint256 autoBananaShares` (external)
+
+
+
+
+
 ### `userInfo(address) → uint256 stake, uint256 autoBananaShares, uint256 rewardDebt, uint256 lastDepositedTime` (external)
 
 
@@ -41,7 +53,7 @@
 
 
 
-### `deposit(address _userAddress)` (external)
+### `deposit(address _userAddress, uint256 _amount)` (external)
 
 
 
@@ -56,58 +68,6 @@
 ### `claimRewards(address _userAddress, uint256 _shares)` (external)
 
 
-
-
-
-### `setTreasury(address _treasury)` (external)
-
-
-
-
-
-### `setVaultApe(address _vaultApe)` (external)
-
-
-
-
-
-### `setKeeperFee(uint256 _keeperFee)` (external)
-
-
-
-
-
-### `setPlatform(address _platform)` (external)
-
-
-
-
-
-### `setPlatformFee(uint256 _platformFee)` (external)
-
-
-
-
-
-### `setBuyBackRate(uint256 _buyBackRate)` (external)
-
-
-
-
-
-### `setWithdrawFee(uint256 _withdrawFee)` (external)
-
-
-
-
-
-### `setWithdrawFeePeriod(uint256 _withdrawFeePeriod)` (external)
-
-
-
-
-
-### `setWithdrawRewardsFee(uint256 _withdrawRewardsFee)` (external)
 
 
 

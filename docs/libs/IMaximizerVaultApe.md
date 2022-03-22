@@ -5,54 +5,6 @@
 
 
 
-### `defaultTreasury() → address` (external)
-
-
-
-
-
-### `defaultKeeperFee() → uint256` (external)
-
-
-
-
-
-### `defaultPlatform() → address` (external)
-
-
-
-
-
-### `defaultPlatformFee() → uint256` (external)
-
-
-
-
-
-### `defaultBuyBackRate() → uint256` (external)
-
-
-
-
-
-### `defaultWithdrawFee() → uint256` (external)
-
-
-
-
-
-### `defaultWithdrawFeePeriod() → uint256` (external)
-
-
-
-
-
-### `defaulWithdrawRewardsFee() → uint256` (external)
-
-
-
-
-
 ### `KEEPER_FEE_UL() → uint256` (external)
 
 
@@ -72,6 +24,18 @@
 
 
 ### `WITHDRAW_FEE_UL() → uint256` (external)
+
+
+
+
+
+### `WITHDRAW_REWARDS_FEE_UL() → uint256` (external)
+
+
+
+
+
+### `getSettings() → struct IMaximizerVaultApe.Settings` (external)
 
 
 
@@ -141,6 +105,35 @@
 
 
 
+
+
+
+
+### `Settings`
+
+
+address treasury
+
+
+uint256 keeperFee
+
+
+address platform
+
+
+uint256 platformFee
+
+
+uint256 buyBackRate
+
+
+uint256 withdrawFee
+
+
+uint256 withdrawFeePeriod
+
+
+uint256 withdrawRewardsFee
 
 
 
