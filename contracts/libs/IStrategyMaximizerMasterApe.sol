@@ -5,7 +5,7 @@ import "../libs/IMaximizerVaultApe.sol";
 
 // For interacting with our own strategy
 interface IStrategyMaximizerMasterApe {
-    function STAKED_TOKEN_ADDRESS() external returns (address);
+    function STAKE_TOKEN_ADDRESS() external returns (address);
 
     function vaultApe() external returns (IMaximizerVaultApe);
 

@@ -412,7 +412,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
             vaultAddress
         );
-        IERC20 wantToken = IERC20(strat.STAKED_TOKEN_ADDRESS());
+        IERC20 wantToken = IERC20(strat.STAKE_TOKEN_ADDRESS());
         uint256 beforeWantToken = wantToken.balanceOf(address(strat));
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         uint256 afterWantToken = wantToken.balanceOf(address(strat));

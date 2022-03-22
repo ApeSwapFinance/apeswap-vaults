@@ -84,8 +84,8 @@ abstract contract BaseBananaMaximizerStrategy is
     uint256 private unallocatedShares;
 
     // Vault info
-    address public immutable STAKED_TOKEN_ADDRESS;
-    IERC20 public immutable STAKED_TOKEN;
+    address public immutable STAKE_TOKEN_ADDRESS;
+    IERC20 public immutable STAKE_TOKEN;
     IERC20 public immutable FARM_REWARD_TOKEN;
     IBananaVault public immutable BANANA_VAULT;
 
@@ -96,6 +96,8 @@ abstract contract BaseBananaMaximizerStrategy is
 
     IMaximizerVaultApe public immutable vaultApe;
 
+    event Deposit(address indexed user, uint256 amount);
+    event Withdraw(address indexed user, uint256 amount, uint256 withdrawFee);
     event ClaimRewards(address indexed user, uint256 shares, uint256 amount);
 
     // Setting updates
@@ -138,16 +140,15 @@ abstract contract BaseBananaMaximizerStrategy is
     );
 
     function totalStake() public virtual view returns (uint256);
+    function _vaultDeposit(uint256 _amount) internal virtual;
+    function _vaultWithdraw(uint256 _amount) internal virtual;
+    function _vaultHarvest() internal virtual;
+    function _beforeDeposit(address _from) internal virtual;
+    function _beforeWithdraw(address _from) internal virtual;
     function _getExpectedOutput(address[] memory _path) internal virtual view returns (uint256);
-    // Modifiers: nonReentrant, onlyVaultApe
-    function withdraw(address _userAddress, uint256 _amount) external virtual;
-    // Modifiers: nonReentrant, onlyVaultApe
-    function deposit(address _userAddress, uint256 _amount) external virtual;
-    // Modifiers: nonReentrant, onlyVaultApe
-    function earn(uint256 _minPlatformOutput, uint256 _minKeeperOutput, uint256 _minBurnOutput, uint256 _minBananaOutput, bool _takeKeeperFee) external virtual;
 
     constructor(
-        address _stakedToken,
+        address _stakeToken,
         address _farmRewardToken,
         address _bananaVault,
         address _router,
@@ -171,8 +172,8 @@ abstract contract BaseBananaMaximizerStrategy is
             "BaseBananaMaximizerStrategy: Incorrect path to WBNB"
         );
 
-        STAKED_TOKEN = IERC20(_stakedToken);
-        STAKED_TOKEN_ADDRESS = _stakedToken;
+        STAKE_TOKEN = IERC20(_stakeToken);
+        STAKE_TOKEN_ADDRESS = _stakeToken;
         FARM_REWARD_TOKEN = IERC20(_farmRewardToken);
         BANANA_VAULT = bananaVault;
         BANANA = IERC20(bananaTokenAddress);
@@ -199,6 +200,93 @@ abstract contract BaseBananaMaximizerStrategy is
         _;
     }
 
+    /// @notice deposit in vault
+    /// @param _userAddress user address
+    function deposit(address _userAddress, uint256 _amount)
+        external
+        nonReentrant
+        onlyVaultApe
+    {
+        require(
+            _amount > 0,
+            "BaseBananaMaximizerStrategy: amount must be greater than zero"
+        );
+        _beforeDeposit(_userAddress);
+    
+        uint256 deposited = _farm();
+        // Update userInfo
+        UserInfo storage user = userInfo[_userAddress];
+        user.stake += deposited;
+        user.lastDepositedTime = block.timestamp;
+        // Update autoBananaShares
+        user.autoBananaShares += ((user.stake * accSharesPerStakedToken) /  1e18) - user.rewardDebt;
+        user.rewardDebt = (user.stake * accSharesPerStakedToken) /  1e18;
+
+        emit Deposit(_userAddress, deposited);
+    }
+
+    function _farm() internal returns (uint256) {
+        uint256 stakeTokenBalance = IERC20(STAKE_TOKEN).balanceOf(address(this));
+        if (stakeTokenBalance == 0) return 0;
+        
+        uint256 stakeBefore = totalStake();
+        _vaultDeposit(stakeTokenBalance);
+        _bananaVaultDeposit();
+        uint256 stakeAfter = totalStake();
+        
+        return stakeAfter - stakeBefore;
+    }
+
+    /// @notice withdraw tokens from vault
+    /// @param _userAddress user address
+    /// @param _amount amount to withdraw
+    function withdraw(address _userAddress, uint256 _amount)
+        external
+        nonReentrant
+        onlyVaultApe
+    {
+        require(
+            _amount > 0,
+            "BaseBananaMaximizerStrategy: amount must be greater than zero"
+        );
+        _beforeWithdraw(_userAddress);        
+        UserInfo storage user = userInfo[_userAddress];
+        uint256 currentAmount = user.stake < _amount ? user.stake : _amount;
+
+        uint256 stakeTokenBalance = IERC20(STAKE_TOKEN).balanceOf(address(this));
+
+        if (currentAmount > stakeTokenBalance) {
+            _vaultWithdraw(currentAmount - stakeTokenBalance);
+            stakeTokenBalance = IERC20(STAKE_TOKEN).balanceOf(address(this));
+        }
+
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+        // Handle stake token
+        uint256 withdrawFee = 0;
+        if (
+            settings.withdrawFee > 0 &&
+            block.timestamp <
+            (user.lastDepositedTime + settings.withdrawFeePeriod)
+        ) {
+            // Take withdraw fees
+            withdrawFee = (currentAmount * settings.withdrawFee) / 10000;
+            STAKE_TOKEN.safeTransfer(settings.treasury, withdrawFee);
+        }
+        STAKE_TOKEN.safeTransfer(_userAddress, currentAmount - withdrawFee);
+
+        user.autoBananaShares += ((user.stake * accSharesPerStakedToken) /  1e18) - user.rewardDebt;
+        // Setting order so that rewardDebt is zero when withdrawing all 
+        user.stake -= currentAmount;
+        user.rewardDebt = (user.stake * accSharesPerStakedToken) / 1e18;
+        // Withdraw banana rewards if user leaves
+        if (user.stake == 0 && user.autoBananaShares > 0) {
+            // Not updating in the withdraw as it's accomplished above
+            _bananaVaultWithdraw(_userAddress, user.autoBananaShares, false);
+        }
+
+        emit Withdraw(_userAddress, currentAmount - withdrawFee, withdrawFee);
+    }
+
     // 1. Harvest rewards
     // 2. Collect fees
     // 3. Convert rewards to $BANANA
@@ -209,15 +297,16 @@ abstract contract BaseBananaMaximizerStrategy is
     /// @param _minBurnOutput Minimum burn fee output
     /// @param _minBananaOutput Minimum banana output
     /// @param _takeKeeperFee Take keeper fee for chainlink keeper
-    function _earn(
+    function earn(
         uint256 _minPlatformOutput,
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
         bool _takeKeeperFee
-    ) internal {
-        IMaximizerVaultApe.Settings memory settings = getSettings();
+    ) public {
+        _vaultHarvest();
 
+        IMaximizerVaultApe.Settings memory settings = getSettings();
         uint256 rewardTokenBalance = _rewardTokenBalance();
 
         // Collect platform fees
@@ -264,10 +353,77 @@ abstract contract BaseBananaMaximizerStrategy is
                 (rewardTokenBalance * settings.buyBackRate) / 10000
             );
         }
+        // Earns on deposits
+        _bananaVaultDeposit();
+    }
 
+    /// @notice claim rewards
+    /// @param _userAddress user address
+    /// @param _shares shares to withdraw
+    function claimRewards(address _userAddress, uint256 _shares)
+        external
+        nonReentrant
+        onlyVaultApe
+    {
+        _bananaVaultWithdraw(_userAddress, _shares, true);
+    }
+
+    function _bananaVaultWithdraw(
+        address _userAddress,
+        uint256 _shares,
+        bool _update
+    ) internal {
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+        UserInfo storage user = userInfo[_userAddress];
+
+        if (_update) {
+            // Add claimable Banana to user state and update debt
+            user.autoBananaShares += ((user.stake * accSharesPerStakedToken) / 1e18) - user.rewardDebt;
+            user.rewardDebt = (user.stake * accSharesPerStakedToken) / 1e18;
+        }
+
+        uint256 currentShares = user.autoBananaShares < _shares
+            ? user.autoBananaShares
+            : _shares;
+        user.autoBananaShares -= currentShares;
+
+        uint256 pricePerFullShare = BANANA_VAULT.getPricePerFullShare();
+        uint256 bananaToWithdraw = (currentShares * pricePerFullShare) / 1e18;
+        uint256 bananaBalance = _bananaBalance();
+        uint256 bananaShareBalance = (bananaBalance * 1e18) / pricePerFullShare;
+        uint256 totalStrategyBanana = totalBanana();
+
+        if (bananaToWithdraw > totalStrategyBanana) {
+            bananaToWithdraw = totalStrategyBanana;
+            currentShares = (bananaToWithdraw * 1e18) / pricePerFullShare;
+        }
+
+        if (currentShares > bananaShareBalance) {
+            BANANA_VAULT.withdraw(currentShares - bananaShareBalance);
+            bananaBalance = _bananaBalance();
+        }
+
+        if (bananaToWithdraw > bananaBalance) {
+            bananaToWithdraw = bananaBalance;
+        }
+
+        if (settings.withdrawRewardsFee > 0) {
+            uint256 bananaFee = (bananaToWithdraw * settings.withdrawRewardsFee) / 10000;
+            _safeBANANATransfer(settings.treasury, bananaFee);
+            bananaToWithdraw -= bananaFee;
+        }
+
+        _safeBANANATransfer(_userAddress, bananaToWithdraw);
+
+        emit ClaimRewards(_userAddress, currentShares, bananaToWithdraw);
+    }
+
+    function _bananaVaultDeposit() internal {
         uint256 previousShares = totalAutoBananaShares();
         uint256 bananaBalance = _bananaBalance();
+
         _approveTokenIfNeeded(BANANA, bananaBalance, address(BANANA_VAULT));
+        // earns on deposit
         BANANA_VAULT.deposit(bananaBalance);
 
         uint256 currentShares = totalAutoBananaShares();
@@ -281,55 +437,6 @@ abstract contract BaseBananaMaximizerStrategy is
         // This calculates the unallocated shares which can then will be allocated later.
         // From example: 45 missing shares still to be allocated
         unallocatedShares = (shareIncrease + unallocatedShares) - ((increaseAccSharesPerStakedToken * totalStake()) / 1e18);
-    }
-
-    /// @notice claim rewards
-    /// @param _userAddress user address
-    /// @param _shares shares to withdraw
-    function claimRewards(address _userAddress, uint256 _shares)
-        external
-        nonReentrant
-        onlyVaultApe
-    {
-        _claimRewards(_userAddress, _shares, true);
-    }
-
-    function _claimRewards(
-        address _userAddress,
-        uint256 _shares,
-        bool _update
-    ) internal {
-        IMaximizerVaultApe.Settings memory settings = getSettings();
-
-        UserInfo storage user = userInfo[_userAddress];
-
-        if (_update) {
-            // Add claimable Banana to user state and update debt
-            user.autoBananaShares += ((user.stake * accSharesPerStakedToken) / 1e18) - user.rewardDebt;
-            user.rewardDebt = (user.stake * accSharesPerStakedToken) / 1e18;
-        }
-
-        _shares = user.autoBananaShares < _shares
-            ? user.autoBananaShares
-            : _shares;
-
-        user.autoBananaShares -= _shares;
-
-        uint256 bananaBalanceBefore = _bananaBalance();
-
-        BANANA_VAULT.withdraw(_shares);
-
-        uint256 withdrawAmount = _bananaBalance() - bananaBalanceBefore;
-
-        if (settings.withdrawRewardsFee > 0) {
-            uint256 rewardFee = (withdrawAmount * settings.withdrawRewardsFee) / 10000;
-            _safeBANANATransfer(settings.treasury, rewardFee);
-            withdrawAmount -= rewardFee;
-        }
-
-        _safeBANANATransfer(_userAddress, withdrawAmount);
-
-        emit ClaimRewards(_userAddress, _shares, withdrawAmount);
     }
 
     /// @notice Using total harvestable rewards as the input, find the outputs for each respective output
@@ -412,11 +519,18 @@ abstract contract BaseBananaMaximizerStrategy is
         return BANANA.balanceOf(address(this));
     }
 
-    /// @notice total rewarded banana shares in banana vault
-    /// @return total rewarded banana shares in banana vault
+    /// @notice total strategy shares in banana vault
+    /// @return totalAutoBananaShares rewarded banana shares in banana vault
     function totalAutoBananaShares() public view returns (uint256) {
         (uint256 shares, , , ) = BANANA_VAULT.userInfo(address(this));
         return shares;
+    }
+
+    /// @notice Returns the total amount of BANANA stored in the vault + the strategy
+    /// @return totalBananaShares rewarded banana shares in banana vault
+    function totalBanana() public view returns (uint256) {
+        uint256 autoBanana = (totalAutoBananaShares() * BANANA_VAULT.getPricePerFullShare()) / 1e18;
+        return autoBanana + _bananaBalance();
     }
 
     // Safe BANANA transfer function, just in case if rounding error causes pool to not have enough

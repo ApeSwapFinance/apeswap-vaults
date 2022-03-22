@@ -96,6 +96,8 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         onlyRole(DEPOSIT_ROLE)
     {
         if(_amount == 0){
+            // Depositing zero is a way for external contracts to know that an _earn was performed 
+            _earn();
             return;
         }
 
@@ -107,8 +109,9 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         } else {
             currentShares = _amount;
         }
-        UserInfo storage user = userInfo[msg.sender];
+        require(currentShares > 0, "BananaVault:: Adding 0 shares");
 
+        UserInfo storage user = userInfo[msg.sender];
         user.shares = user.shares.add(currentShares);
         user.lastDepositedTime = block.timestamp;
 
@@ -175,16 +178,13 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     function withdraw(uint256 _shares) public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
 
-        require(_shares > 0, "BananaVault: Nothing to withdraw");
-        require(
-            _shares <= user.shares,
-            "BananaVault: Withdraw amount exceeds balance"
-        );
+        require(_shares > 0, "BananaVault: Must withdraw more than 0");
+        uint256 currentShares = user.shares < _shares ? user.shares : _shares;
 
-        uint256 bananaTokensToWithdraw = (underlyingTokenBalance().mul(_shares))
+        uint256 bananaTokensToWithdraw = (underlyingTokenBalance().mul(currentShares))
             .div(totalShares);
-        user.shares = user.shares.sub(_shares);
-        totalShares = totalShares.sub(_shares);
+        user.shares = user.shares.sub(currentShares);
+        totalShares = totalShares.sub(currentShares);
 
         uint256 bal = available();
         if (bal < bananaTokensToWithdraw) {
@@ -207,9 +207,7 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         }
 
         user.lastUserActionTime = block.timestamp;
-
         bananaToken.safeTransfer(msg.sender, bananaTokensToWithdraw);
-
         emit Withdraw(msg.sender, bananaTokensToWithdraw, _shares);
     }
 

@@ -46,13 +46,10 @@ contract StrategyMaximizerMasterApe is
     using SafeERC20 for IERC20;
 
     // Farm info
-    IMasterApe public immutable STAKED_TOKEN_FARM;
-    uint256 public immutable FARM_PID;
+    IMasterApe public immutable STAKE_TOKEN_FARM;
     bool public immutable IS_BANANA_STAKING;
+    uint256 public immutable FARM_PID;
 
-    event Deposit(address indexed user, uint256 amount);
-    event Withdraw(address indexed user, uint256 amount);
-    event EarlyWithdraw(address indexed user, uint256 amount, uint256 fee);
 
     // Setting updates
     constructor(
@@ -75,120 +72,38 @@ contract StrategyMaximizerMasterApe is
         _pathToWbnb,
         _addresses
     ) {
-        STAKED_TOKEN_FARM = IMasterApe(_masterApe);
+        STAKE_TOKEN_FARM = IMasterApe(_masterApe);
         FARM_PID = _farmPid;
         IS_BANANA_STAKING = _isBananaStaking;
     }
 
-    // 1. Harvest rewards
-    // 2. Collect fees
-    // 3. Convert rewards to $BANANA
-    // 4. Stake to banana auto-compound vault
-    /// @notice compound of vault
-    /// @param _minPlatformOutput Minimum platform fee output
-    /// @param _minKeeperOutput Minimum keeper fee output
-    /// @param _minBurnOutput Minimum burn fee output
-    /// @param _minBananaOutput Minimum banana output
-    /// @param _takeKeeperFee Take keeper fee for chainlink keeper
-    function earn(
-        uint256 _minPlatformOutput,
-        uint256 _minKeeperOutput,
-        uint256 _minBurnOutput,
-        uint256 _minBananaOutput,
-        bool _takeKeeperFee
-    ) external override nonReentrant onlyVaultApe {
-        if (IS_BANANA_STAKING) {
-            STAKED_TOKEN_FARM.leaveStaking(0);
-        } else {
-            STAKED_TOKEN_FARM.withdraw(FARM_PID, 0);
-        }
-
-        _earn(_minPlatformOutput, _minKeeperOutput, _minBurnOutput, _minBananaOutput, _takeKeeperFee);
-    }
-
-    /// @notice deposit in vault
-    /// @param _userAddress user address
-    function deposit(address _userAddress, uint256 _amount)
-        external
-        override
-        nonReentrant
-        onlyVaultApe
-    {
-        require(
-            _amount > 0,
-            "StrategyMaximizerMasterApe: amount must be greater than zero"
-        );
-        UserInfo storage user = userInfo[_userAddress];
-
+    function _vaultDeposit(uint256 _amount) internal override {
         _approveTokenIfNeeded(
-            STAKED_TOKEN,
+            STAKE_TOKEN,
             _amount,
-            address(STAKED_TOKEN_FARM)
+            address(STAKE_TOKEN_FARM)
         );
-
-        if (IS_BANANA_STAKING) {
-            STAKED_TOKEN_FARM.enterStaking(_amount);
+        if(IS_BANANA_STAKING) {
+            STAKE_TOKEN_FARM.enterStaking(_amount);
         } else {
-            STAKED_TOKEN_FARM.deposit(FARM_PID, _amount);
+            STAKE_TOKEN_FARM.deposit(FARM_PID, _amount);
         }
-
-        user.autoBananaShares = user.autoBananaShares + (((user.stake * accSharesPerStakedToken) /  1e18) - user.rewardDebt);
-        user.stake += _amount;
-        user.rewardDebt = (user.stake * accSharesPerStakedToken) /  1e18;
-        user.lastDepositedTime = block.timestamp;
-        emit Deposit(_userAddress, _amount);
     }
-
-    /// @notice withdraw tokens from vault
-    /// @param _userAddress user address
-    /// @param _amount amount to withdraw
-    function withdraw(address _userAddress, uint256 _amount)
-        external
-        override
-        nonReentrant
-        onlyVaultApe
-    {
-        IMaximizerVaultApe.Settings memory settings = getSettings();
-
-        UserInfo storage user = userInfo[_userAddress];
-
-        require(
-            _amount > 0,
-            "StrategyMaximizerMasterApe: amount must be greater than zero"
-        );
-        _amount = user.stake < _amount ? user.stake : _amount;
-
-        if (IS_BANANA_STAKING) {
-            STAKED_TOKEN_FARM.leaveStaking(_amount);
+    
+    function _vaultWithdraw(uint256 _amount) internal override {
+        if(IS_BANANA_STAKING) {
+            STAKE_TOKEN_FARM.leaveStaking(_amount);
         } else {
-            STAKED_TOKEN_FARM.withdraw(FARM_PID, _amount);
+            STAKE_TOKEN_FARM.withdraw(FARM_PID, _amount);
         }
-
-        uint256 currentAmount = _amount;
-
-        if (
-            settings.withdrawFee > 0 &&
-            block.timestamp <
-            (user.lastDepositedTime + settings.withdrawFeePeriod)
-        ) {
-            // Take withdraw fees
-            uint256 currentWithdrawFee = (currentAmount * settings.withdrawFee) / 10000;
-            STAKED_TOKEN.safeTransfer(settings.treasury, currentWithdrawFee);
-            currentAmount -= currentWithdrawFee;
+    }
+    
+    function _vaultHarvest() internal override {
+        if(IS_BANANA_STAKING) {
+            STAKE_TOKEN_FARM.enterStaking(0);
+        } else {
+            STAKE_TOKEN_FARM.deposit(FARM_PID, 0);
         }
-
-        user.autoBananaShares += ((user.stake * accSharesPerStakedToken) /  1e18) - user.rewardDebt;
-        user.stake -= _amount;
-        user.rewardDebt = (user.stake * accSharesPerStakedToken) / 1e18;
-
-        // Withdraw banana rewards if user leaves
-        if (user.stake == 0 && user.autoBananaShares > 0) {
-            _claimRewards(_userAddress, user.autoBananaShares, false);
-        }
-
-        STAKED_TOKEN.safeTransfer(_userAddress, currentAmount);
-
-        emit Withdraw(_userAddress, currentAmount);
     }
 
     /// @notice Using total rewards as the input, find the output based on the path provided
@@ -200,7 +115,7 @@ contract StrategyMaximizerMasterApe is
         override
         returns (uint256)
     {
-        uint256 rewards = _rewardTokenBalance() + (STAKED_TOKEN_FARM.pendingCake(FARM_PID, address(this)));
+        uint256 rewards = _rewardTokenBalance() + (STAKE_TOKEN_FARM.pendingCake(FARM_PID, address(this)));
 
         if (_path.length <= 1 || rewards == 0) {
             return rewards;
@@ -213,10 +128,18 @@ contract StrategyMaximizerMasterApe is
     /// @notice total staked tokens of vault in farm
     /// @return total staked tokens of vault in farm
     function totalStake() public view override returns (uint256) {
-        (uint256 amount, ) = STAKED_TOKEN_FARM.userInfo(
+        (uint256 amount, ) = STAKE_TOKEN_FARM.userInfo(
             FARM_PID,
             address(this)
         );
         return amount;
+    }
+
+    function _beforeDeposit(address _to) internal override {
+
+    }
+
+    function _beforeWithdraw(address _to) internal override {
+
     }
 }
