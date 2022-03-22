@@ -304,6 +304,7 @@ describe('KeeperMaximizerVaultApe', function () {
       });
 
       it('should deposit and have shares', async () => {
+        await new Promise(resolve => setTimeout(resolve, 20000));
         await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
         const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(userInfo.stake.toString()).equal(toDeposit)
