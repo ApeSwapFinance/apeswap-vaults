@@ -212,15 +212,15 @@ abstract contract BaseBananaMaximizerStrategy is
             "BaseBananaMaximizerStrategy: amount must be greater than zero"
         );
         _beforeDeposit(_userAddress);
-    
-        uint256 deposited = _farm();
         // Update userInfo
         UserInfo storage user = userInfo[_userAddress];
-        user.stake += deposited;
-        user.lastDepositedTime = block.timestamp;
         // Update autoBananaShares
         user.autoBananaShares += ((user.stake * accSharesPerStakedToken) /  1e18) - user.rewardDebt;
+    
+        uint256 deposited = _farm();
+        user.stake += deposited;
         user.rewardDebt = (user.stake * accSharesPerStakedToken) /  1e18;
+        user.lastDepositedTime = block.timestamp;
 
         emit Deposit(_userAddress, deposited);
     }
@@ -231,7 +231,8 @@ abstract contract BaseBananaMaximizerStrategy is
         
         uint256 stakeBefore = totalStake();
         _vaultDeposit(stakeTokenBalance);
-        _bananaVaultDeposit();
+        // accSharesPerStakedToken is updated here to ensure 
+        _bananaVaultDeposit(true);
         uint256 stakeAfter = totalStake();
         
         return stakeAfter - stakeBefore;
@@ -353,8 +354,8 @@ abstract contract BaseBananaMaximizerStrategy is
                 (rewardTokenBalance * settings.buyBackRate) / 10000
             );
         }
-        // Earns on deposits
-        _bananaVaultDeposit();
+        // Earns inside BANANA on deposits
+        _bananaVaultDeposit(false);
     }
 
     /// @notice claim rewards
@@ -409,6 +410,7 @@ abstract contract BaseBananaMaximizerStrategy is
 
         if (settings.withdrawRewardsFee > 0) {
             uint256 bananaFee = (bananaToWithdraw * settings.withdrawRewardsFee) / 10000;
+            // BananaVault fees are taken on withdraws
             _safeBANANATransfer(settings.treasury, bananaFee);
             bananaToWithdraw -= bananaFee;
         }
@@ -418,12 +420,24 @@ abstract contract BaseBananaMaximizerStrategy is
         emit ClaimRewards(_userAddress, currentShares, bananaToWithdraw);
     }
 
-    function _bananaVaultDeposit() internal {
-        uint256 previousShares = totalAutoBananaShares();
+    function _bananaVaultDeposit(bool _takeFee) internal {
         uint256 bananaBalance = _bananaBalance();
+        if(bananaBalance == 0) {
+            // earn
+            BANANA_VAULT.deposit(0);
+            return;
+        }
+        uint256 previousShares = totalAutoBananaShares();
+        // Handle fee if needed
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+        if (_takeFee && settings.withdrawRewardsFee > 0) {
+            // This catches times when banana is deposited outside of earn and harvests are generated
+            uint256 bananaFee = (bananaBalance * settings.withdrawRewardsFee) / 10000;
+            _safeBANANATransfer(settings.treasury, bananaFee);
+            bananaBalance -= bananaFee;
+        }
 
         _approveTokenIfNeeded(BANANA, bananaBalance, address(BANANA_VAULT));
-        // earns on deposit
         BANANA_VAULT.deposit(bananaBalance);
 
         uint256 currentShares = totalAutoBananaShares();
