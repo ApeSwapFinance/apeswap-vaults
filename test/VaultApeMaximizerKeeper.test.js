@@ -624,11 +624,6 @@ describe('KeeperMaximizerVaultApe', function () {
           )
 
           expectRevert(
-            maximizerVaultApe.setModerator(updateAddress, { from: notOwner }),
-            "Ownable: caller is not the owner"
-          )
-
-          expectRevert(
             maximizerVaultApe.setMaxDelay(updateValue, { from: notOwner }),
             "Ownable: caller is not the owner"
           )

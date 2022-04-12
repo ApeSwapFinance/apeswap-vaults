@@ -40,9 +40,7 @@ import "../libs/IMaximizerVaultApe.sol";
 /// @title Strategy Maximizer - MasterApe
 /// @author ApeSwapFinance
 /// @notice MasterApe strategy for maximizer vaults
-contract StrategyMaximizerMasterApe is
-    BaseBananaMaximizerStrategy
-{
+contract StrategyMaximizerMasterApe is BaseBananaMaximizerStrategy {
     using SafeERC20 for IERC20;
 
     // Farm info
@@ -61,15 +59,17 @@ contract StrategyMaximizerMasterApe is
         address[] memory _pathToBanana,
         address[] memory _pathToWbnb,
         address[] memory _addresses //[_owner, _vaultApe]
-    ) BaseBananaMaximizerStrategy(
-        _stakedToken,
-        _farmRewardToken,
-        _bananaVault,
-        _router,
-        _pathToBanana,
-        _pathToWbnb,
-        _addresses
-    ) {
+    )
+        BaseBananaMaximizerStrategy(
+            _stakedToken,
+            _farmRewardToken,
+            _bananaVault,
+            _router,
+            _pathToBanana,
+            _pathToWbnb,
+            _addresses
+        )
+    {
         STAKE_TOKEN_FARM = IMasterApe(_masterApe);
         FARM_PID = _farmPid;
         IS_BANANA_STAKING = _isBananaStaking;
@@ -78,41 +78,39 @@ contract StrategyMaximizerMasterApe is
     /// @notice total staked tokens of vault in farm
     /// @return total staked tokens of vault in farm
     function totalStake() public view override returns (uint256) {
-        (uint256 amount, ) = STAKE_TOKEN_FARM.userInfo(
-            FARM_PID,
-            address(this)
-        );
+        (uint256 amount, ) = STAKE_TOKEN_FARM.userInfo(FARM_PID, address(this));
         return amount;
     }
 
-     /// @notice Handle deposits for this strategy
-    /// @param _amount Amount to remove deposit
+    /// @notice Handle deposits for this strategy
+    /// @param _amount Amount to deposit
     function _vaultDeposit(uint256 _amount) internal override {
-        _approveTokenIfNeeded(
-            STAKE_TOKEN,
-            _amount,
-            address(STAKE_TOKEN_FARM)
-        );
-        if(IS_BANANA_STAKING) {
+        _approveTokenIfNeeded(STAKE_TOKEN, _amount, address(STAKE_TOKEN_FARM));
+        if (IS_BANANA_STAKING) {
             STAKE_TOKEN_FARM.enterStaking(_amount);
         } else {
             STAKE_TOKEN_FARM.deposit(FARM_PID, _amount);
         }
     }
-    
+
     /// @notice Handle withdraw of this strategy
     /// @param _amount Amount to remove from staking
     function _vaultWithdraw(uint256 _amount) internal override {
-        if(IS_BANANA_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKE_TOKEN_FARM.leaveStaking(_amount);
         } else {
             STAKE_TOKEN_FARM.withdraw(FARM_PID, _amount);
         }
     }
-    
+
+    /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
+    function _vaultEmergencyWithdraw() internal override {
+        STAKE_TOKEN_FARM.emergencyWithdraw(FARM_PID);
+    }
+
     /// @notice Handle harvesting of this strategy
     function _vaultHarvest() internal override {
-        if(IS_BANANA_STAKING) {
+        if (IS_BANANA_STAKING) {
             STAKE_TOKEN_FARM.enterStaking(0);
         } else {
             STAKE_TOKEN_FARM.deposit(FARM_PID, 0);
@@ -128,7 +126,8 @@ contract StrategyMaximizerMasterApe is
         override
         returns (uint256)
     {
-        uint256 rewards = _rewardTokenBalance() + (STAKE_TOKEN_FARM.pendingCake(FARM_PID, address(this)));
+        uint256 rewards = _rewardTokenBalance() +
+            (STAKE_TOKEN_FARM.pendingCake(FARM_PID, address(this)));
 
         if (_path.length <= 1 || rewards == 0) {
             return rewards;
@@ -138,11 +137,7 @@ contract StrategyMaximizerMasterApe is
         }
     }
 
-    function _beforeDeposit(address _to) internal override {
+    function _beforeDeposit(address _to) internal override {}
 
-    }
-
-    function _beforeWithdraw(address _to) internal override {
-
-    }
+    function _beforeWithdraw(address _to) internal override {}
 }

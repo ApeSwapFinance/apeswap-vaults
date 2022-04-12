@@ -94,7 +94,7 @@ contract KeeperMaximizerVaultApe is
         BANANA_VAULT.earn();
     }
 
-    function setKeeper(address _keeper) public onlyOwner {
+    function setKeeper(address _keeper) external onlyOwner {
         keeper = _keeper;
     }
 }

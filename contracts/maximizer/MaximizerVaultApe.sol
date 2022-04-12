@@ -36,7 +36,12 @@ import "../libs/IBananaVault.sol";
 /// @title Maximizer VaultApe
 /// @author ApeSwapFinance
 /// @notice Interaction contract for all maximizer vault strategies
-contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Sweeper {
+contract MaximizerVaultApe is
+    ReentrancyGuard,
+    IMaximizerVaultApe,
+    Ownable,
+    Sweeper
+{
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -57,9 +62,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
 
     address[] public vaults;
     mapping(address => VaultInfo) public vaultInfos;
-    IBananaVault public BANANA_VAULT;
-
-    address public moderator;
+    IBananaVault public immutable BANANA_VAULT;
 
     uint256 public maxDelay;
     uint256 public minKeeperFee;
@@ -72,6 +75,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     uint256 public constant override BUYBACK_RATE_UL = 300; // 3%
     uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
     uint256 public constant override WITHDRAW_REWARDS_FEE_UL = 300; // 3%
+    uint256 public constant override WITHDRAW_FEE_PERIOD_UL = 1210000; // 14 days
 
     event Compound(address indexed vault, uint256 timestamp);
     event ChangedTreasury(address _old, address _new);
@@ -86,7 +90,6 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     event VaultAdded(address _vaultAddress);
     event VaultEnabled(uint256 _vaultPid, address _vaultAddress);
     event VaultDisabled(uint256 _vaultPid, address _vaultAddress);
-    event ChangedModerator(address _address);
     event ChangedMaxDelay(uint256 _new);
     event ChangedMinKeeperFee(uint256 _new);
     event ChangedSlippageFactor(uint256 _new);
@@ -109,7 +112,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         settings = _settings;
     }
 
-    function getSettings() public view override returns (Settings memory) {
+    function getSettings() external view override returns (Settings memory) {
         return settings;
     }
 
@@ -134,7 +137,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
 
         for (uint16 index = 0; index < totalLength; ++index) {
             if (maxVaults == actualLength) {
-                continue;
+                break;
             }
 
             address vault = vaults[index];
@@ -221,7 +224,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
 
     /// @notice Earn on a batch of vaults in this contract
     /// @param _pids Array of pids to earn on
-    function earnSome(uint256[] memory _pids) external override {
+    function earnSome(uint256[] calldata _pids) external override {
         for (uint256 index = 0; index < _pids.length; index++) {
             _earn(_pids[index], false);
         }
@@ -243,8 +246,9 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         }
         address vaultAddress = vaults[_pid];
         VaultInfo memory vaultInfo = vaultInfos[vaultAddress];
-        
-        uint256 totalStake = IStrategyMaximizerMasterApe(vaultAddress).totalStake();
+
+        uint256 totalStake = IStrategyMaximizerMasterApe(vaultAddress)
+            .totalStake();
         // Check if vault is enabled and has stake
         if (vaultInfo.enabled && totalStake > 0) {
             // Earn if vault is enabled
@@ -326,6 +330,12 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         return vaults.length;
     }
 
+    /// @notice Get balance of user in specific vault
+    /// @param _pid pid of vault
+    /// @param _user user address
+    /// @return stake
+    /// @return banana
+    /// @return autoBananaShares
     function balanceOf(uint256 _pid, address _user)
         external
         view
@@ -466,16 +476,6 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         strat.claimRewards(msg.sender, type(uint256).max);
     }
 
-    function _approveTokenIfNeeded(
-        IERC20 _token,
-        uint256 _amount,
-        address _spender
-    ) internal {
-        if(_token.allowance(address(this), _spender) < _amount) {
-            _token.safeIncreaseAllowance(_spender, type(uint256).max);
-        }
-    }
-
     // ===== OWNER only functions =====
 
     /// @notice Add a new vault address
@@ -505,17 +505,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     /// @notice Add new vaults
     /// @param _vaults vault addresses to add
     /// @dev Only callable by the contract owner
-    function addVaults(address[] memory _vaults) public onlyOwner {
+    function addVaults(address[] calldata _vaults) external onlyOwner {
         for (uint256 index = 0; index < _vaults.length; ++index) {
             addVault(_vaults[index]);
         }
-    }
-
-    function inCaseTokensGetStuck(address _token, uint256 _amount)
-        external
-        onlyOwner
-    {
-        IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 
     function enableVault(uint256 _vaultPid) external onlyOwner {
@@ -530,27 +523,22 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         emit VaultEnabled(_vaultPid, vaultAddress);
     }
 
-    function setModerator(address _moderator) public onlyOwner {
-        moderator = _moderator;
-        emit ChangedModerator(_moderator);
-    }
-
-    function setMaxDelay(uint256 _maxDelay) public onlyOwner {
+    function setMaxDelay(uint256 _maxDelay) external onlyOwner {
         maxDelay = _maxDelay;
         emit ChangedMaxDelay(_maxDelay);
     }
 
-    function setMinKeeperFee(uint256 _minKeeperFee) public onlyOwner {
+    function setMinKeeperFee(uint256 _minKeeperFee) external onlyOwner {
         minKeeperFee = _minKeeperFee;
         emit ChangedMinKeeperFee(_minKeeperFee);
     }
 
-    function setSlippageFactor(uint256 _slippageFactor) public onlyOwner {
+    function setSlippageFactor(uint256 _slippageFactor) external onlyOwner {
         slippageFactor = _slippageFactor;
         emit ChangedSlippageFactor(_slippageFactor);
     }
 
-    function setMaxVaults(uint16 _maxVaults) public onlyOwner {
+    function setMaxVaults(uint16 _maxVaults) external onlyOwner {
         maxVaults = _maxVaults;
         emit ChangedMaxVaults(_maxVaults);
     }
@@ -578,7 +566,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     function setPlatformFee(uint256 _platformFee) external onlyOwner {
         require(
             _platformFee <= PLATFORM_FEE_UL,
-            "MaximizerVaultApe: platform fee too high"
+            "MaximizerVaultApe: Platform fee too high"
         );
         emit ChangedPlatformFee(settings.platformFee, _platformFee);
         settings.platformFee = _platformFee;
@@ -587,7 +575,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
         require(
             _buyBackRate <= BUYBACK_RATE_UL,
-            "MaximizerVaultApe: buyback rate too high"
+            "MaximizerVaultApe: Buyback rate too high"
         );
         emit ChangedBuyBackRate(settings.buyBackRate, _buyBackRate);
         settings.buyBackRate = _buyBackRate;
@@ -596,7 +584,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
         require(
             _withdrawFee <= WITHDRAW_FEE_UL,
-            "MaximizerVaultApe: withdraw fee too high"
+            "MaximizerVaultApe: Withdraw fee too high"
         );
         emit ChangedWithdrawFee(settings.withdrawFee, _withdrawFee);
         settings.withdrawFee = _withdrawFee;
@@ -606,6 +594,10 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
         external
         onlyOwner
     {
+        require(
+            _withdrawFeePeriod <= WITHDRAW_FEE_PERIOD_UL,
+            "MaximizerVaultApe: Withdraw fee period too long"
+        );
         emit ChangedWithdrawFeePeriod(
             settings.withdrawFeePeriod,
             _withdrawFeePeriod
@@ -619,7 +611,7 @@ contract MaximizerVaultApe is ReentrancyGuard, IMaximizerVaultApe, Ownable, Swee
     {
         require(
             _withdrawRewardsFee <= WITHDRAW_REWARDS_FEE_UL,
-            "MaximizerVaultApe: withdraw rewards fee too high"
+            "MaximizerVaultApe: Withdraw rewards fee too high"
         );
         emit ChangedWithdrawRewardsFee(
             settings.withdrawRewardsFee,
