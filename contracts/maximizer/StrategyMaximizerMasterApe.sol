@@ -103,11 +103,6 @@ contract StrategyMaximizerMasterApe is BaseBananaMaximizerStrategy {
         }
     }
 
-    /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
-    function _vaultEmergencyWithdraw() internal override {
-        STAKE_TOKEN_FARM.emergencyWithdraw(FARM_PID);
-    }
-
     /// @notice Handle harvesting of this strategy
     function _vaultHarvest() internal override {
         if (IS_BANANA_STAKING) {
@@ -135,6 +130,11 @@ contract StrategyMaximizerMasterApe is BaseBananaMaximizerStrategy {
             uint256[] memory amounts = router.getAmountsOut(rewards, _path);
             return amounts[amounts.length - 1];
         }
+    }
+
+    /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
+    function emergencyVaultWithdraw() public override onlyVaultApe {
+        STAKE_TOKEN_FARM.emergencyWithdraw(FARM_PID);
     }
 
     function _beforeDeposit(address _to) internal override {}

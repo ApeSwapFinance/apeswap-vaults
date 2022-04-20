@@ -138,11 +138,11 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
 
     function totalStake() public view virtual returns (uint256);
 
+    function emergencyVaultWithdraw() public virtual;
+
     function _vaultDeposit(uint256 _amount) internal virtual;
 
     function _vaultWithdraw(uint256 _amount) internal virtual;
-
-    function _vaultEmergencyWithdraw() internal virtual;
 
     function _vaultHarvest() internal virtual;
 
@@ -399,7 +399,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
         bool _takeKeeperFee
-    ) public {
+    ) public nonReentrant {
         _vaultHarvest();
 
         IMaximizerVaultApe.Settings memory settings = getSettings();
@@ -670,7 +670,6 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
     }
 
     /** onlyOwner functions */
-
     /// @notice set path from reward token to banana
     /// @param _path path to banana
     /// @dev only owner

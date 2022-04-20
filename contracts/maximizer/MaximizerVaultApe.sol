@@ -517,10 +517,20 @@ contract MaximizerVaultApe is
         emit VaultEnabled(_vaultPid, vaultAddress);
     }
 
-    function disableVault(uint256 _vaultPid) external onlyOwner {
+    function disableVault(uint256 _vaultPid) public onlyOwner {
         address vaultAddress = vaults[_vaultPid];
         vaultInfos[vaultAddress].enabled = false;
-        emit VaultEnabled(_vaultPid, vaultAddress);
+        emit VaultDisabled(_vaultPid, vaultAddress);
+    }
+
+    function emergencyVaultWithdraw(uint256 _vaultPid) external onlyOwner {
+        address vaultAddress = vaults[_vaultPid];
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaultAddress
+        );
+        strat.emergencyVaultWithdraw();
+        disableVault(_vaultPid);
+        emit VaultDisabled(_vaultPid, vaultAddress);
     }
 
     function setMaxDelay(uint256 _maxDelay) external onlyOwner {

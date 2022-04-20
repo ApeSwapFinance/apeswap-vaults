@@ -243,7 +243,6 @@ describe('KeeperMaximizerVaultApe', function () {
             toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             await pair.transfer(testerAddress2, (Number(toDeposit)).toString(), { from: testerAddress });
           } else {
-
             if (token1 != testConfig.usdAddress) {
               const [tokenInAmount, tokenOutAmount] = await router.getAmountsIn(tokensToLPAmount, [testConfig.usdAddress, token1]);
               await router.swapExactTokensForTokens((Number(tokenInAmount) * 1.1).toString(), 0, [testConfig.usdAddress, token1], testerAddress, await time.latestBlock() + 600, { from: testerAddress });
@@ -672,6 +671,35 @@ describe('KeeperMaximizerVaultApe', function () {
 
         const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(userInfo.stake.toString()).equal(toDeposit)
+      });
+
+      it('should be able to emergency withdraw', async () => {
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
+        const vaultAddress = await maximizerVaultApe.vaults(0);
+        let wantBalanceVault = await wantToken.balanceOf(vaultAddress);
+        expect(wantBalanceVault.toString()).equal("0")
+        
+        await maximizerVaultApe.emergencyVaultWithdraw(0, { from: adminAddress })
+        let vaultInfo = await maximizerVaultApe.vaultInfos(vaultAddress);
+        expect(vaultInfo.enabled).to.be.false;
+
+        await expectRevert(maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress }), "MaximizerVaultApe: vault is disabled");
+        await expectRevert(maximizerVaultApe.earn(0, { from: testerAddress }), "MaximizerVaultApe: vault is disabled");
+
+        wantBalanceVault = await wantToken.balanceOf(vaultAddress);
+        expect(wantBalanceVault.toString()).equal(toDeposit)
+
+        await maximizerVaultApe.withdraw(0, toDeposit, { from: testerAddress })
+
+        wantBalanceVault = await wantToken.balanceOf(vaultAddress);
+        expect(wantBalanceVault.toString()).equal("0")
+
+        const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
+        expect(userInfo.stake.toString()).equal("0")
+
+        await maximizerVaultApe.enableVault(0, { from: adminAddress })
+        vaultInfo = await maximizerVaultApe.vaultInfos(vaultAddress);
+        expect(vaultInfo.enabled).to.be.true;
       });
 
       it('should have correct values for view functions', async () => {
