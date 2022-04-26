@@ -70,12 +70,12 @@ contract MaximizerVaultApe is
     uint16 public maxVaults;
 
     // Fee upper limits
-    uint256 public constant override KEEPER_FEE_UL = 100; // 1%
-    uint256 public constant override PLATFORM_FEE_UL = 500; // 5%
-    uint256 public constant override BUYBACK_RATE_UL = 300; // 3%
-    uint256 public constant override WITHDRAW_FEE_UL = 300; // 3%
-    uint256 public constant override WITHDRAW_REWARDS_FEE_UL = 300; // 3%
-    uint256 public constant override WITHDRAW_FEE_PERIOD_UL = 1210000; // 14 days
+    uint256 public constant override KEEPER_FEE_UL = 1000; // 10%
+    uint256 public constant override PLATFORM_FEE_UL = 1000; // 10%
+    uint256 public constant override BUYBACK_RATE_UL = 1000; // 10%
+    uint256 public constant override WITHDRAW_FEE_UL = 1000; // 10%
+    uint256 public constant override WITHDRAW_REWARDS_FEE_UL = 1000; // 10%
+    uint256 public constant override WITHDRAW_FEE_PERIOD_UL = 31536000; // 365 days
 
     event Compound(address indexed vault, uint256 timestamp);
     event ChangedTreasury(address _old, address _new);
