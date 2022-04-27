@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/Utils/SafeERC20.sol";
-import "@openzeppelin/contracts/Utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/Security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/Utils/Math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./libs/IStrategy.sol";

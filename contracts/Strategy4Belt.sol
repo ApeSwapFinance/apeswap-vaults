@@ -2,44 +2,44 @@
 pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./libs/IAutoFarmV2.sol";
-import "./libs/IBeltMultiStrategyToken.sol";
+import "./libs/IBeltLP.sol";
+import "./libs/IMasterBelt.sol";
 import "./BaseStrategySingle.sol";
 
-contract StrategyAutoBeltToken is BaseStrategySingle, Initializable {
+// https://bscscan.com/address/0x5df9ce05ea92af1ea324996d12f139847af3dfc7#code
+contract Strategy4Belt is BaseStrategySingle, Initializable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     // Third party contracts
-    address public autoFarm; // address(0x0895196562C7868C5Be92459FaE7f877ED450452);
-    address public oToken;   // address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
-    uint256 public pid; // 341
-    address[] public earnedToWantPath;
+    address public masterBelt; // address(0xD4BbC80b9B102b77B21A06cb77E954049605E6c1);
+    address public beltLP;   // address(0x9cb73F20164e399958261c289Eb5F9846f4D1404);
+    uint256 public pid; // 3
 
     /**
         address[8] _configAddresses,
         _configAddresses[0] _vaultChefAddress,
-        _configAddresses[1] _autoFarm,
+        _configAddresses[1] _masterBelt,
         _configAddresses[2] _uniRouterAddress,
         _configAddresses[3]  _wantAddress,
         _configAddress[4]  _earnedAddress
         _configAddress[5]  _usdAddress
         _configAddress[6]  _bananaAddress
-        _configAddress[7]  _oToken
+        _configAddress[7]  _beltLp
     */
     function initialize(
         address[8] memory _configAddresses,
         address[] memory _earnedToWnativePath,
         address[] memory _earnedToUsdPath,
         address[] memory _earnedToBananaPath,
-        address[] memory _earnedToWantPath,
         uint256 _pid
     ) external initializer {
         
         govAddress = msg.sender;
         vaultChefAddress = _configAddresses[0];
-        autoFarm = _configAddresses[1];
+        masterBelt = _configAddresses[1];
         uniRouterAddress = _configAddresses[2];
+        beltLP = _configAddresses[7];
 
         wantAddress = _configAddresses[3];
 
@@ -47,12 +47,10 @@ contract StrategyAutoBeltToken is BaseStrategySingle, Initializable {
         earnedAddress = _configAddresses[4];
         usdAddress = _configAddresses[5];
         bananaAddress = _configAddresses[6];
-        oToken = _configAddresses[7];
 
         earnedToWnativePath = _earnedToWnativePath;
         earnedToUsdPath = _earnedToUsdPath;
         earnedToBananaPath = _earnedToBananaPath;
-        earnedToWantPath = _earnedToWantPath;
 
         transferOwnership(vaultChefAddress);
         
@@ -61,15 +59,15 @@ contract StrategyAutoBeltToken is BaseStrategySingle, Initializable {
 
     // puts the funds to work
     function _vaultDeposit(uint256 _amount) internal override {
-        IAutoFarmV2(autoFarm).deposit(pid, _amount);
+        IMasterBelt(masterBelt).deposit(pid, _amount);
     }
 
     function _vaultWithdraw(uint256 _amount) internal override {
-        IAutoFarmV2(autoFarm).withdraw(pid, _amount);
+        IMasterBelt(masterBelt).withdraw(pid, _amount);
     }
 
     function _vaultHarvest() internal override {
-        IAutoFarmV2(autoFarm).deposit(pid, 0);
+        IMasterBelt(masterBelt).deposit(pid, 0);
     }
 
     function earn() external override nonReentrant whenNotPaused { 
@@ -90,25 +88,25 @@ contract StrategyAutoBeltToken is BaseStrategySingle, Initializable {
             earnedAmt = buyBack(earnedAmt);
 
             // Converts farm tokens into want tokens and farms
-            if (earnedAddress != oToken) {
-                // Swap earned to token0
-                _safeSwap(
-                    earnedAmt,
-                    earnedToWantPath,
-                    address(this)
-                );
-            }
-            uint256 token0Amt = IERC20(oToken).balanceOf(address(this));
-
-            IERC20(oToken).safeApprove(wantAddress, 0);
-            IERC20(oToken).safeIncreaseAllowance(wantAddress, token0Amt);
-
-            IBeltMultiStrategyToken(wantAddress).deposit(token0Amt, 0);
-
+            _addLiquidity();
             _farm();
 
             lastEarnBlock = block.number;
         }
+    }
+
+    // Adds liquidity to AMM and gets more LP tokens.
+    function _addLiquidity() internal {
+        uint256 autoBal = IERC20(earnedAddress).balanceOf(address(this));
+        _safeSwap(
+            autoBal,
+            earnedToUsdPath,
+            address(this)
+        );
+
+        uint256 busdBal = IERC20(usdAddress).balanceOf(address(this));
+        uint256[4] memory uamounts = [0, 0, 0, busdBal];
+        IBeltLP(beltLP).add_liquidity(uamounts, 0);
     }
 
     // calculate the total underlaying 'want' held by the strat.
@@ -123,24 +121,31 @@ contract StrategyAutoBeltToken is BaseStrategySingle, Initializable {
 
     // it calculates how much 'want' the strategy has working in the farm.
     function vaultSharesTotal() public override view returns (uint256) {
-        return IAutoFarmV2(autoFarm).stakedWantTokens(pid, address(this));
+        (uint256 amount,) = IMasterBelt(masterBelt).userInfo(pid, address(this));
+        return amount;
+        // return IMasterBelt(masterBelt).stakedWantTokens(pid, address(this));
     }
 
     // pauses deposits and withdraws all funds from third party systems.
     function _emergencyVaultWithdraw() internal override {
-        IAutoFarmV2(autoFarm).emergencyWithdraw(pid);
+        IMasterBelt(masterBelt).emergencyWithdraw(pid);
     }
 
     function _resetAllowances() internal override {
-        IERC20(wantAddress).safeApprove(autoFarm, type(uint256).max);
+        IERC20(wantAddress).safeApprove(masterBelt, uint256(0));
+        IERC20(wantAddress).safeApprove(masterBelt, type(uint256).max);
+
+        IERC20(earnedAddress).safeApprove(uniRouterAddress, uint256(0));
         IERC20(earnedAddress).safeApprove(uniRouterAddress, type(uint256).max);
-        IERC20(usdAddress).safeApprove(oToken, type(uint256).max);
+
+        IERC20(usdAddress).safeApprove(beltLP, uint256(0));
+        IERC20(usdAddress).safeApprove(beltLP, type(uint256).max);
     }
 
     function _removeAllowances() internal {
-        IERC20(wantAddress).safeApprove(autoFarm, 0);
+        IERC20(wantAddress).safeApprove(masterBelt, 0);
         IERC20(earnedAddress).safeApprove(uniRouterAddress, 0);
-        IERC20(usdAddress).safeApprove(oToken, 0);
+        IERC20(usdAddress).safeApprove(beltLP, 0);
     }
 
     function _beforeDeposit(address _to) internal override {
