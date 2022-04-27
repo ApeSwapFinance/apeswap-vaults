@@ -443,7 +443,7 @@ describe('KeeperMaximizerVaultApe', function () {
         await maximizerVaultApe.setPlatformFee("100", { from: adminAddress });
         await maximizerVaultApe.setBuyBackRate("100", { from: adminAddress });
 
-        const platformFeeBefore = await wrappedNative.balanceOf(platformAddress);
+        const platformFeeBefore = await bananaToken.balanceOf(platformAddress);
         const keeperFeeBefore = await wrappedNative.balanceOf(treasuryAddress);
         const buyBackFeeBefore = await bananaToken.balanceOf("0x000000000000000000000000000000000000dEaD");
 
@@ -456,7 +456,7 @@ describe('KeeperMaximizerVaultApe', function () {
         expect(checkUpkeep.upkeepNeeded).to.be.true;
         await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
-        const platformFeeAfter = await wrappedNative.balanceOf(platformAddress);
+        const platformFeeAfter = await bananaToken.balanceOf(platformAddress);
         const keeperFeeAfter = await wrappedNative.balanceOf(treasuryAddress);
         const buyBackFeeAfter = await bananaToken.balanceOf("0x000000000000000000000000000000000000dEaD");
 

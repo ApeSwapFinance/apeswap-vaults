@@ -280,14 +280,12 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         // Find the expected BANANA value of the current harvestable rewards
         uint256 bananaOutputWithoutFees = _getExpectedOutput(pathToBanana);
         // Calculate the WBNB values
-        platformOutput = (wbnbOutput * settings.platformFee) / 10000;
         keeperOutput = (wbnbOutput * settings.keeperFee) / 10000;
         // Calculate the BANANA values
+        platformOutput = (bananaOutputWithoutFees * settings.platformFee) / 10000;
         burnOutput = (bananaOutputWithoutFees * settings.buyBackRate) / 10000;
-        uint256 bananaFees = ((bananaOutputWithoutFees * settings.platformFee) /
-            10000) +
-            ((bananaOutputWithoutFees * settings.keeperFee) / 10000) +
-            burnOutput;
+        uint256 bananaFees = 
+            ((bananaOutputWithoutFees * settings.keeperFee) / 10000) + platformOutput + burnOutput;
         bananaOutput = bananaOutputWithoutFees - bananaFees;
     }
 
@@ -405,16 +403,6 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         IMaximizerVaultApe.Settings memory settings = getSettings();
         uint256 rewardTokenBalance = _rewardTokenBalance();
 
-        // Collect platform fees
-        if (settings.platformFee > 0) {
-            _swap(
-                (rewardTokenBalance * settings.platformFee) / 10000,
-                _minPlatformOutput,
-                pathToWbnb,
-                settings.platform
-            );
-        }
-
         // Collect keeper fees
         if (_takeKeeperFee && settings.keeperFee > 0) {
             _swap(
@@ -427,6 +415,15 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
 
         // Convert remaining rewards to BANANA
         if (address(FARM_REWARD_TOKEN) != address(BANANA)) {
+            // Collect platform fees
+            if (settings.platformFee > 0) {
+                _swap(
+                    (rewardTokenBalance * settings.platformFee) / 10000,
+                    _minPlatformOutput,
+                    pathToBanana,
+                    settings.platform
+                );
+            }
             // Collect Burn fees
             if (settings.buyBackRate > 0) {
                 _swap(
@@ -443,11 +440,21 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
                 pathToBanana,
                 address(this)
             );
-        } else if (settings.buyBackRate > 0) {
-            BANANA.transfer(
-                BURN_ADDRESS,
-                (rewardTokenBalance * settings.buyBackRate) / 10000
-            );
+        } else {
+            // Collect platform fees
+            if (settings.platformFee > 0) {
+                BANANA.transfer(
+                    settings.platform,
+                    (rewardTokenBalance * settings.platformFee) / 10000
+                );
+            }
+            // Collect Burn fees
+            if (settings.buyBackRate > 0) {
+                BANANA.transfer(
+                    BURN_ADDRESS,
+                    (rewardTokenBalance * settings.buyBackRate) / 10000
+                );
+            }
         }
         // Earns inside BANANA on deposits
         _bananaVaultDeposit(false);
