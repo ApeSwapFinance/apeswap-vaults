@@ -46,6 +46,11 @@ contract KeeperMaximizerVaultApe is
         keeper = _keeper;
     }
 
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "KeeperMaximizerVaultApe: Not keeper");
+        _;
+    }
+
     /// @notice Chainlink keeper checkUpkeep
     function checkUpkeep(bytes calldata)
         external
@@ -64,7 +69,11 @@ contract KeeperMaximizerVaultApe is
 
     /// @notice Chainlink keeper performUpkeep
     /// @param performData response from checkUpkeep
-    function performUpkeep(bytes calldata performData) external override {
+    function performUpkeep(bytes calldata performData)
+        external
+        override
+        onlyKeeper
+    {
         (
             address[] memory _vaults,
             uint256[] memory _minPlatformOutputs,
