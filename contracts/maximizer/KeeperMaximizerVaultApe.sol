@@ -68,12 +68,9 @@ contract KeeperMaximizerVaultApe is
     }
 
     /// @notice Chainlink keeper performUpkeep
+    /// @dev Chainlink keeper txs are sent from different addresses
     /// @param performData response from checkUpkeep
-    function performUpkeep(bytes calldata performData)
-        external
-        override
-        onlyKeeper
-    {
+    function performUpkeep(bytes calldata performData) external override {
         (
             address[] memory _vaults,
             uint256[] memory _minPlatformOutputs,
