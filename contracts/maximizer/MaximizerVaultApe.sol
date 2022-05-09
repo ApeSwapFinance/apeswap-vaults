@@ -75,7 +75,7 @@ contract MaximizerVaultApe is
     uint256 public constant override BUYBACK_RATE_UL = 1000; // 10%
     uint256 public constant override WITHDRAW_FEE_UL = 1000; // 10%
     uint256 public constant override WITHDRAW_REWARDS_FEE_UL = 1000; // 10%
-    uint256 public constant override WITHDRAW_FEE_PERIOD_UL = 2**256 - 1; // MAX_INT
+    uint256 public constant override WITHDRAW_FEE_PERIOD_UL = 2**255; // MAX_INT / 2
 
     event Compound(address indexed vault, uint256 timestamp);
     event ChangedTreasury(address _old, address _new);
