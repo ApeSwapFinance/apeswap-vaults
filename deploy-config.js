@@ -6,7 +6,7 @@ function getNetworkConfig(network, accounts) {
             adminAddress: '0x50Cf6cdE8f63316b2BD6AACd0F5581aEf5dD235D', // BSC GSafe General Admin
             masterApeAddress: '0x5c8D727b265DBAfaba67E050f2f739cAeEB4A6F9',
             bananaTokenAddress: '0x603c7f932ED1fc6575303D8Fb018fDCBb0f39a95',
-            treasuryAddress: '',
+            treasuryAddress: '0x65A25f178fD01e5e31FaBe85EeA86Ea06Ee5D43B',
             apeRouterAddress: '0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7',
             wrappedNativeAddress: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
         }
