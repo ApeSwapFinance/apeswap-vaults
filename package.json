@@ -18,6 +18,8 @@
     "migrate:bsc-testnet": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network bsc-testnet",
     "migrate:dev": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network development",
     "verify:bsc": "truffle run verify VaultApe --network bsc && truffle run verify StrategyMasterChefSingleFactory --network bsc && truffle run verify StrategyMasterApeSingleFactory --network bsc && truffle run verify StrategyKoalaFarmFactory --network bsc && truffle run verify StrategyMasterChefFactory --network bsc && truffle run verify StrategyKoalaChefSingleFactory --network bsc",
+    "verify:bsc:maximizer": "truffle run verify KeeperMaximizerVaultApe --network bsc && truffle run verify BananaVault --network bsc && truffle run verify StrategyMaximizerMasterApe --network bsc",
+    "verify:bsc-testnet:maximizer": "truffle run verify KeeperMaximizerVaultApe --network bsc-testnet && truffle run verify BananaVault --network bsc-testnet && truffle run verify StrategyMaximizerMasterApe --network bsc-testnet",
     "verify:polygon": "truffle run verify VaultApe --network polygon && truffle run verify StrategyMasterChefSingleFactory --network polygon && truffle run verify StrategyMasterApeSingleFactory --network polygon && truffle run verify StrategyKoalaFarmFactory --network polygon && truffle run verify StrategyMasterChefFactory --network polygon && truffle run verify StrategyKoalaChefSingleFactory --network polygon",
     "verify:bsc-testnet": "truffle run verify Migrations --network bsc-testnet",
     "typecheck": "tsc --noEmit",

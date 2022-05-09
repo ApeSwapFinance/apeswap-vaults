@@ -26,6 +26,7 @@ pragma solidity 0.8.6;
 
 import "./MaximizerVaultApe.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+import "../libs/Bytes.sol";
 
 /// @title Keeper Maximizer VaultApe
 /// @author ApeSwapFinance
@@ -34,6 +35,8 @@ contract KeeperMaximizerVaultApe is
     MaximizerVaultApe,
     KeeperCompatibleInterface
 {
+    using Bytes for bytes;
+
     address public keeper;
 
     constructor(
@@ -52,8 +55,8 @@ contract KeeperMaximizerVaultApe is
     }
 
     /// @notice Chainlink keeper checkUpkeep
-    function checkUpkeep(bytes calldata)
-        external
+    function checkUpkeep(bytes memory)
+        public
         view
         override
         returns (bool upkeepNeeded, bytes memory performData)
@@ -70,7 +73,15 @@ contract KeeperMaximizerVaultApe is
     /// @notice Chainlink keeper performUpkeep
     /// @dev Chainlink keeper txs are sent from different addresses
     /// @param performData response from checkUpkeep
-    function performUpkeep(bytes calldata performData) external override {
+    function performUpkeep(bytes memory performData) external override {
+        (bool upkeepNeeded, bytes memory checkPerformData) = checkUpkeep(
+            new bytes(0)
+        );
+        require(upkeepNeeded, "KeeperMaximizerVaultApe: Upkeep not needed");
+        require(
+            checkPerformData.equals(performData),
+            "KeeperMaximizerVaultApe: performData inaccurate"
+        );
         (
             address[] memory _vaults,
             uint256[] memory _minPlatformOutputs,
