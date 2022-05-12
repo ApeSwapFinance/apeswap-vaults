@@ -44,7 +44,7 @@ const strategyDeployments = [
 // ]
 
 module.exports = async function (deployer, network, accounts) {
-  let { adminAddress, masterApeAddress, bananaTokenAddress, treasuryAddress, apeRouterAddress, wrappedNativeAddress, libraries } = getNetworkConfig(network, accounts);
+  let { adminAddress, masterApeAddress, bananaTokenAddress, treasuryAddress, apeRouterAddress, wrappedNativeAddress, libraries, chainlinkRegistry } = getNetworkConfig(network, accounts);
   const tempAdmin = accounts[0];
 
   if (tempAdmin == adminAddress) {
@@ -93,11 +93,11 @@ module.exports = async function (deployer, network, accounts) {
     platformFee: 0,
     buyBackRate: 0,
     withdrawFee: 10, // .1%
-    withdrawFeePeriod: MAX_UINT256,
+    withdrawFeePeriod: "57896044618658097711785492504343953926634992332820282019728792003956564819968",
     withdrawRewardsFee: 0,
   }
   await deployer.deploy(KeeperMaximizerVaultApe,
-    adminAddress, // Keeper
+    chainlinkRegistry, // Keeper
     tempAdmin, // Owner (Using temp admin to add strategies during deployment)
     bananaVault.address,
     86400, // Compound max delay (1day)

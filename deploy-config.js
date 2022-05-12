@@ -9,6 +9,7 @@ function getNetworkConfig(network, accounts) {
             treasuryAddress: '0x65A25f178fD01e5e31FaBe85EeA86Ea06Ee5D43B', // Maximizer Vault LPFeeManager
             apeRouterAddress: '0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7',
             wrappedNativeAddress: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            chainlinkRegistry: "0x7b3EC232b08BD7b4b3305BE0C044D907B2DF960B",
             libraries: {
                 bytes: '',
             }
@@ -16,14 +17,15 @@ function getNetworkConfig(network, accounts) {
     } else if (['bsc-testnet', 'bsc-testnet-fork'].includes(network)) {
         console.log(`Deploying with BSC testnet config.`)
         return {
-            adminAddress: '0xE375D169F8f7bC18a544a6e5e546e63AD7511581',
+            adminAddress: '0x539EE706ea34a2145b653C995c4245f41450894d',
             masterApeAddress: '0xbbC5e1cD3BA8ED639b00927115e5f0e0040aA613',
             bananaTokenAddress: '0x4Fb99590cA95fc3255D9fA66a1cA46c43C34b09a',
             treasuryAddress: '0x033996008355D0BE4E022c00f06F844547e23dcF', // Maximizer Vault LPFeeManager
             apeRouterAddress: "0x3380aE82e39E42Ca34EbEd69aF67fAa0683Bb5c1",
             wrappedNativeAddress: "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",
+            chainlinkRegistry: "0xA3E3026562a3ADAF7A761B10a45217c400a4054A",
             libraries: {
-                bytes: '',
+                bytes: '0xCb4e2520C74b42eC6D1232E177a996Be19f886Fc',
             }
         }
     } else if (['polygon', 'polygon-fork'].includes(network)) {

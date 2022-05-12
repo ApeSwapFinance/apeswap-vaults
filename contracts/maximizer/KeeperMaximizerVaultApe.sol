@@ -71,17 +71,12 @@ contract KeeperMaximizerVaultApe is
     }
 
     /// @notice Chainlink keeper performUpkeep
-    /// @dev Chainlink keeper txs are sent from different addresses
     /// @param performData response from checkUpkeep
-    function performUpkeep(bytes memory performData) external override {
-        (bool upkeepNeeded, bytes memory checkPerformData) = checkUpkeep(
-            new bytes(0)
-        );
-        require(upkeepNeeded, "KeeperMaximizerVaultApe: Upkeep not needed");
-        require(
-            checkPerformData.equals(performData),
-            "KeeperMaximizerVaultApe: performData inaccurate"
-        );
+    function performUpkeep(bytes memory performData)
+        external
+        override
+        onlyKeeper
+    {
         (
             address[] memory _vaults,
             uint256[] memory _minPlatformOutputs,
