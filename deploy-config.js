@@ -42,7 +42,7 @@ function getNetworkConfig(network, accounts) {
             apeRouterAddress: '0x3380aE82e39E42Ca34EbEd69aF67fAa0683Bb5c1',
             wbnbAddress: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd',
             wrappedNativeAddress: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-            bananaVaultAddress: '', // NOTE: If left blank a new one will be deployed 
+            chainlinkRegistry: accounts[1],
         }
     } else {
         throw new Error(`No config found for network ${network}.`)

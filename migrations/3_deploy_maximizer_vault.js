@@ -154,7 +154,6 @@ module.exports = async function (deployer, network, accounts) {
   const keeperOutput = {
     keeperMaximizerVaultApeAddress: keeperMaximizerVaultApe.address,
     keeperOwner: await keeperMaximizerVaultApe.owner(),
-    bytesLib: BytesLib.address,
   }
 
   /**
