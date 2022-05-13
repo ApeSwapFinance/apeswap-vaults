@@ -10,9 +10,6 @@ function getNetworkConfig(network, accounts) {
             apeRouterAddress: '0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7',
             wrappedNativeAddress: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
             chainlinkRegistry: "0x7b3EC232b08BD7b4b3305BE0C044D907B2DF960B",
-            libraries: {
-                bytes: '',
-            }
         }
     } else if (['bsc-testnet', 'bsc-testnet-fork'].includes(network)) {
         console.log(`Deploying with BSC testnet config.`)
@@ -24,9 +21,6 @@ function getNetworkConfig(network, accounts) {
             apeRouterAddress: "0x3380aE82e39E42Ca34EbEd69aF67fAa0683Bb5c1",
             wrappedNativeAddress: "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd",
             chainlinkRegistry: "0xA3E3026562a3ADAF7A761B10a45217c400a4054A",
-            libraries: {
-                bytes: '0xCb4e2520C74b42eC6D1232E177a996Be19f886Fc',
-            }
         }
     } else if (['polygon', 'polygon-fork'].includes(network)) {
         console.log(`Deploying with POLYGON MAINNET config.`)
@@ -49,9 +43,6 @@ function getNetworkConfig(network, accounts) {
             wbnbAddress: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd',
             wrappedNativeAddress: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
             bananaVaultAddress: '', // NOTE: If left blank a new one will be deployed 
-            libraries: {
-                bytes: '',
-            }
         }
     } else {
         throw new Error(`No config found for network ${network}.`)

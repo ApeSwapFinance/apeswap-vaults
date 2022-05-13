@@ -263,7 +263,6 @@ contract MaximizerVaultApe is
             keeperOutput = keeperOutput.mul(slippageFactor).div(10000);
             burnOutput = burnOutput.mul(slippageFactor).div(10000);
             bananaOutput = bananaOutput.mul(slippageFactor).div(10000);
-            uint256 timestamp = block.timestamp;
 
             return
                 _compoundVault(
@@ -272,7 +271,6 @@ contract MaximizerVaultApe is
                     keeperOutput,
                     burnOutput,
                     bananaOutput,
-                    timestamp,
                     false
                 );
         } else {
@@ -290,7 +288,6 @@ contract MaximizerVaultApe is
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
-        uint256 timestamp,
         bool _takeKeeperFee
     ) internal {
         IStrategyMaximizerMasterApe(_vault).earn(
@@ -301,6 +298,7 @@ contract MaximizerVaultApe is
             _takeKeeperFee
         );
 
+        uint256 timestamp = block.timestamp;
         vaultInfos[_vault].lastCompound = timestamp;
 
         emit Compound(_vault, timestamp);

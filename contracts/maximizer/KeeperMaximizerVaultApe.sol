@@ -26,7 +26,6 @@ pragma solidity 0.8.6;
 
 import "./MaximizerVaultApe.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
-import "../libs/Bytes.sol";
 
 /// @title Keeper Maximizer VaultApe
 /// @author ApeSwapFinance
@@ -35,8 +34,6 @@ contract KeeperMaximizerVaultApe is
     MaximizerVaultApe,
     KeeperCompatibleInterface
 {
-    using Bytes for bytes;
-
     address public keeper;
 
     constructor(
@@ -88,7 +85,6 @@ contract KeeperMaximizerVaultApe is
                 (address[], uint256[], uint256[], uint256[], uint256[])
             );
 
-        uint256 timestamp = block.timestamp;
         uint256 length = _vaults.length;
 
         for (uint256 index = 0; index < length; ++index) {
@@ -98,7 +94,6 @@ contract KeeperMaximizerVaultApe is
                 _minKeeperOutputs[index],
                 _minBurnOutputs[index],
                 _minBananaOutputs[index],
-                timestamp,
                 true
             );
         }

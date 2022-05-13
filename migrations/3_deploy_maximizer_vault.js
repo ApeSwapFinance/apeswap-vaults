@@ -2,49 +2,48 @@ const BananaVault = artifacts.require("BananaVault");
 const KeeperMaximizerVaultApe = artifacts.require("KeeperMaximizerVaultApe");
 const StrategyMaximizerMasterApe = artifacts.require("StrategyMaximizerMasterApe");
 const RouterMock = artifacts.require("RouterMock");
-const BytesLib = artifacts.require("Bytes");
 const { getNetworkConfig } = require('../deploy-config')
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 
 
 // NOTE: TESTNET MasterApe
-const strategyDeployments = [
-  {
-    farmPid: 7,
-    farmStakeTokenAddress: "0x30E74ceFD298990880758E20223f03129F52E699",  // HOR-NEY
-  },
-  {
-    farmPid: 8,
-    farmStakeTokenAddress: "0x4419D815c9c9329f9679782e76ec15bCe1B14a6D", // FOR-EVER
-  },
-]
-
-// NOTE MAINNET MasterApe
 // const strategyDeployments = [
 //   {
-//     farmPid: 1,
-//     farmStakeTokenAddress: "0xF65C1C0478eFDe3c19b49EcBE7ACc57BB6B1D713",  // BANANA-BNB
+//     farmPid: 7,
+//     farmStakeTokenAddress: "0x30E74ceFD298990880758E20223f03129F52E699",  // HOR-NEY
 //   },
 //   {
-//     farmPid: 2,
-//     farmStakeTokenAddress: "0x7Bd46f6Da97312AC2DBD1749f82E202764C0B914", // BANANA-BUSD
-//   },
-//   {
-//     farmPid: 45,
-//     farmStakeTokenAddress: "0x29A4A3D77c010CE100A45831BF7e798f0f0B325D", // MATIC-BNB
-//   },
-//   {
-//     farmPid: 49,
-//     farmStakeTokenAddress: "0x47A0B7bA18Bb80E4888ca2576c2d34BE290772a6", // FTM-BNB
-//   },
-//   {
-//     farmPid: 117,
-//     farmStakeTokenAddress: "0x119D6Ebe840966c9Cf4fF6603E76208d30BA2179", // CEEK-BNB
+//     farmPid: 8,
+//     farmStakeTokenAddress: "0x4419D815c9c9329f9679782e76ec15bCe1B14a6D", // FOR-EVER
 //   },
 // ]
 
+// NOTE MAINNET MasterApe
+const strategyDeployments = [
+  {
+    farmPid: 1,
+    farmStakeTokenAddress: "0xF65C1C0478eFDe3c19b49EcBE7ACc57BB6B1D713",  // BANANA-BNB
+  },
+  {
+    farmPid: 2,
+    farmStakeTokenAddress: "0x7Bd46f6Da97312AC2DBD1749f82E202764C0B914", // BANANA-BUSD
+  },
+  {
+    farmPid: 45,
+    farmStakeTokenAddress: "0x29A4A3D77c010CE100A45831BF7e798f0f0B325D", // MATIC-BNB
+  },
+  {
+    farmPid: 49,
+    farmStakeTokenAddress: "0x47A0B7bA18Bb80E4888ca2576c2d34BE290772a6", // FTM-BNB
+  },
+  {
+    farmPid: 117,
+    farmStakeTokenAddress: "0x119D6Ebe840966c9Cf4fF6603E76208d30BA2179", // CEEK-BNB
+  },
+]
+
 module.exports = async function (deployer, network, accounts) {
-  let { adminAddress, masterApeAddress, bananaTokenAddress, treasuryAddress, apeRouterAddress, wrappedNativeAddress, libraries, chainlinkRegistry } = getNetworkConfig(network, accounts);
+  let { adminAddress, masterApeAddress, bananaTokenAddress, treasuryAddress, apeRouterAddress, wrappedNativeAddress, chainlinkRegistry } = getNetworkConfig(network, accounts);
   const tempAdmin = accounts[0];
 
   if (tempAdmin == adminAddress) {
@@ -70,20 +69,6 @@ module.exports = async function (deployer, network, accounts) {
   const bananaVault = await BananaVault.deployed();
 
   /**
-   * Deploy / Link Libraries
-   */
-  let bytesLib;
-  if (libraries.bytes) {
-    console.log(`libraries.bytes is set. Using ${libraries.bytes} for Bytes library.`)
-    bytesLib = await BytesLib.at(libraries.bytes);
-  } else {
-    console.log('libraries.bytes not set in deploy-config. Deploying new Bytes library.')
-    await deployer.deploy(BytesLib);
-    bytesLib = await BytesLib.deployed();
-  }
-  await deployer.link(bytesLib, KeeperMaximizerVaultApe);
-
-  /**
    * Deploy KeeperMaximizerVaultApe
    */
   const MaximizerSettings = {
@@ -93,7 +78,7 @@ module.exports = async function (deployer, network, accounts) {
     platformFee: 0,
     buyBackRate: 0,
     withdrawFee: 10, // .1%
-    withdrawFeePeriod: "57896044618658097711785492504343953926634992332820282019728792003956564819968",
+    withdrawFeePeriod: "57896044618658097711785492504343953926634992332820282019728792003956564819968", // MAX_UINT256 / 2
     withdrawRewardsFee: 0,
   }
   await deployer.deploy(KeeperMaximizerVaultApe,
