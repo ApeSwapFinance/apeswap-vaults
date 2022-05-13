@@ -52,8 +52,8 @@ contract KeeperMaximizerVaultApe is
     }
 
     /// @notice Chainlink keeper checkUpkeep
-    function checkUpkeep(bytes calldata)
-        external
+    function checkUpkeep(bytes memory)
+        public
         view
         override
         returns (bool upkeepNeeded, bytes memory performData)
@@ -68,9 +68,12 @@ contract KeeperMaximizerVaultApe is
     }
 
     /// @notice Chainlink keeper performUpkeep
-    /// @dev Chainlink keeper txs are sent from different addresses
     /// @param performData response from checkUpkeep
-    function performUpkeep(bytes calldata performData) external override {
+    function performUpkeep(bytes memory performData)
+        external
+        override
+        onlyKeeper
+    {
         (
             address[] memory _vaults,
             uint256[] memory _minPlatformOutputs,
@@ -82,7 +85,6 @@ contract KeeperMaximizerVaultApe is
                 (address[], uint256[], uint256[], uint256[], uint256[])
             );
 
-        uint256 timestamp = block.timestamp;
         uint256 length = _vaults.length;
 
         for (uint256 index = 0; index < length; ++index) {
@@ -92,7 +94,6 @@ contract KeeperMaximizerVaultApe is
                 _minKeeperOutputs[index],
                 _minBurnOutputs[index],
                 _minBananaOutputs[index],
-                timestamp,
                 true
             );
         }

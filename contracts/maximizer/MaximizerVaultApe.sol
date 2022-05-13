@@ -75,7 +75,7 @@ contract MaximizerVaultApe is
     uint256 public constant override BUYBACK_RATE_UL = 1000; // 10%
     uint256 public constant override WITHDRAW_FEE_UL = 1000; // 10%
     uint256 public constant override WITHDRAW_REWARDS_FEE_UL = 1000; // 10%
-    uint256 public constant override WITHDRAW_FEE_PERIOD_UL = 2**256 - 1; // MAX_INT
+    uint256 public constant override WITHDRAW_FEE_PERIOD_UL = 2**255; // MAX_INT / 2
 
     event Compound(address indexed vault, uint256 timestamp);
     event ChangedTreasury(address _old, address _new);
@@ -263,7 +263,6 @@ contract MaximizerVaultApe is
             keeperOutput = keeperOutput.mul(slippageFactor).div(10000);
             burnOutput = burnOutput.mul(slippageFactor).div(10000);
             bananaOutput = bananaOutput.mul(slippageFactor).div(10000);
-            uint256 timestamp = block.timestamp;
 
             return
                 _compoundVault(
@@ -272,7 +271,6 @@ contract MaximizerVaultApe is
                     keeperOutput,
                     burnOutput,
                     bananaOutput,
-                    timestamp,
                     false
                 );
         } else {
@@ -290,7 +288,6 @@ contract MaximizerVaultApe is
         uint256 _minKeeperOutput,
         uint256 _minBurnOutput,
         uint256 _minBananaOutput,
-        uint256 timestamp,
         bool _takeKeeperFee
     ) internal {
         IStrategyMaximizerMasterApe(_vault).earn(
@@ -301,6 +298,7 @@ contract MaximizerVaultApe is
             _takeKeeperFee
         );
 
+        uint256 timestamp = block.timestamp;
         vaultInfos[_vault].lastCompound = timestamp;
 
         emit Compound(_vault, timestamp);
