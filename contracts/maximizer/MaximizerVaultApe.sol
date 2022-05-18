@@ -305,7 +305,7 @@ contract MaximizerVaultApe is
     }
 
     function _getExpectedOutputs(address _vault)
-        private
+        internal
         view
         returns (
             uint256 platformOutput,
