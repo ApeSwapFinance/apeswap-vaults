@@ -85,9 +85,20 @@ contract KeeperMaximizerVaultApe is
                 (address[], uint256[], uint256[], uint256[], uint256[])
             );
 
-        uint256 length = _vaults.length;
+        uint256 vaultLength = _vaults.length;
+        require(vaultLength > 0, "KeeperMaximizerVaultApe: No vaults");
 
-        for (uint256 index = 0; index < length; ++index) {
+        for (uint256 index = 0; index < vaultLength; ++index) {
+            address vault = _vaults[index];
+            (, uint256 keeperOutput, , ) = _getExpectedOutputs(vault);
+
+            require(
+                (block.timestamp >=
+                    vaultInfos[vault].lastCompound + maxDelay) ||
+                    (keeperOutput >= minKeeperFee),
+                "KeeperMaximizerVaultApe: Upkeep validation"
+            );
+
             _compoundVault(
                 _vaults[index],
                 _minPlatformOutputs[index],
