@@ -85,6 +85,9 @@ module.exports = async function (deployer, network, accounts) {
     withdrawFee: 10, // .1%
     withdrawFeePeriod: "57896044618658097711785492504343953926634992332820282019728792003956564819968", // MAX_UINT256 / 2
     withdrawRewardsFee: 0,
+    // NOTE: This value is set in the constructor, can overwrite it here
+    // minKeeperFee: '10000000000000000',
+    minKeeperFee: undefined,
   }
   await deployer.deploy(KeeperMaximizerVaultApe,
     chainlinkRegistry, // Keeper
@@ -155,6 +158,10 @@ module.exports = async function (deployer, network, accounts) {
     })
   }
 
+  if (MaximizerSettings.minKeeperFee) {
+    console.log(`MaximizerSettings.minKeeperFee set. Adjusting onchain.`)
+    await keeperMaximizerVaultApe.setMinKeeperFee(MaximizerSettings.minKeeperFee, { from: tempAdmin });
+  }
   await keeperMaximizerVaultApe.transferOwnership(adminAddress, { from: tempAdmin });
   const keeperOutput = {
     keeperMaximizerVaultApeAddress: keeperMaximizerVaultApe.address,
