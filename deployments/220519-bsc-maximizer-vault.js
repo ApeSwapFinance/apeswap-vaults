@@ -1,5 +1,6 @@
 const deployment = {
-    keeper: 'https://keepers.chain.link/',
+    keeper: 'https://keepers.chain.link/bsc/64',
+    keeperPending: 'https://keepers.chain.link/bsc/0x6f82ecd58b69e3c25718ff93b4dbe1889f67f28747874229145d8aa2ff354681?poll=true',
     adminAddress: '0x50Cf6cdE8f63316b2BD6AACd0F5581aEf5dD235D',
     masterApeAddress: '0x5c8D727b265DBAfaba67E050f2f739cAeEB4A6F9',
     keeperOutput: {
@@ -60,6 +61,7 @@ const deployment = {
 }
 
 const parsedDeployment = {
+    keeper: 'https://keepers.chain.link/bsc/64',
     adminAddress: {
         address: '0x50Cf6cdE8f63316b2BD6AACd0F5581aEf5dD235D',
         explorer: 'https://bscscan.com/address/0x50Cf6cdE8f63316b2BD6AACd0F5581aEf5dD235D'
