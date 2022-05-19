@@ -2,7 +2,7 @@ const BananaVault = artifacts.require("BananaVault");
 const KeeperMaximizerVaultApe = artifacts.require("KeeperMaximizerVaultApe");
 const StrategyMaximizerMasterApe = artifacts.require("StrategyMaximizerMasterApe");
 const RouterMock = artifacts.require("RouterMock");
-const { getNetworkConfig } = require('../deploy-config')
+const { getNetworkConfig, convertAddressesToExplorerLinks } = require('../deploy-config')
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 
 
@@ -29,6 +29,10 @@ const strategyDeployments = [
     farmStakeTokenAddress: "0x7Bd46f6Da97312AC2DBD1749f82E202764C0B914", // BANANA-BUSD
   },
   {
+    farmPid: 3,
+    farmStakeTokenAddress: "0x51e6D27FA57373d8d4C256231241053a70Cb1d93", // BNB-BUSD
+  },
+  {
     farmPid: 45,
     farmStakeTokenAddress: "0x29A4A3D77c010CE100A45831BF7e798f0f0B325D", // MATIC-BNB
   },
@@ -36,14 +40,15 @@ const strategyDeployments = [
     farmPid: 49,
     farmStakeTokenAddress: "0x47A0B7bA18Bb80E4888ca2576c2d34BE290772a6", // FTM-BNB
   },
-  {
-    farmPid: 117,
-    farmStakeTokenAddress: "0x119D6Ebe840966c9Cf4fF6603E76208d30BA2179", // CEEK-BNB
-  },
+  // Saving for later
+  // {
+  //   farmPid: 117,
+  //   farmStakeTokenAddress: "0x119D6Ebe840966c9Cf4fF6603E76208d30BA2179", // CEEK-BNB
+  // },
 ]
 
 module.exports = async function (deployer, network, accounts) {
-  let { adminAddress, masterApeAddress, bananaTokenAddress, treasuryAddress, apeRouterAddress, wrappedNativeAddress, chainlinkRegistry } = getNetworkConfig(network, accounts);
+  let { adminAddress, masterApeAddress, bananaTokenAddress, treasuryAddress, apeRouterAddress, wrappedNativeAddress, chainlinkRegistry, explorerLink } = getNetworkConfig(network, accounts);
   const tempAdmin = accounts[0];
 
   if (tempAdmin == adminAddress) {
@@ -153,13 +158,13 @@ module.exports = async function (deployer, network, accounts) {
   await keeperMaximizerVaultApe.transferOwnership(adminAddress, { from: tempAdmin });
   const keeperOutput = {
     keeperMaximizerVaultApeAddress: keeperMaximizerVaultApe.address,
-    keeperOwner: await keeperMaximizerVaultApe.owner(),
+    keeperMaximizerOwner: await keeperMaximizerVaultApe.owner(),
   }
 
   /**
    * Log output
    */
-  console.dir({
+  const KeeperMaximizerOutput = {
     adminAddress,
     masterApeAddress,
     keeperOutput,
@@ -167,5 +172,7 @@ module.exports = async function (deployer, network, accounts) {
     MaximizerSettings,
     withdrawFeePeriod: MaximizerSettings.withdrawFeePeriod.toString(),
     strategyOutput,
-  })
+  }
+  console.dir({ KeeperMaximizerOutput }, { depth: null })
+  console.dir({ ParsedKeeperMaximizerOutput: convertAddressesToExplorerLinks(KeeperMaximizerOutput, explorerLink, true) }, { depth: null })
 };
