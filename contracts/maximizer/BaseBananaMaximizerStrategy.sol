@@ -344,6 +344,8 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         if (currentAmount > stakeTokenBalance) {
             _vaultWithdraw(currentAmount - stakeTokenBalance);
             stakeTokenBalance = IERC20(STAKE_TOKEN).balanceOf(address(this));
+            // Deposit rewards
+            _bananaVaultDeposit(0, true);
         }
 
         IMaximizerVaultApe.Settings memory settings = getSettings();
@@ -530,18 +532,16 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         return actualSettings;
     }
 
-    function _farm() internal returns (uint256) {
+    function _farm() internal returns (uint256 _stakeTokensDeposited) {
         uint256 stakeTokenBalance = IERC20(STAKE_TOKEN).balanceOf(
             address(this)
         );
 
         uint256 stakeBefore = totalStake();
         _vaultDeposit(stakeTokenBalance);
-        uint256 stakeAfter = totalStake();
+        _stakeTokensDeposited = totalStake() - stakeBefore;
         // accSharesPerStakedToken is updated here to ensure
-        _bananaVaultDeposit(stakeAfter - stakeBefore, true);
-
-        return stakeAfter - stakeBefore;
+        _bananaVaultDeposit(_stakeTokensDeposited, true);
     }
 
     function _bananaVaultWithdraw(
@@ -598,14 +598,15 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         emit ClaimRewards(_userAddress, currentShares, bananaToWithdraw);
     }
 
-    function _bananaVaultDeposit(uint256 _difference, bool _takeFee) internal {
+    function _bananaVaultDeposit(uint256 _depositedStakeTokens, bool _takeFee)
+        internal
+    {
         uint256 bananaBalance = _bananaBalance();
         if (bananaBalance == 0) {
             // earn
             BANANA_VAULT.deposit(0);
             return;
         }
-        uint256 previousShares = totalAutoBananaShares();
         IMaximizerVaultApe.Settings memory settings = getSettings();
         if (_takeFee && settings.platformFee > 0) {
             // This catches times when banana is deposited outside of earn and harvests are generated
@@ -614,12 +615,20 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
             bananaBalance -= bananaFee;
         }
 
+        uint256 previousShares = totalAutoBananaShares();
         _approveTokenIfNeeded(BANANA, bananaBalance, address(BANANA_VAULT));
         BANANA_VAULT.deposit(bananaBalance);
 
+        /// To give correct token allocations to correct users. It's important to adjust the "Accumulated Shares Per Staked Token"
+        ///   value correctly as deposits and withdraws both simultaneously earn fees.
+        uint256 adjustedStake = totalStake() - _depositedStakeTokens;
+        if (adjustedStake == 0) {
+            // Catches scenarios where all stake is removed and there is dust in the strategy
+            return;
+        }
+
         uint256 currentShares = totalAutoBananaShares();
         uint256 shareIncrease = currentShares - previousShares;
-        uint256 adjustedStake = totalStake() - _difference;
 
         uint256 increaseAccSharesPerStakedToken = ((shareIncrease +
             unallocatedShares) * 1e18) / adjustedStake;
@@ -665,6 +674,25 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
             BANANA.transfer(_to, balance);
         } else {
             BANANA.transfer(_to, _amount);
+        }
+    }
+
+    /// @notice Provide a path and amount to find the expected output
+    /// @param _path Array of token addresses which compose the path from index 0 to n
+    /// @param _inputAmount Amount of tokens to provide for the swap
+    /// @return Reward output amount based on path
+    function _getExpectedOutputAmount(
+        address[] memory _path,
+        uint256 _inputAmount
+    ) internal view returns (uint256) {
+        if (_path.length <= 1 || _inputAmount == 0) {
+            return _inputAmount;
+        } else {
+            uint256[] memory amounts = router.getAmountsOut(
+                _inputAmount,
+                _path
+            );
+            return amounts[amounts.length - 1];
         }
     }
 

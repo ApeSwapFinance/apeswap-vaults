@@ -123,13 +123,7 @@ contract StrategyMaximizerMasterApe is BaseBananaMaximizerStrategy {
     {
         uint256 rewards = _rewardTokenBalance() +
             (STAKE_TOKEN_FARM.pendingCake(FARM_PID, address(this)));
-
-        if (_path.length <= 1 || rewards == 0) {
-            return rewards;
-        } else {
-            uint256[] memory amounts = router.getAmountsOut(rewards, _path);
-            return amounts[amounts.length - 1];
-        }
+        return _getExpectedOutputAmount(_path, rewards);
     }
 
     /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
