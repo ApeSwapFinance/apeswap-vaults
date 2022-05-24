@@ -78,7 +78,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
     // Runtime data
     mapping(address => UserInfo) public userInfo; // Info of users
     uint256 public accSharesPerStakedToken; // Accumulated BANANA_VAULT shares per staked token, times 1e18.
-    uint256 private unallocatedShares;
+    uint256 public unallocatedShares;
 
     // Vault info
     address public immutable STAKE_TOKEN_ADDRESS;
@@ -282,10 +282,14 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         // Calculate the WBNB values
         keeperOutput = (wbnbOutput * settings.keeperFee) / 10000;
         // Calculate the BANANA values
-        platformOutput = (bananaOutputWithoutFees * settings.platformFee) / 10000;
+        platformOutput =
+            (bananaOutputWithoutFees * settings.platformFee) /
+            10000;
         burnOutput = (bananaOutputWithoutFees * settings.buyBackRate) / 10000;
-        uint256 bananaFees = 
-            ((bananaOutputWithoutFees * settings.keeperFee) / 10000) + platformOutput + burnOutput;
+        uint256 bananaFees = ((bananaOutputWithoutFees * settings.keeperFee) /
+            10000) +
+            platformOutput +
+            burnOutput;
         bananaOutput = bananaOutputWithoutFees - bananaFees;
     }
 
@@ -458,13 +462,16 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
             }
         }
         // Earns inside BANANA on deposits
-        _bananaVaultDeposit();
+        _bananaVaultDeposit(0, false);
     }
 
     /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
+    /// @dev Transferring out all BANANA rewards will lock BANANA harvests. This contract can be filled up with
+    ///  excess needed BANANA or users can withdraw their stake and be airdropped BANANA tokens.
     function emergencyVaultWithdraw() external onlyVaultApe {
+        // Remove farm tokens
         _emergencyVaultWithdraw();
-
+        // Remove BANANA vault tokens
         IMaximizerVaultApe.Settings memory settings = getSettings();
         BANANA_VAULT.withdrawAll();
         uint256 bananaBalance = _bananaBalance();
@@ -527,9 +534,9 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
 
         uint256 stakeBefore = totalStake();
         _vaultDeposit(stakeTokenBalance);
-        // accSharesPerStakedToken is updated here to ensure
-        _bananaVaultDeposit();
         uint256 stakeAfter = totalStake();
+        // accSharesPerStakedToken is updated here to ensure
+        _bananaVaultDeposit(stakeAfter - stakeBefore, true);
 
         return stakeAfter - stakeBefore;
     }
@@ -588,7 +595,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         emit ClaimRewards(_userAddress, currentShares, bananaToWithdraw);
     }
 
-    function _bananaVaultDeposit() internal {
+    function _bananaVaultDeposit(uint256 _difference, bool _takeFee) internal {
         uint256 bananaBalance = _bananaBalance();
         if (bananaBalance == 0) {
             // earn
@@ -596,15 +603,23 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
             return;
         }
         uint256 previousShares = totalAutoBananaShares();
+        IMaximizerVaultApe.Settings memory settings = getSettings();
+        if (_takeFee && settings.platformFee > 0) {
+            // This catches times when banana is deposited outside of earn and harvests are generated
+            uint256 bananaFee = (bananaBalance * settings.platformFee) / 10000;
+            _safeBANANATransfer(settings.treasury, bananaFee);
+            bananaBalance -= bananaFee;
+        }
 
         _approveTokenIfNeeded(BANANA, bananaBalance, address(BANANA_VAULT));
         BANANA_VAULT.deposit(bananaBalance);
 
         uint256 currentShares = totalAutoBananaShares();
         uint256 shareIncrease = currentShares - previousShares;
+        uint256 adjustedStake = totalStake() - _difference;
 
         uint256 increaseAccSharesPerStakedToken = ((shareIncrease +
-            unallocatedShares) * 1e18) / totalStake();
+            unallocatedShares) * 1e18) / adjustedStake;
         accSharesPerStakedToken += increaseAccSharesPerStakedToken;
 
         // Not all shares are allocated because it's divided by totalStake() and can have rounding issue.
@@ -613,7 +628,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         // From example: 45 missing shares still to be allocated
         unallocatedShares =
             (shareIncrease + unallocatedShares) -
-            ((increaseAccSharesPerStakedToken * totalStake()) / 1e18);
+            ((increaseAccSharesPerStakedToken * adjustedStake) / 1e18);
     }
 
     function _rewardTokenBalance() internal view returns (uint256) {
