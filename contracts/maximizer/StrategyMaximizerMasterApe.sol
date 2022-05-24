@@ -133,7 +133,7 @@ contract StrategyMaximizerMasterApe is BaseBananaMaximizerStrategy {
     }
 
     /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
-    function emergencyVaultWithdraw() public override onlyVaultApe {
+    function _emergencyVaultWithdraw() internal override {
         STAKE_TOKEN_FARM.emergencyWithdraw(FARM_PID);
     }
 
