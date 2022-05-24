@@ -466,16 +466,19 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
     }
 
     /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
-    /// @dev Transferring out all BANANA rewards will lock BANANA harvests. This contract can be filled up with
-    ///  excess needed BANANA or users can withdraw their stake and be airdropped BANANA tokens.
     function emergencyVaultWithdraw() external onlyVaultApe {
         // Remove farm tokens
         _emergencyVaultWithdraw();
+    }
+
+    /// @notice Handle emergency withdraw of this strategy without caring about rewards. EMERGENCY ONLY.
+    /// @dev Transferring out all BANANA rewards will lock BANANA harvests. This contract can be filled up with
+    ///  excess needed BANANA or users can withdraw their stake and be airdropped BANANA tokens.
+    function emergencyBananaVaultWithdraw(address _to) external onlyVaultApe {
         // Remove BANANA vault tokens
-        IMaximizerVaultApe.Settings memory settings = getSettings();
         BANANA_VAULT.withdrawAll();
         uint256 bananaBalance = _bananaBalance();
-        _safeBANANATransfer(settings.platform, bananaBalance);
+        _safeBANANATransfer(_to, bananaBalance);
     }
 
     /// @notice getter function for settings

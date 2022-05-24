@@ -531,6 +531,19 @@ contract MaximizerVaultApe is
         emit VaultDisabled(_vaultPid, vaultAddress);
     }
 
+    function emergencyBananaVaultWithdraw(
+        uint256 _vaultPid,
+        address _sendBananaTo
+    ) external onlyOwner {
+        address vaultAddress = vaults[_vaultPid];
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaultAddress
+        );
+        strat.emergencyBananaVaultWithdraw(_sendBananaTo);
+        disableVault(_vaultPid);
+        emit VaultDisabled(_vaultPid, vaultAddress);
+    }
+
     function setMaxDelay(uint256 _maxDelay) external onlyOwner {
         maxDelay = _maxDelay;
         emit ChangedMaxDelay(_maxDelay);
