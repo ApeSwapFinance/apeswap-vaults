@@ -93,9 +93,9 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
         nonReentrant
         onlyRole(DEPOSIT_ROLE)
     {
-        if(_amount == 0){
-            // Depositing zero is a way for external contracts to know that an _earn was performed 
-            _earn();
+        earn();
+        if (_amount == 0) {
+            // Depositing zero is a way for external contracts to know that an _earn was performed
             return;
         }
 
@@ -133,7 +133,7 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
     /**
      * @notice Reinvests BANANA tokens into MasterApe
      */
-    function earn() external {
+    function earn() public {
         masterApe.leaveStaking(0);
 
         _earn();
@@ -166,6 +166,7 @@ contract BananaVault is AccessControlEnumerable, ReentrancyGuard {
      * @param _shares: Number of shares to withdraw
      */
     function withdraw(uint256 _shares) public nonReentrant {
+        earn();
         UserInfo storage user = userInfo[msg.sender];
 
         require(_shares > 0, "BananaVault: Must withdraw more than 0");
