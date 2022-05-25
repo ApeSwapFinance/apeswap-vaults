@@ -414,7 +414,7 @@ contract MaximizerVaultApe is
         nonReentrant
     {
         address vaultAddress = vaults[_pid];
-        VaultInfo memory vaultInfo = vaultInfos[vaultAddress];
+        VaultInfo storage vaultInfo = vaultInfos[vaultAddress];
         require(vaultInfo.enabled, "MaximizerVaultApe: vault is disabled");
 
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
@@ -422,6 +422,8 @@ contract MaximizerVaultApe is
         );
         IERC20 wantToken = IERC20(strat.STAKE_TOKEN_ADDRESS());
         uint256 beforeWantToken = wantToken.balanceOf(address(strat));
+        // The vault will be compounded on each deposit
+        vaultInfo.lastCompound = block.timestamp;
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         uint256 afterWantToken = wantToken.balanceOf(address(strat));
         // account for reflect fees
@@ -436,19 +438,22 @@ contract MaximizerVaultApe is
         override
         nonReentrant
     {
-        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
-            vaults[_pid]
-        );
-        strat.withdraw(msg.sender, _wantAmt);
+        _withdraw(_pid, _wantAmt);
     }
 
     /// @notice User withdraw all for specific vault
     /// @param _pid pid of vault
     function withdrawAll(uint256 _pid) external override nonReentrant {
+        _withdraw(_pid, type(uint256).max);
+    }
+
+    /// @dev Providing a private withdraw as nonReentrant functions cannot call each other
+    function _withdraw(uint256 _pid, uint256 _wantAmt) private {
+        address vaultAddress = vaults[_pid];
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
-            vaults[_pid]
+            vaultAddress
         );
-        strat.withdraw(msg.sender, type(uint256).max);
+        strat.withdraw(msg.sender, _wantAmt);
     }
 
     /// @notice User harvest rewards for specific vault
@@ -527,6 +532,19 @@ contract MaximizerVaultApe is
             vaultAddress
         );
         strat.emergencyVaultWithdraw();
+        disableVault(_vaultPid);
+        emit VaultDisabled(_vaultPid, vaultAddress);
+    }
+
+    function emergencyBananaVaultWithdraw(
+        uint256 _vaultPid,
+        address _sendBananaTo
+    ) external onlyOwner {
+        address vaultAddress = vaults[_vaultPid];
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaultAddress
+        );
+        strat.emergencyBananaVaultWithdraw(_sendBananaTo);
         disableVault(_vaultPid);
         emit VaultDisabled(_vaultPid, vaultAddress);
     }
