@@ -356,7 +356,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         ) {
             // Take withdraw fees
             withdrawFee = (currentAmount * settings.withdrawFee) / 10000;
-            STAKE_TOKEN.safeTransfer(settings.treasury, withdrawFee);
+            STAKE_TOKEN.safeTransfer(settings.platform, withdrawFee);
         }
         STAKE_TOKEN.safeTransfer(_userAddress, currentAmount - withdrawFee);
 
@@ -582,7 +582,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
             uint256 bananaFee = (bananaToWithdraw *
                 settings.withdrawRewardsFee) / 10000;
             // BananaVault fees are taken on withdraws
-            _safeBANANATransfer(settings.treasury, bananaFee);
+            _safeBANANATransfer(settings.platform, bananaFee);
             bananaToWithdraw -= bananaFee;
         }
 
@@ -604,7 +604,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         if (_takeFee && settings.platformFee > 0) {
             // This catches times when banana is deposited outside of earn and harvests are generated
             uint256 bananaFee = (bananaBalance * settings.platformFee) / 10000;
-            _safeBANANATransfer(settings.treasury, bananaFee);
+            _safeBANANATransfer(settings.platform, bananaFee);
             bananaBalance -= bananaFee;
         }
 
@@ -756,7 +756,7 @@ abstract contract BaseBananaMaximizerStrategy is Ownable, ReentrancyGuard {
         strategySettings.platform = _platform;
     }
 
-    /// @notice set treasury address
+    /// @notice Set the treasury address where Keeper fees are sent to
     /// @param _treasury treasury address
     /// @param _useDefault usage of VaultApeMaximizer default
     /// @dev only owner
