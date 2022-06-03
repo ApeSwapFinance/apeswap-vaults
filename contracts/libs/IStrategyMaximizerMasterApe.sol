@@ -58,4 +58,8 @@ interface IStrategyMaximizerMasterApe {
     function withdraw(address _userAddress, uint256 _wantAmt) external;
 
     function claimRewards(address _userAddress, uint256 _shares) external;
+
+    function emergencyVaultWithdraw() external;
+
+    function emergencyBananaVaultWithdraw(address _to) external;
 }

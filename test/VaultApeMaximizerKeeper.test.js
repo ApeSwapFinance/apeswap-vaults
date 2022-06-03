@@ -243,7 +243,6 @@ describe('KeeperMaximizerVaultApe', function () {
             toDeposit = (Math.floor(Number(LPTokens) * 0.05)).toString();
             await pair.transfer(testerAddress2, (Number(toDeposit)).toString(), { from: testerAddress });
           } else {
-
             if (token1 != testConfig.usdAddress) {
               const [tokenInAmount, tokenOutAmount] = await router.getAmountsIn(tokensToLPAmount, [testConfig.usdAddress, token1]);
               await router.swapExactTokensForTokens((Number(tokenInAmount) * 1.1).toString(), 0, [testConfig.usdAddress, token1], testerAddress, await time.latestBlock() + 600, { from: testerAddress });
@@ -311,9 +310,9 @@ describe('KeeperMaximizerVaultApe', function () {
       });
 
       it('should withdraw and pay withdraw fee', async () => {
-        const { treasury } = await strategyMaximizerMasterApe.getSettings();
-        const wantAccountSnapshotBefore = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress, treasury]);
-        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
+        const { platform } = await strategyMaximizerMasterApe.getSettings();
+        const wantAccountSnapshotBefore = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress, platform]);
+        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, platform]);
         await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress });
         // Snapshot Before
         const strategySnapshotBefore = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
@@ -344,14 +343,14 @@ describe('KeeperMaximizerVaultApe', function () {
         userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(Number(userInfo.stake)).equal(0, 'user stake is not zero after withdraw')
         // That the stake token of that vault increases for the tester by the amount less than the withdraw fee
-        const wantAccountSnapshotAfter = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress, treasury]);
-        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
+        const wantAccountSnapshotAfter = await getAccountTokenBalances(wantToken, [testerAddress, adminAddress, platform]);
+        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, platform]);
         const withdrawFee = new BN(toDeposit).mul(new BN(2)).mul(new BN("25")).div(new BN("10000")); //0.25% withdraw fees
         const shouldBeBalance = new BN(wantAccountSnapshotBefore[testerAddress]).sub(withdrawFee);
 
         // Assert stake token balances
         expect(
-          new BN(wantAccountSnapshotAfter[treasury])
+          new BN(wantAccountSnapshotAfter[platform])
             .eq(withdrawFee))
           .equal(true, 'withdraw fee to treasury address inaccurate');
         expect(wantAccountSnapshotAfter[testerAddress]).equal(shouldBeBalance.toString(), 'user want balance inaccurate after withdraw');
@@ -363,9 +362,9 @@ describe('KeeperMaximizerVaultApe', function () {
           .equal(true, 'banana tokens did not increase for tester address after earn/withdraw');
         // NOTE: Only testing for value increases
         expect(
-          new BN(bananaAccountSnapshotAfter[treasury])
-            .gt(new BN(bananaAccountSnapshotBefore[treasury])))
-          .equal(true, 'banana tokens did not increase for treasury address after earn/reward withdraw fee');
+          new BN(bananaAccountSnapshotAfter[platform])
+            .gt(new BN(bananaAccountSnapshotBefore[platform])))
+          .equal(true, 'banana tokens did not increase for platform after earn/reward withdraw fee');
 
         userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
 
@@ -444,7 +443,7 @@ describe('KeeperMaximizerVaultApe', function () {
         await maximizerVaultApe.setPlatformFee("100", { from: adminAddress });
         await maximizerVaultApe.setBuyBackRate("100", { from: adminAddress });
 
-        const platformFeeBefore = await wrappedNative.balanceOf(platformAddress);
+        const platformFeeBefore = await bananaToken.balanceOf(platformAddress);
         const keeperFeeBefore = await wrappedNative.balanceOf(treasuryAddress);
         const buyBackFeeBefore = await bananaToken.balanceOf("0x000000000000000000000000000000000000dEaD");
 
@@ -457,7 +456,7 @@ describe('KeeperMaximizerVaultApe', function () {
         expect(checkUpkeep.upkeepNeeded).to.be.true;
         await maximizerVaultApe.performUpkeep(checkUpkeep.performData, { from: adminAddress });
 
-        const platformFeeAfter = await wrappedNative.balanceOf(platformAddress);
+        const platformFeeAfter = await bananaToken.balanceOf(platformAddress);
         const keeperFeeAfter = await wrappedNative.balanceOf(treasuryAddress);
         const buyBackFeeAfter = await bananaToken.balanceOf("0x000000000000000000000000000000000000dEaD");
 
@@ -506,7 +505,7 @@ describe('KeeperMaximizerVaultApe', function () {
         expect(wantBalanceAfter.toString()).equal(shouldBeBalance.toString());
 
         // TODO: This test is failing?
-        expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * 0.99 * (toDeposit / 1e18))); //0.99 = 1% withdral rewards fee
+        expect(Number(bananaBalanceAfter1 - bananaBalanceBefore1)).to.be.greaterThan(Number(accSharesPerStakedToken * 0.99 * (toDeposit / 1e18))); //0.99 = 1% withdraw rewards fee
         expect(Number(bananaBalanceAfter1)).to.be.greaterThan(Number(bananaBalanceBefore1));
         expect(Number(bananaBalanceAfter2)).to.be.greaterThan(Number(bananaBalanceBefore2));
 
@@ -514,12 +513,12 @@ describe('KeeperMaximizerVaultApe', function () {
       });
 
       it('should harvest properly', async () => {
-        const { treasury } = await strategyMaximizerMasterApe.getSettings();
-        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
+        const { platform } = await strategyMaximizerMasterApe.getSettings();
+        const bananaAccountSnapshotBefore = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, platform]);
         // Deposit tokens
         await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress });
         // Snapshot Before
-        const strategySnapshotBefore = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2, treasury]);
+        const strategySnapshotBefore = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2, platform]);
         const bananaVaultSnapshotBefore = await getBananaVaultSnapshot(bananaVault, [strategyMaximizerMasterApe.address]);
         const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
 
@@ -531,7 +530,7 @@ describe('KeeperMaximizerVaultApe', function () {
         await advanceNumBlocks(blocksToAdvance);
         await maximizerVaultApe.earn(0);
         const bananaVaultSnapshotInBetween = await getBananaVaultSnapshot(bananaVault, [strategyMaximizerMasterApe.address]);
-        const strategySnapshotInBetween = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2, treasury]);
+        const strategySnapshotInBetween = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2, platform]);
         // NOTE: Only testing for value increases
         // balanceOf evaluates the current banana value, while userInfo stores the most recent state update (will be behind)
         expect(
@@ -554,7 +553,7 @@ describe('KeeperMaximizerVaultApe', function () {
 
         const strategySnapshotAfter = await getStrategyMaximizerSnapshot(strategyMaximizerMasterApe, [testerAddress, testerAddress2]);
         const bananaVaultSnapshotAfter = await getBananaVaultSnapshot(bananaVault, [strategyMaximizerMasterApe.address]);
-        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, treasury]);
+        const bananaAccountSnapshotAfter = await getAccountTokenBalances(bananaToken, [testerAddress, adminAddress, platformAddress]);
 
         // NOTE: Only testing for value decreases
         expect(
@@ -576,14 +575,14 @@ describe('KeeperMaximizerVaultApe', function () {
           .equal(true, 'banana tokens did not increase for tester address after earn/withdraw');
         // NOTE: Only testing for value increases
         expect(
-          new BN(bananaAccountSnapshotAfter[treasury])
-            .gt(new BN(bananaAccountSnapshotBefore[treasury])))
-          .equal(true, 'banana tokens did not increase for treasury address after earn/reward withdraw fee');
+          new BN(bananaAccountSnapshotAfter[platform])
+            .gt(new BN(bananaAccountSnapshotBefore[platform])))
+          .equal(true, 'banana tokens did not increase for platform after earn/reward withdraw fee');
         // NOTE: Only testing for value increases
         expect(
-          new BN(bananaAccountSnapshotAfter[treasury])
-            .gt(new BN(bananaAccountSnapshotBefore[treasury])))
-          .equal(true, 'banana tokens did not increase for treasury address after earn/reward withdraw fee');
+          new BN(bananaAccountSnapshotAfter[platform])
+            .gt(new BN(bananaAccountSnapshotBefore[platform])))
+          .equal(true, 'banana tokens did not increase for platform after earn/reward withdraw fee');
       });
 
       // One pass tests
@@ -620,11 +619,6 @@ describe('KeeperMaximizerVaultApe', function () {
 
           expectRevert(
             maximizerVaultApe.setWithdrawRewardsFee(updateValue, { from: notOwner }),
-            "Ownable: caller is not the owner"
-          )
-
-          expectRevert(
-            maximizerVaultApe.setModerator(updateAddress, { from: notOwner }),
             "Ownable: caller is not the owner"
           )
 
@@ -677,6 +671,45 @@ describe('KeeperMaximizerVaultApe', function () {
 
         const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
         expect(userInfo.stake.toString()).equal(toDeposit)
+      });
+
+      it('should be able to emergency withdraw', async () => {
+        await maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress })
+        await time.advanceBlock();
+        maximizerVaultApe.earn(0, { from: testerAddress });
+        const vaultAddress = await maximizerVaultApe.vaults(0);
+        let wantBalanceVault = await wantToken.balanceOf(vaultAddress);
+        expect(wantBalanceVault.toString()).equal("0")
+
+        await maximizerVaultApe.emergencyVaultWithdraw(0, { from: adminAddress })
+        let vaultInfo = await maximizerVaultApe.vaultInfos(vaultAddress);
+        expect(vaultInfo.enabled).to.be.false;
+
+        await expectRevert(maximizerVaultApe.deposit(0, toDeposit, { from: testerAddress }), "MaximizerVaultApe: vault is disabled");
+        await expectRevert(maximizerVaultApe.earn(0, { from: testerAddress }), "MaximizerVaultApe: vault is disabled");
+
+        wantBalanceVault = await wantToken.balanceOf(vaultAddress);
+        expect(wantBalanceVault.toString()).equal(toDeposit)
+
+        await maximizerVaultApe.withdraw(0, toDeposit, { from: testerAddress })
+
+        wantBalanceVault = await wantToken.balanceOf(vaultAddress);
+        expect(wantBalanceVault.toString()).equal("0")
+
+        const userInfo = await maximizerVaultApe.userInfo(0, testerAddress);
+        expect(userInfo.stake.toString()).equal("0")
+
+        await maximizerVaultApe.enableVault(0, { from: adminAddress })
+        vaultInfo = await maximizerVaultApe.vaultInfos(vaultAddress);
+        expect(vaultInfo.enabled).to.be.true;
+
+        // Test Emergency Withdraw on BANANA Vault
+        const toAddress = accounts[9];
+        const bananaSnapshotBefore = await getAccountTokenBalances(bananaToken, [toAddress]);
+        await maximizerVaultApe.emergencyBananaVaultWithdraw(0, toAddress, { from: adminAddress })
+        const bananaSnapshotAfter = await getAccountTokenBalances(bananaToken, [toAddress]);
+        expect(Number(bananaSnapshotAfter[toAddress])).to.be.greaterThan(Number(bananaSnapshotBefore[toAddress]), 'emergencyBananaVaultWithdraw did not send tokens')
+
       });
 
       it('should have correct values for view functions', async () => {

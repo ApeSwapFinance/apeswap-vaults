@@ -46,9 +46,14 @@ contract KeeperMaximizerVaultApe is
         keeper = _keeper;
     }
 
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "KeeperMaximizerVaultApe: Not keeper");
+        _;
+    }
+
     /// @notice Chainlink keeper checkUpkeep
-    function checkUpkeep(bytes calldata)
-        external
+    function checkUpkeep(bytes memory)
+        public
         view
         override
         returns (bool upkeepNeeded, bytes memory performData)
@@ -64,7 +69,11 @@ contract KeeperMaximizerVaultApe is
 
     /// @notice Chainlink keeper performUpkeep
     /// @param performData response from checkUpkeep
-    function performUpkeep(bytes calldata performData) external override {
+    function performUpkeep(bytes memory performData)
+        external
+        override
+        onlyKeeper
+    {
         (
             address[] memory _vaults,
             uint256[] memory _minPlatformOutputs,
@@ -76,17 +85,26 @@ contract KeeperMaximizerVaultApe is
                 (address[], uint256[], uint256[], uint256[], uint256[])
             );
 
-        uint256 timestamp = block.timestamp;
-        uint256 length = _vaults.length;
+        uint256 vaultLength = _vaults.length;
+        require(vaultLength > 0, "KeeperMaximizerVaultApe: No vaults");
 
-        for (uint256 index = 0; index < length; ++index) {
+        for (uint256 index = 0; index < vaultLength; ++index) {
+            address vault = _vaults[index];
+            (, uint256 keeperOutput, , ) = _getExpectedOutputs(vault);
+
+            require(
+                (block.timestamp >=
+                    vaultInfos[vault].lastCompound + maxDelay) ||
+                    (keeperOutput >= minKeeperFee),
+                "KeeperMaximizerVaultApe: Upkeep validation"
+            );
+
             _compoundVault(
                 _vaults[index],
                 _minPlatformOutputs[index],
                 _minKeeperOutputs[index],
                 _minBurnOutputs[index],
                 _minBananaOutputs[index],
-                timestamp,
                 true
             );
         }
@@ -94,7 +112,7 @@ contract KeeperMaximizerVaultApe is
         BANANA_VAULT.earn();
     }
 
-    function setKeeper(address _keeper) public onlyOwner {
+    function setKeeper(address _keeper) external onlyOwner {
         keeper = _keeper;
     }
 }
