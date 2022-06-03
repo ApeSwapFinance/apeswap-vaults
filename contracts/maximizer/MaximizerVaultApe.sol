@@ -67,6 +67,7 @@ contract MaximizerVaultApe is
     uint256 public maxDelay;
     uint256 public minKeeperFee;
     uint256 public slippageFactor;
+    uint256 public constant SLIPPAGE_FACTOR_DENOMINATOR = 10000;
     uint16 public maxVaults;
 
     // Fee upper limits
@@ -164,16 +165,18 @@ contract MaximizerVaultApe is
                 tempCompoundInfo.vaults[actualLength] = vault;
                 tempCompoundInfo.minPlatformOutputs[
                     actualLength
-                ] = platformOutput.mul(slippageFactor).div(10000);
+                ] = platformOutput.mul(slippageFactor).div(
+                    SLIPPAGE_FACTOR_DENOMINATOR
+                );
                 tempCompoundInfo.minKeeperOutputs[actualLength] = keeperOutput
                     .mul(slippageFactor)
-                    .div(10000);
+                    .div(SLIPPAGE_FACTOR_DENOMINATOR);
                 tempCompoundInfo.minBurnOutputs[actualLength] = burnOutput
                     .mul(slippageFactor)
-                    .div(10000);
+                    .div(SLIPPAGE_FACTOR_DENOMINATOR);
                 tempCompoundInfo.minBananaOutputs[actualLength] = bananaOutput
                     .mul(slippageFactor)
-                    .div(10000);
+                    .div(SLIPPAGE_FACTOR_DENOMINATOR);
 
                 actualLength = actualLength + 1;
             }
@@ -259,10 +262,18 @@ contract MaximizerVaultApe is
                 uint256 bananaOutput
             ) = _getExpectedOutputs(vaultAddress);
 
-            platformOutput = platformOutput.mul(slippageFactor).div(10000);
-            keeperOutput = keeperOutput.mul(slippageFactor).div(10000);
-            burnOutput = burnOutput.mul(slippageFactor).div(10000);
-            bananaOutput = bananaOutput.mul(slippageFactor).div(10000);
+            platformOutput = platformOutput.mul(slippageFactor).div(
+                SLIPPAGE_FACTOR_DENOMINATOR
+            );
+            keeperOutput = keeperOutput.mul(slippageFactor).div(
+                SLIPPAGE_FACTOR_DENOMINATOR
+            );
+            burnOutput = burnOutput.mul(slippageFactor).div(
+                SLIPPAGE_FACTOR_DENOMINATOR
+            );
+            bananaOutput = bananaOutput.mul(slippageFactor).div(
+                SLIPPAGE_FACTOR_DENOMINATOR
+            );
 
             return
                 _compoundVault(
@@ -414,7 +425,7 @@ contract MaximizerVaultApe is
         nonReentrant
     {
         address vaultAddress = vaults[_pid];
-        VaultInfo memory vaultInfo = vaultInfos[vaultAddress];
+        VaultInfo storage vaultInfo = vaultInfos[vaultAddress];
         require(vaultInfo.enabled, "MaximizerVaultApe: vault is disabled");
 
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
@@ -422,6 +433,8 @@ contract MaximizerVaultApe is
         );
         IERC20 wantToken = IERC20(strat.STAKE_TOKEN_ADDRESS());
         uint256 beforeWantToken = wantToken.balanceOf(address(strat));
+        // The vault will be compounded on each deposit
+        vaultInfo.lastCompound = block.timestamp;
         wantToken.safeTransferFrom(msg.sender, address(strat), _wantAmt);
         uint256 afterWantToken = wantToken.balanceOf(address(strat));
         // account for reflect fees
@@ -436,19 +449,21 @@ contract MaximizerVaultApe is
         override
         nonReentrant
     {
-        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
-            vaults[_pid]
-        );
-        strat.withdraw(msg.sender, _wantAmt);
+        _withdraw(_pid, _wantAmt);
     }
 
     /// @notice User withdraw all for specific vault
     /// @param _pid pid of vault
     function withdrawAll(uint256 _pid) external override nonReentrant {
+        _withdraw(_pid, type(uint256).max);
+    }
+
+    /// @dev Providing a private withdraw as nonReentrant functions cannot call each other
+    function _withdraw(uint256 _pid, uint256 _wantAmt) private {
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
             vaults[_pid]
         );
-        strat.withdraw(msg.sender, type(uint256).max);
+        strat.withdraw(msg.sender, _wantAmt);
     }
 
     /// @notice User harvest rewards for specific vault
@@ -474,7 +489,7 @@ contract MaximizerVaultApe is
         strat.claimRewards(msg.sender, type(uint256).max);
     }
 
-    // ===== OWNER only functions =====
+    // ===== onlyOwner functions =====
 
     /// @notice Add a new vault address
     /// @param _vault vault address to add
@@ -521,6 +536,8 @@ contract MaximizerVaultApe is
         emit VaultDisabled(_vaultPid, vaultAddress);
     }
 
+    /// @notice Call this function to disable a vault by pid and pull staked tokens out into strategy for users to withdraw from
+    /// @param _vaultPid ID of the vault to emergencyWithdraw from
     function emergencyVaultWithdraw(uint256 _vaultPid) external onlyOwner {
         address vaultAddress = vaults[_vaultPid];
         IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
@@ -531,37 +548,72 @@ contract MaximizerVaultApe is
         emit VaultDisabled(_vaultPid, vaultAddress);
     }
 
+    /// @notice Call this function to empty out the BANANA vault rewards for a specific strategy if there is an emergency
+    /// @param _vaultPid ID of the vault to emergencyWithdraw from
+    /// @param _sendBananaTo Address to send BANANA to for the passed _vaultPid
+    function emergencyBananaVaultWithdraw(
+        uint256 _vaultPid,
+        address _sendBananaTo
+    ) external onlyOwner {
+        address vaultAddress = vaults[_vaultPid];
+        IStrategyMaximizerMasterApe strat = IStrategyMaximizerMasterApe(
+            vaultAddress
+        );
+        strat.emergencyBananaVaultWithdraw(_sendBananaTo);
+        disableVault(_vaultPid);
+        emit VaultDisabled(_vaultPid, vaultAddress);
+    }
+
+    // ===== onlyOwner Setters =====
+
+    /// @notice Set the maxDelay used to compound vaults through Keepers
+    /// @param _maxDelay Delay in seconds
     function setMaxDelay(uint256 _maxDelay) external onlyOwner {
         maxDelay = _maxDelay;
         emit ChangedMaxDelay(_maxDelay);
     }
 
+    /// @notice Set the minKeeperFee in denomination of native currency
+    /// @param _minKeeperFee Minimum fee in native currency used to allow the Keeper to run before maxDelay
     function setMinKeeperFee(uint256 _minKeeperFee) external onlyOwner {
         minKeeperFee = _minKeeperFee;
         emit ChangedMinKeeperFee(_minKeeperFee);
     }
 
+    /// @notice Set the slippageFactor for calculating outputs
+    /// @param _slippageFactor Minimum fee in native currency required to run compounder through Keeper before maxDelay
     function setSlippageFactor(uint256 _slippageFactor) external onlyOwner {
+        require(
+            _slippageFactor <= SLIPPAGE_FACTOR_DENOMINATOR,
+            "slippageFactor too high"
+        );
         slippageFactor = _slippageFactor;
         emit ChangedSlippageFactor(_slippageFactor);
     }
 
+    /// @notice Set maxVaults to be compounded through the Keeper
+    /// @param _maxVaults Number of vaults to compound on each run
     function setMaxVaults(uint16 _maxVaults) external onlyOwner {
         maxVaults = _maxVaults;
         emit ChangedMaxVaults(_maxVaults);
     }
 
-    // ===== setters setting values =====
+    /// @notice Set the address where treasury funds are sent to
+    /// @param _treasury Address of treasury
     function setTreasury(address _treasury) external onlyOwner {
         emit ChangedTreasury(settings.treasury, _treasury);
         settings.treasury = _treasury;
     }
 
+    /// @notice Set the address where performance funds are sent to
+    /// @param _platform Address of platform
     function setPlatform(address _platform) external onlyOwner {
         emit ChangedPlatform(settings.platform, _platform);
         settings.platform = _platform;
     }
 
+    /// @notice Set the keeperFee earned on compounding through the Keeper
+    /// @param _keeperFee Percentage to take on each compound. (100 = 1%)
     function setKeeperFee(uint256 _keeperFee) external onlyOwner {
         require(
             _keeperFee <= KEEPER_FEE_UL,
@@ -571,6 +623,8 @@ contract MaximizerVaultApe is
         settings.keeperFee = _keeperFee;
     }
 
+    /// @notice Set the platformFee earned on compounding
+    /// @param _platformFee Percentage to take on each compound. (100 = 1%)
     function setPlatformFee(uint256 _platformFee) external onlyOwner {
         require(
             _platformFee <= PLATFORM_FEE_UL,
@@ -580,6 +634,8 @@ contract MaximizerVaultApe is
         settings.platformFee = _platformFee;
     }
 
+    /// @notice Set the percentage of BANANA to burn on each compound.
+    /// @param _buyBackRate Percentage to burn on each compound. (100 = 1%)
     function setBuyBackRate(uint256 _buyBackRate) external onlyOwner {
         require(
             _buyBackRate <= BUYBACK_RATE_UL,
@@ -589,6 +645,8 @@ contract MaximizerVaultApe is
         settings.buyBackRate = _buyBackRate;
     }
 
+    /// @notice Set the withdrawFee percentage to take on withdraws.
+    /// @param _withdrawFee Percentage to send to platform. (100 = 1%)
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
         require(
             _withdrawFee <= WITHDRAW_FEE_UL,
@@ -598,6 +656,8 @@ contract MaximizerVaultApe is
         settings.withdrawFee = _withdrawFee;
     }
 
+    /// @notice Set the withdrawFeePeriod period where users pay a fee if they withdraw before this period
+    /// @param _withdrawFeePeriod Period in seconds
     function setWithdrawFeePeriod(uint256 _withdrawFeePeriod)
         external
         onlyOwner
@@ -613,6 +673,8 @@ contract MaximizerVaultApe is
         settings.withdrawFeePeriod = _withdrawFeePeriod;
     }
 
+    /// @notice Set the withdrawRewardsFee percentage to take on BANANA Vault withdraws.
+    /// @param _withdrawRewardsFee Percentage to send to platform. (100 = 1%)
     function setWithdrawRewardsFee(uint256 _withdrawRewardsFee)
         external
         onlyOwner
