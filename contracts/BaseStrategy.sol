@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/Utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/Security/Pausable.sol";
-import "@openzeppelin/contracts/Utils/Math/SafeMath.sol";
-import "@openzeppelin/contracts/Utils/Math/Math.sol";
-import "@openzeppelin/contracts/Security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./libs/IStrategyBanana.sol";
 import "./libs/IUniPair.sol";
@@ -24,7 +24,7 @@ abstract contract BaseStrategy is Ownable, ReentrancyGuard, Pausable {
     address public usdAddress;
     address public bananaAddress;
     // Wrapped native token address (WBNB/WMATIC)
-    address public wNativeAdress = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+    address public wNativeAdress = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
     address public rewardAddress = 0x4EB6b0A7543508f6EbD81c2E9c7cA7A471475e73;
     address public withdrawFeeAddress = 0x4EB6b0A7543508f6EbD81c2E9c7cA7A471475e73;

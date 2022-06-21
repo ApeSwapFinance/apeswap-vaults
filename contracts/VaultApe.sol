@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-import "@openzeppelin/contracts/token/ERC20/Utils/SafeERC20.sol";
-import "@openzeppelin/contracts/Utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/Security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/Utils/Math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "./libs/IVaultApe.sol";
 import "./libs/IStrategy.sol";
 
-contract VaultApe is ReentrancyGuard, Ownable {
+contract VaultApe is IVaultApe, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -18,13 +18,8 @@ contract VaultApe is ReentrancyGuard, Ownable {
         uint256 shares; // How many LP tokens the user has provided.
     }
 
-    struct PoolInfo {
-        IERC20 want; // Address of the want token.
-        address strat; // Strategy address that will auto compound want tokens
-    }
-
     PoolInfo[] public poolInfo; // Info of each pool.
-    mapping(uint256 => mapping(address => UserInfo)) public userInfo; // Info of each user that stakes LP tokens.
+    mapping(uint256 => mapping(address => UserInfo)) public override userInfo; // Info of each user that stakes LP tokens.
     mapping(address => bool) private strats;
 
     event AddPool(address indexed strat);
@@ -32,14 +27,14 @@ contract VaultApe is ReentrancyGuard, Ownable {
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
-    function poolLength() external view returns (uint256) {
+    function poolLength() external override view returns (uint256) {
         return poolInfo.length;
     }
 
     /**
      * @dev Add a new want to the pool. Can only be called by the owner.
      */
-    function addPool(address _strat) external onlyOwner nonReentrant {
+    function addPool(address _strat) external override onlyOwner nonReentrant {
         require(!strats[_strat], "Existing strategy");
         poolInfo.push(
             PoolInfo({
@@ -53,7 +48,7 @@ contract VaultApe is ReentrancyGuard, Ownable {
     }
 
     // View function to see staked Want tokens on frontend.
-    function stakedWantTokens(uint256 _pid, address _user) external view returns (uint256) {
+    function stakedWantTokens(uint256 _pid, address _user) external override view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
 
@@ -66,12 +61,12 @@ contract VaultApe is ReentrancyGuard, Ownable {
     }
 
     // Want tokens moved from user -> this -> Strat (compounding)
-    function deposit(uint256 _pid, uint256 _wantAmt) external nonReentrant {
+    function deposit(uint256 _pid, uint256 _wantAmt) external override nonReentrant {
         _deposit(_pid, _wantAmt, msg.sender);
     }
 
     // For depositing for other users
-    function deposit(uint256 _pid, uint256 _wantAmt, address _to) external nonReentrant {
+    function deposit(uint256 _pid, uint256 _wantAmt, address _to) external override nonReentrant {
         _deposit(_pid, _wantAmt, _to);
     }
 
@@ -94,12 +89,12 @@ contract VaultApe is ReentrancyGuard, Ownable {
     }
 
     // Withdraw LP tokens from MasterChef.
-    function withdraw(uint256 _pid, uint256 _wantAmt) external nonReentrant {
+    function withdraw(uint256 _pid, uint256 _wantAmt) external override nonReentrant {
         _withdraw(_pid, _wantAmt, msg.sender);
     }
 
     // For withdrawing to other address
-    function withdraw(uint256 _pid, uint256 _wantAmt, address _to) external nonReentrant {
+    function withdraw(uint256 _pid, uint256 _wantAmt, address _to) external override nonReentrant {
         _withdraw(_pid, _wantAmt, _to);
     }
 
@@ -138,11 +133,11 @@ contract VaultApe is ReentrancyGuard, Ownable {
     }
 
     // Withdraw everything from pool for yourself
-    function withdrawAll(uint256 _pid) external {
+    function withdrawAll(uint256 _pid) external override {
         _withdraw(_pid, type(uint256).max, msg.sender);
     }
 
-    function resetAllowances() external onlyOwner {
+    function resetAllowances() external override onlyOwner {
         for (uint256 i=0; i<poolInfo.length; i++) {
             PoolInfo storage pool = poolInfo[i];
             pool.want.safeApprove(pool.strat, uint256(0));
@@ -150,21 +145,21 @@ contract VaultApe is ReentrancyGuard, Ownable {
         }
     }
 
-    function earnAll() external {
+    function earnAll() external override {
         for (uint256 i=0; i<poolInfo.length; i++) {
             if (!IStrategy(poolInfo[i].strat).paused())
                 IStrategy(poolInfo[i].strat).earn(_msgSender());
         }
     }
 
-    function earnSome(uint256[] memory pids) external {
+    function earnSome(uint256[] memory pids) external override {
         for (uint256 i=0; i<pids.length; i++) {
             if (poolInfo.length >= pids[i] && !IStrategy(poolInfo[pids[i]].strat).paused())
                 IStrategy(poolInfo[pids[i]].strat).earn(_msgSender());
         }
     }
 
-    function resetSingleAllowance(uint256 _pid) public onlyOwner {
+    function resetSingleAllowance(uint256 _pid) public override onlyOwner {
         PoolInfo storage pool = poolInfo[_pid];
         pool.want.safeApprove(pool.strat, uint256(0));
         pool.want.safeIncreaseAllowance(pool.strat, type(uint256).max);

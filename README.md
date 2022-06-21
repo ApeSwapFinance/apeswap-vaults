@@ -1,11 +1,10 @@
-# Truffle Typescript Boilerplate
-Build Solidity smart contracts with truffle, openzeppelin and typescript support.
+<img src="logo.svg" alt="ApeSwap" height="160px">
 
-## Install 
-Click "Use as Template" to create a repo on GitHub based on this repo. Otherwise:  
-`git clone git@github.com:DeFiFoFum/truffle-typescript-template.git`   
-  
-`yarn install`
+# ApeSwap Vaults
+[![Docs](https://img.shields.io/badge/docs-%F0%9F%93%84-yellow)](https://apeswap.gitbook.io/apeswap-finance/welcome/master)
+[![tests](https://github.com/ApeSwapFinance/apeswap-vaults/actions/workflows/CI.yml/badge.svg?branch=feat%2Fmaximizer)](https://github.com/ApeSwapFinance/apeswap-vaults/actions/workflows/CI.yml)
+[![License](https://img.shields.io/badge/License-GPLv3-green.svg)](https://www.gnu.org/licenses/gpl-3.0)  
+Automated fund management contracts which work on top of the ApeSwap farm.
 
 ## Setup
 Create a `.env` file based off of `.env.example` to deploy contracts to bsc mainnet/testnet and to verify deployed contracts.  
@@ -76,3 +75,26 @@ VaultApe:                   https://bscscan.com/address/0xa4c084d141A4E54F3C7970
 StrategyMasterChefSingle:   https://bscscan.com/address/0x27619a7919bf31c15fca24dd10ccdb3f290b3581#code
 StrategyMasterApeSingle:    https://bscscan.com/address/0x51b13b0068d27fd49284b3ceac7c55d372602ad9#readContract
 StrategyMasterChef:         https://bscscan.com/address/0x5199e3ac3a64e8413f1fa3485b58a4741f23eb99#code
+
+
+# Maximizer Vaults
+The [Maximizer contracts](./contracts/maximizer/) are vaults which earn reward tokens from ApeSwap or external farms. The reward tokens are then swapped into BANANA (if needed), added to the ApeSwap BananaVault where the BANANA earnings are continuously compounded in the main ApeSwap BANANA pool. These vaults were built to help alleviate the continuous sell pressure that normal vaults typically put on BANANA.
+
+## Operation
+
+### Chainlink Keepers
+The [KeeperMaximizerVaultApe.sol](./contracts/maximizer/KeeperMaximizerVaultApe.sol) contract is an extension of the `MaximizerVaultApe` contract to allow the vaults to be registered on the **Chainlink Keeper Network**.
+
+#### Setup
+1. Deploy `KeeperMaximizerVaultApe.sol`.
+2. Register the address of `KeeperMaximizerVaultApe` [here](https://keepers.chain.link/new). 
+   1. Choose the proper network by changing the network of your wallet
+   2. You will need to have some [LINK](https://coinmarketcap.com/currencies/chainlink/) in your wallet to fund the initial registration
+3. Once the upkeep address is registered you can add LINK funds and monitor the history through Chainlink's UI (ex: [testnet-keeper](https://keepers.chain.link/chapel/246))
+
+#### Resources
+- Register Keeper [docs](https://docs.chain.link/docs/chainlink-keepers/register-upkeep/).
+- Check the keeper [network overview](https://docs.chain.link/docs/chainlink-keepers/overview/#configuration) for the Keeper Registry contract and individual network configuration settings.  
+- Get testnet LINK [here](https://faucets.chain.link/chapel).  
+### Architecture
+<img src="./images/maximizer-vault-architecture.png">

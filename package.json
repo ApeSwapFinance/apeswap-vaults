@@ -5,25 +5,28 @@
   "license": "GPL-3.0-only",
   "main": "index.js",
   "scripts": {
-    "ganache": "npx ganache-cli",
     "test": "yarn run compile && yarn mocha --exit --timeout 10000 && npm run coverage && rm -rf ./coverage && rm -rf ./coverage.json",
+    "test:ci": "yarn run compile && yarn mocha --exit --timeout 30000",
+    "test:fast": "yarn mocha --exit --timeout 30000",
     "coverage": "node ./coverage.js",
     "size": "truffle run contract-size",
     "compile": "truffle compile",
     "compile:all": "truffle compile --all",
-    "gen:types": "typechain --target=truffle-v5 'build/contracts/*.json'",
-    "postinstall": "yarn compile && yarn gen:types",
+    "gen:types": "truffle compile --all && typechain --target=truffle-v5 'build/contracts/*.json'",
     "migrate:bsc": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network bsc",
     "migrate:polygon": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network polygon",
     "migrate:bsc-testnet": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network bsc-testnet",
-    "migrate:development": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network development",
-    "verify:bsc": "truffle run verify VaultApe --network bsc && truffle run verify StrategyMasterChefSingleFactory --network bsc && truffle run verify StrategyMasterApeSingleFactory --network bsc && truffle run verify StrategyKoalaFarmFactory --network bsc && truffle run verify StrategyMasterChefFactory --network bsc && truffle run verify StrategyKoalaChefSingleFactory --network bsc",
-    "verify:polygon": "truffle run verify VaultApe --network polygon && truffle run verify StrategyMasterChefSingleFactory --network polygon && truffle run verify StrategyMasterApeSingleFactory --network polygon && truffle run verify StrategyKoalaFarmFactory --network polygon && truffle run verify StrategyMasterChefFactory --network polygon && truffle run verify StrategyKoalaChefSingleFactory --network polygon",
+    "migrate:dev": "tsc -p ./tsconfig.json --outDir ./migrations && truffle migrate --network development",
+    "verify:bsc": "truffle run verify VaultApe StrategyMasterChefSingleFactory StrategyMasterApeSingleFactory StrategyKoalaFarmFactory StrategyMasterChefFactory StrategyKoalaChefSingleFactory --network bsc",
+    "verify:bsc:maximizer": "truffle run verify KeeperMaximizerVaultApe BananaVault StrategyMaximizerMasterApe --network bsc",
+    "verify:bsc-testnet:maximizer": "truffle run verify KeeperMaximizerVaultApe BananaVault StrategyMaximizerMasterApe --network bsc-testnet",
+    "verify:polygon": "truffle run verify VaultApe StrategyMasterChefSingleFactory StrategyMasterApeSingleFactory StrategyKoalaFarmFactory StrategyMasterChefFactory StrategyKoalaChefSingleFactory --network polygon",
     "verify:bsc-testnet": "truffle run verify Migrations --network bsc-testnet",
     "typecheck": "tsc --noEmit",
     "lint": "solhint './contracts/**/*.sol'",
     "lint:fix": "solhint './contracts/**/*.sol' --fix",
-    "prettier:fix": "prettier --write 'contracts/**/*.sol'"
+    "prettier:fix": "prettier --write 'contracts/**/*.sol'",
+    "doc:gen": "npx solidity-docgen --solc-module solc-0.8"
   },
   "husky": {
     "hooks": {
@@ -31,7 +34,15 @@
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   },
+  "contributors": [
+    "ApeGuru (https://github.com/ape-swap)",
+    "Doublo (https://github.com/Doublo54)",
+    "DeFiFoFum (https://github.com/DeFiFoFum)"
+  ],
   "devDependencies": {
+    "@apeswap.finance/contracts": "^0.2.0",
+    "@apeswap.finance/test-helpers": "^0.2.0",
+    "@chainlink/contracts": "^0.3.1",
     "@commitlint/cli": "^12.1.1",
     "@commitlint/config-conventional": "^12.1.1",
     "@openzeppelin/contracts": "^4.3.0",
@@ -39,18 +50,22 @@
     "@openzeppelin/test-helpers": "^0.5.12",
     "@truffle/hdwallet-provider": "^1.4.1",
     "@typechain/truffle-v5": "^4.0.1",
+    "chai-bn": "^0.3.1",
     "dotenv": "^8.2.0",
     "ganache-cli": "^6.12.2",
     "husky": "^6.0.0",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.8",
+    "solc-0.8": "npm:solc@0.8.6",
     "solhint": "^3.3.4",
+    "solidity-coverage": "^0.7.16",
+    "solidity-docgen": "^0.5.13",
     "truffle": "^5.3.1",
     "truffle-contract-size": "^2.0.1",
     "truffle-flattener": "^1.5.0",
     "truffle-plugin-verify": "^0.5.9",
-    "solidity-coverage": "^0.7.16",
     "typechain": "^4.0.3",
     "typescript": "^4.2.4"
-  }
+  },
+  "dependencies": {}
 }

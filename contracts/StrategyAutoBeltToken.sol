@@ -40,7 +40,6 @@ contract StrategyAutoBeltToken is BaseStrategySingle, Initializable {
         vaultChefAddress = _configAddresses[0];
         autoFarm = _configAddresses[1];
         uniRouterAddress = _configAddresses[2];
-        oToken = _configAddresses[7];
 
         wantAddress = _configAddresses[3];
 
@@ -48,6 +47,7 @@ contract StrategyAutoBeltToken is BaseStrategySingle, Initializable {
         earnedAddress = _configAddresses[4];
         usdAddress = _configAddresses[5];
         bananaAddress = _configAddresses[6];
+        oToken = _configAddresses[7];
 
         earnedToWnativePath = _earnedToWnativePath;
         earnedToUsdPath = _earnedToUsdPath;

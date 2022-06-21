@@ -6,8 +6,9 @@ const { expect, assert } = require('chai');
 const MockToken = contract.fromArtifact('MockToken');
 
 describe('MockToken', function () {
+  this.timeout(60000);
   const [minter, alice, bob, carol] = accounts;
-  
+
   beforeEach(async () => {
     this.mock = await MockToken.new(ether('123456'), { from: minter });
 
