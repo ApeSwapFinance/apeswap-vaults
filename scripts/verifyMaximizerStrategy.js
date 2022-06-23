@@ -54,6 +54,7 @@ module.exports = async function (callback) {
             const strategyMaximizerMasterApe = await StrategyMaximizerMasterApe.at(strategyAddress);
 
             const strategyDetails = {
+                strategyAddress,
                 BANANA_VAULT: await strategyMaximizerMasterApe.BANANA_VAULT(),
                 BANANA: await strategyMaximizerMasterApe.BANANA(),
                 vaultApe: await strategyMaximizerMasterApe.vaultApe(),
